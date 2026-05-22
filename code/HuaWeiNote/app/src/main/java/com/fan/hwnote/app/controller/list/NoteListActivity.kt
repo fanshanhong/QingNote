@@ -9,7 +9,6 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.widget.EditText
-import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
@@ -18,9 +17,9 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.fan.hwnote.app.R
+import com.fan.hwnote.app.controller.editor.NoteEditorActivity
 import com.fan.hwnote.app.model.NoteRepository
 import com.fan.hwnote.app.model.entity.Note
-import com.fan.hwnote.app.model.entity.NoteContent
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.launch
 
@@ -53,10 +52,7 @@ class NoteListActivity : AppCompatActivity() {
 
         adapter = NoteListAdapter(
             onClick = { note ->
-                Toast.makeText(
-                    this, R.string.toast_open_editor_placeholder, Toast.LENGTH_SHORT
-                ).show()
-                // M4：替换为 startActivity(NoteEditorActivity.newIntent(this, note.id))
+                startActivity(NoteEditorActivity.newIntent(this, note.id))
             },
             onLongClick = { note, anchor -> showCardMenu(note, anchor) },
         )
@@ -66,23 +62,7 @@ class NoteListActivity : AppCompatActivity() {
         sortBy = loadSort()
 
         fab.setOnClickListener {
-            // M3 占位：直接落一条空笔记，验证 列表→数据→刷新 闭环
-            // M4：替换为 startActivity(NoteEditorActivity.newIntent(this, noteId = -1L))
-            lifecycleScope.launch {
-                val now = System.currentTimeMillis()
-                NoteRepository.save(
-                    Note(
-                        id = 0L,
-                        title = "",
-                        plainText = "",
-                        isFavorite = false,
-                        createdAt = now,
-                        updatedAt = now,
-                        content = NoteContent.empty(),
-                    )
-                )
-                reload()
-            }
+            startActivity(NoteEditorActivity.newIntent(this, -1L))
         }
 
         searchInput.addTextChangedListener(object : TextWatcher {
