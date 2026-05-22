@@ -112,7 +112,8 @@ class TextBlockView @JvmOverloads constructor(
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 insertStart = start
-                insertCount = count - before  // 净插入量；正常打字 count=1 before=0
+                // count 即新内容长度 [start, start+count)；不能用 count-before，否则等长替换 / 选区粘贴会漏
+                insertCount = count
             }
             override fun afterTextChanged(s: Editable?) {
                 if (insertCount > 0 && s is android.text.Spannable) {

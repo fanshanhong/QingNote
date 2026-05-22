@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Color
 import android.graphics.Typeface
 import android.text.Spannable
+import android.text.style.CharacterStyle
 import android.text.style.ForegroundColorSpan
 import android.text.style.RelativeSizeSpan
 import android.text.style.StrikethroughSpan
@@ -17,6 +18,7 @@ import com.fan.hwnote.app.model.entity.NoteContent
 import com.fan.hwnote.app.model.entity.SpanType
 import com.fan.hwnote.app.model.entity.TextSpan
 import com.fan.hwnote.app.util.applyTo
+import com.fan.hwnote.app.util.toTextSpans
 import com.fan.hwnote.app.view.block.BlockView
 import com.fan.hwnote.app.view.block.TextBlockView
 import java.util.UUID
@@ -79,37 +81,10 @@ class EditorPresenter(
         end: Int,
         value: String?,
     ) {
-        val raw: List<TextSpan> = run {
-            val out = mutableListOf<TextSpan>()
-            for (s in sp.getSpans(0, sp.length, Any::class.java)) {
-                val st = sp.getSpanStart(s); val en = sp.getSpanEnd(s)
-                if (st < 0 || en <= st) continue
-                when (s) {
-                    is StyleSpan -> when (s.style) {
-                        Typeface.BOLD -> out += TextSpan(st, en, SpanType.BOLD)
-                        Typeface.ITALIC -> out += TextSpan(st, en, SpanType.ITALIC)
-                    }
-                    is UnderlineSpan -> out += TextSpan(st, en, SpanType.UNDERLINE)
-                    is StrikethroughSpan -> out += TextSpan(st, en, SpanType.STRIKETHROUGH)
-                    is RelativeSizeSpan -> {
-                        val v = when {
-                            kotlin.math.abs(s.sizeChange - 0.85f) < 0.01f -> "small"
-                            kotlin.math.abs(s.sizeChange - 1.25f) < 0.01f -> "large"
-                            kotlin.math.abs(s.sizeChange - 1.0f) < 0.01f -> "medium"
-                            else -> null
-                        }
-                        if (v != null) out += TextSpan(st, en, SpanType.FONT_SIZE, v)
-                    }
-                    is ForegroundColorSpan -> {
-                        val hex = "#%06X".format(0xFFFFFF and s.foregroundColor)
-                        out += TextSpan(st, en, SpanType.COLOR, hex)
-                    }
-                }
-            }
-            out
-        }
-        // 清掉所有 span（不会动文字本身）
-        for (s in sp.getSpans(0, sp.length, Any::class.java)) sp.removeSpan(s)
+        // 用 SpanConverter 收集已有富文本 span（与 toBlock 保持同一份解析逻辑，避免漂移）
+        val raw: List<TextSpan> = sp.toTextSpans()
+        // 清掉所有富文本 span（CharacterStyle 子类）；不要扫到 Selection / IME composing / SuggestionSpan
+        for (s in sp.getSpans(0, sp.length, CharacterStyle::class.java)) sp.removeSpan(s)
         // 翻转：删除范围内同 type；如本来无任何同 type 覆盖该段，加一条整段
         val sameType = raw.filter { it.type == type && rangeOverlaps(it.start, it.end, start, end) }
         val kept = raw.filter { it !in sameType }
