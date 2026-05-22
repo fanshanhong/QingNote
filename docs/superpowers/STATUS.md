@@ -12,8 +12,8 @@
 | 4. 规格自审 | ✅ 完成 | 修复 7 处一致性问题（heading 块属性归位、Span 6 种、笔效/橡皮算法详写、ACTION_GET_CONTENT 替换、Glide compiler 去除、plain_text 规则补、行内/块级样式分离） |
 | 5. 用户审阅 PRD | ✅ 完成 | 用户确认无修改，进入下一步 |
 | 6. **实施计划编写** | ✅ 完成 | `docs/superpowers/plans/2026-05-22-hwnote-implementation.md`（高层版，7 个里程碑各一节，685 行） |
-| 7. 代码实施 | 🔵 **进行中（M2 完成）** | M1 + M2 详细计划 + 代码 + 单测；M3-M7 未开始 |
-| 8. 手测验收 | ⏳ 未开始 | — |
+| 7. 代码实施 | 🔵 **进行中（M3 完成）** | M1 + M2 + M3 详细计划 + 代码；M4-M7 未开始 |
+| 8. 手测验收 | 🔵 进行中（M3 列表页通过） | M3 五条高层验收逐条手测通过 |
 
 ## 里程碑进度
 
@@ -21,7 +21,7 @@
 |---|---|---|
 | M1 基础工程 | ✅ 完成（2026-05-22） | 工程构建 + 真机启动 + git init |
 | M2 数据层 | ✅ 完成（2026-05-22） | 数据层 + 42 单测 |
-| M3 列表页 | ⏳ 未开始 | — |
+| M3 列表页 | ✅ 完成（2026-05-22） | RecyclerView + 搜索 + 排序 + 长按菜单 + 删除二次确认 |
 | M4 编辑器骨架 | ⏳ 未开始 | — |
 | M5 图片块/清单块 | ⏳ 未开始 | — |
 | M6 手写 Overlay | ⏳ 未开始 | — |
@@ -97,6 +97,40 @@
 - ✅ `./gradlew :app:assembleDebug` 通过（8s）
 - ⏳ 真机冒烟启动：留待用户手测（`NoteRepository.init(this)` 已接入）
 
+## M3 完成详情（2026-05-22）
+
+**产出：**
+- 资源：drawables（ic_search/ic_sort/ic_star/ic_star_outline/ic_add/ic_delete/ic_empty_note + shape_note_card_bg）+ 2 个 menu xml + strings 列表页词条
+- 布局：`activity_note_list.xml` 重构（Toolbar + 常驻搜索框 + RecyclerView + 空状态 + FAB）+ 新建 `item_note_card.xml`（MaterialCardView 卡片）
+- 工具：`util/DateUtils.kt`（相对时间格式化）+ `util/TextUtils.kt`（摘要截断 / 空标题判定）
+- Adapter：`controller/list/NoteListAdapter.kt`（VH 渲染 + 单击/长按回调签名）
+- Activity：`NoteListActivity.kt` 完整实现（onCreate + onResume + 数据加载 + 空状态切换 + 搜索 debounce 200ms + 排序持久化 + 长按 PopupMenu + 收藏切换 + 删除 AlertDialog 二次确认）
+- FAB 占位：直接 `NoteRepository.save(Note(0L,...))` + reload（M4 替换为跳编辑器）
+
+**测试策略：** 按高层规划"非典型 TDD"约定，UI 层不写自动化测试，全部走"写完即手测"。
+
+**M3 commit 列表（git log `e70de3b..HEAD`，共 11 个 commit）：**
+- `1dee37f` feat(m3): 添加 DateUtils（相对时间）和 TextUtils（摘要截断）工具类
+- `81ec738` feat(m3): 添加列表页所需 drawable / menu / strings 资源
+- `f3a3c17` feat(m3): 重构列表页布局，加入常驻搜索框、RecyclerView、空状态容器
+- `f97ee19` feat(m3): 添加单条笔记卡片布局 item_note_card.xml
+- `41137ee` feat(m3): 添加 NoteListAdapter（卡片渲染 + 单击/长按回调）
+- `55ff97b` feat(m3): NoteListActivity 接入 RecyclerView + 数据加载 + 空状态切换
+- `adbc8f7` feat(m3): FAB 占位实现（直接 save 空 Note；M4 替换为跳编辑器）
+- `aae9bc4` feat(m3): 搜索框 200ms debounce 过滤
+- `2de4391` feat(m3): 排序对话框 + SharedPreferences 持久化
+- `7299ba8` feat(m3): 长按弹 PopupMenu + 收藏切换（删除占位）
+- `1b6e8bf` feat(m3): 删除二次确认 AlertDialog + 真删 + 列表刷新
+
+**验收（用户手测通过）：**
+- ✅ 新建：FAB → 列表多一条"无标题"
+- ✅ 搜索："测试"实时过滤；清空 → 全量恢复
+- ✅ 排序：3 种切换 → 顺序变化；杀进程重启保留上次选项
+- ✅ 长按菜单：[收藏 / 删除]；收藏 → ⭐；删除 → 二次确认 → 移除
+- ✅ 空状态：列表空时显示插图 + 文案
+
+**执行模式：** Subagent-Driven Development with general-purpose agent；7 波次（W1: T1+T4 并行；W2: T2+T3 并行；W3: T5；W4: T6；W5: T7-T11 五合一），每 commit 后 BUILD SUCCESSFUL 验证。
+
 ## 里程碑依赖关系
 
 ```
@@ -125,10 +159,12 @@ M1 ✅ → M2 数据层 → M3 列表页
 
 ## 下一步建议
 
-M2 已完成，建议进入 **M3 列表页**：实现 NoteListActivity 的 RecyclerView + Adapter（卡片样式）+ 接入 NoteRepository.list / sortBy / search + 排序/搜索菜单 + 进入编辑器的占位跳转。预估 4-6 小时。
+M3 已完成，建议进入 **M4 编辑器骨架**：创建 `NoteEditorActivity` + `EditorPresenter`，标题 EditText，文本块 LinearLayout 容器，富文本工具栏（B/I/U/S + 字号 + 颜色 + H1/H2），保存返回数据完整恢复。**暂不接图片/清单/手写**。预估 6-8 小时。
 
-询问用户是否要：
-- **A. 先写 M3 详细实施计划**（参考 M1/M2 详细计划格式），写完确认后执行
-- **B. 直接按高层计划 M3 节执行**（与前两里程碑同种节奏，遇决策实时讨论）
+完成 M4 后还需把 M3 留下的两处 Toast 占位换成真跳转：
+- `NoteListAdapter` 单击卡片：`startActivity(NoteEditorActivity.newIntent(this, note.id))`
+- FAB 新建：`startActivity(NoteEditorActivity.newIntent(this, noteId = -1L))`
+
+执行节奏沿用 M2/M3 的 "writing-plans → 用户审阅 → Subagent-Driven 并行执行 → 用户手测验收 → STATUS 收尾" 模式。
 
 资源：浏览器 visual companion 仍在运行：http://localhost:61835
