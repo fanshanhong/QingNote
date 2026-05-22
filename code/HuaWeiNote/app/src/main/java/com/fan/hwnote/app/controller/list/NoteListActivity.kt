@@ -1,6 +1,10 @@
 package com.fan.hwnote.app.controller.list
 
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.View
 import android.widget.EditText
 import android.widget.Toast
@@ -27,6 +31,9 @@ class NoteListActivity : AppCompatActivity() {
 
     private var sortBy: NoteRepository.SortBy = NoteRepository.SortBy.UPDATED_DESC
     private var currentQuery: String? = null
+
+    private val searchHandler = Handler(Looper.getMainLooper())
+    private var searchRunnable: Runnable? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -71,11 +78,30 @@ class NoteListActivity : AppCompatActivity() {
                 reload()
             }
         }
+
+        searchInput.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                searchRunnable?.let { searchHandler.removeCallbacks(it) }
+                val text = s?.toString()?.trim().orEmpty()
+                searchRunnable = Runnable {
+                    currentQuery = text.ifEmpty { null }
+                    reload()
+                }
+                searchHandler.postDelayed(searchRunnable!!, 200L)
+            }
+        })
     }
 
     override fun onResume() {
         super.onResume()
         reload()
+    }
+
+    override fun onDestroy() {
+        searchRunnable?.let { searchHandler.removeCallbacks(it) }
+        super.onDestroy()
     }
 
     private fun reload() {
