@@ -52,7 +52,11 @@ class NoteEditorActivity : AppCompatActivity() {
             override fun onColorClicked() {
                 showColorPickerDialog()
             }
-            override fun onHeadingToggle(isH1: Boolean) { /* Task 10 */ }
+            override fun onHeadingToggle(isH1: Boolean) {
+                val target = if (isH1) com.fan.hwnote.app.model.entity.Heading.H1
+                             else com.fan.hwnote.app.model.entity.Heading.H2
+                presenter.toggleHeading(target)
+            }
             override fun onImageClicked() {
                 android.widget.Toast.makeText(this@NoteEditorActivity,
                     R.string.toast_image_placeholder, android.widget.Toast.LENGTH_SHORT).show()
