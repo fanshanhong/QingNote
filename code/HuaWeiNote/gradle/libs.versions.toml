@@ -22,6 +22,8 @@ junitJupiter = "5.10.2"
 robolectric = "4.13"
 junitVersion = "1.1.5"
 espressoCore = "3.5.1"
+junitVintage = "5.10.2"
+orgJson = "20240303"
 
 [libraries]
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
@@ -39,6 +41,8 @@ junit-jupiter = { group = "org.junit.jupiter", name = "junit-jupiter", version.r
 robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
+junit-vintage-engine = { group = "org.junit.vintage", name = "junit-vintage-engine", version.ref = "junitVintage" }
+org-json = { group = "org.json", name = "json", version.ref = "orgJson" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
