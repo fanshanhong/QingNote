@@ -56,6 +56,7 @@ dependencies {
     testImplementation(libs.robolectric)
     testImplementation(libs.junit)                  // 新增：JUnit 4 (Robolectric 测试用)
     testImplementation(libs.org.json)               // 新增：org.json 真实实现
+    testImplementation(libs.androidx.test.core)     // 新增：ApplicationProvider (Robolectric 4.13 未传递)
     testRuntimeOnly(libs.junit.vintage.engine)      // 新增：JUnit 4 桥接 JUnit Platform
 
     androidTestImplementation(libs.androidx.junit)
