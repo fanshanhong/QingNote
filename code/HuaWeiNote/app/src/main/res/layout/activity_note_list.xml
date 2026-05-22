@@ -21,6 +21,47 @@
             app:title="@string/app_name"
             app:titleTextColor="@color/white" />
 
+        <!-- 搜索框：常驻在 Toolbar 下方，不放进 ActionBar -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/primary"
+            android:orientation="horizontal"
+            android:paddingHorizontal="@dimen/spacing_l"
+            android:paddingBottom="@dimen/spacing_m">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:background="@drawable/shape_note_card_bg"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="@dimen/spacing_m">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/ic_search"
+                    app:tint="@color/text_hint" />
+
+                <EditText
+                    android:id="@+id/search_input"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@null"
+                    android:hint="@string/list_search_hint"
+                    android:imeOptions="actionSearch"
+                    android:inputType="text"
+                    android:maxLines="1"
+                    android:paddingStart="@dimen/spacing_s"
+                    android:paddingEnd="0dp"
+                    android:textColor="@color/text_primary"
+                    android:textColorHint="@color/text_hint"
+                    android:textSize="@dimen/text_body" />
+
+            </LinearLayout>
+        </LinearLayout>
+
     </com.google.android.material.appbar.AppBarLayout>
 
     <FrameLayout
@@ -29,15 +70,45 @@
         android:layout_height="match_parent"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
-        <TextView
-            android:id="@+id/empty_text"
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recycler_notes"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:paddingHorizontal="@dimen/spacing_m"
+            android:paddingVertical="@dimen/spacing_s"
+            android:scrollbars="vertical" />
+
+        <LinearLayout
+            android:id="@+id/empty_state"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:gravity="center"
-            android:text="@string/list_empty_title"
-            android:textColor="@color/text_hint"
-            android:textSize="@dimen/text_body" />
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <ImageView
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:src="@drawable/ic_empty_note" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_m"
+                android:text="@string/list_empty_title"
+                android:textColor="@color/text_secondary"
+                android:textSize="@dimen/text_body" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/spacing_xs"
+                android:text="@string/list_empty_subtitle"
+                android:textColor="@color/text_hint"
+                android:textSize="@dimen/text_caption" />
+        </LinearLayout>
 
     </FrameLayout>
 
@@ -48,7 +119,7 @@
         android:layout_gravity="bottom|end"
         android:layout_margin="@dimen/spacing_l"
         android:contentDescription="@string/fab_new_note_cd"
-        android:src="@android:drawable/ic_input_add"
+        android:src="@drawable/ic_add"
         app:backgroundTint="@color/primary"
         app:tint="@color/white" />
 
