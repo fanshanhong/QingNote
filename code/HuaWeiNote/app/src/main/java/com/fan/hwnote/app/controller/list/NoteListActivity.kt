@@ -5,9 +5,12 @@ import android.os.Handler
 import android.os.Looper
 import android.text.Editable
 import android.text.TextWatcher
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
 import android.widget.EditText
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.lifecycle.lifecycleScope
@@ -58,6 +61,8 @@ class NoteListActivity : AppCompatActivity() {
         )
         recycler.layoutManager = LinearLayoutManager(this)
         recycler.adapter = adapter
+
+        sortBy = loadSort()
 
         fab.setOnClickListener {
             // M3 占位：直接落一条空笔记，验证 列表→数据→刷新 闭环
@@ -115,5 +120,59 @@ class NoteListActivity : AppCompatActivity() {
     private fun renderEmpty(empty: Boolean) {
         emptyState.visibility = if (empty) View.VISIBLE else View.GONE
         recycler.visibility = if (empty) View.GONE else View.VISIBLE
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.menu_note_list_toolbar, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        if (item.itemId == R.id.action_sort) {
+            showSortDialog()
+            return true
+        }
+        return super.onOptionsItemSelected(item)
+    }
+
+    private fun showSortDialog() {
+        val labels = arrayOf(
+            getString(R.string.sort_updated_desc),
+            getString(R.string.sort_created_desc),
+            getString(R.string.sort_title_asc),
+        )
+        val values = arrayOf(
+            NoteRepository.SortBy.UPDATED_DESC,
+            NoteRepository.SortBy.CREATED_DESC,
+            NoteRepository.SortBy.TITLE_ASC,
+        )
+        val checked = values.indexOf(sortBy)
+        AlertDialog.Builder(this)
+            .setTitle(R.string.action_sort)
+            .setSingleChoiceItems(labels, checked) { d, which ->
+                sortBy = values[which]
+                saveSort(sortBy)
+                reload()
+                d.dismiss()
+            }
+            .setNegativeButton(R.string.action_cancel, null)
+            .show()
+    }
+
+    private fun loadSort(): NoteRepository.SortBy {
+        val prefs = getSharedPreferences(PREFS, MODE_PRIVATE)
+        val name = prefs.getString(KEY_SORT, NoteRepository.SortBy.UPDATED_DESC.name)
+        return runCatching { NoteRepository.SortBy.valueOf(name!!) }
+            .getOrDefault(NoteRepository.SortBy.UPDATED_DESC)
+    }
+
+    private fun saveSort(sortBy: NoteRepository.SortBy) {
+        getSharedPreferences(PREFS, MODE_PRIVATE).edit()
+            .putString(KEY_SORT, sortBy.name).apply()
+    }
+
+    companion object {
+        private const val PREFS = "hwnote_settings"
+        private const val KEY_SORT = "sort_by"
     }
 }
