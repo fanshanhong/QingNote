@@ -24,6 +24,7 @@ class EditorPresenter(
 ) : BlockView.Callback {
 
     private val currentBlocks = mutableListOf<BlockView>()
+    private val passthroughBlocks = mutableListOf<Block>()
     private lateinit var currentNote: Note
     private var focusedTextBlock: TextBlockView? = null
 
@@ -31,14 +32,15 @@ class EditorPresenter(
         currentNote = note
         container.removeAllViews()
         currentBlocks.clear()
+        passthroughBlocks.clear()
         focusedTextBlock = null
 
         val blocks = note.content.blocks.ifEmpty { listOf(emptyTextBlock()) }
         for (b in blocks) {
             when (b) {
                 is Block.TextBlock -> addTextBlockView(b)
-                is Block.ImageBlock -> Unit // M5 接入
-                is Block.ChecklistBlock -> Unit // M6 接入
+                is Block.ImageBlock,
+                is Block.ChecklistBlock -> passthroughBlocks += b // M5/M6 渲染前先缓存，避免重保存丢数据
             }
         }
         // 默认让第一块拿到焦点
@@ -52,7 +54,8 @@ class EditorPresenter(
      * 调用方负责 save 到 Repository。
      */
     fun collectCurrentNote(title: String): Note {
-        val newBlocks = currentBlocks.map { it.toBlock() }
+        val newBlocks = currentBlocks.map { it.toBlock() } + passthroughBlocks
+        // ImageBlock/ChecklistBlock 当前在 M4 不渲染，bind 时缓存、collect 时尾部拼回，避免数据丢失
         val content = NoteContent(blocks = newBlocks, handwriting = emptyList())
         return currentNote.copy(
             title = title,
