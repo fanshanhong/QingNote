@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/card_root"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginVertical="@dimen/spacing_xs"
+    android:layout_marginHorizontal="@dimen/spacing_xs"
+    app:cardBackgroundColor="@color/bg_card"
+    app:cardCornerRadius="@dimen/radius_card"
+    app:cardElevation="2dp"
+    app:rippleColor="@color/primary_light">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="@dimen/spacing_m">
+
+        <!-- 第一行：标题 + 星标 + 时间 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/card_title"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="@color/text_primary"
+                android:textSize="@dimen/text_body"
+                android:textStyle="bold"
+                tools:text="今天会议要点" />
+
+            <ImageView
+                android:id="@+id/card_star"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_marginStart="@dimen/spacing_s"
+                android:contentDescription="@string/card_favorite_cd"
+                android:src="@drawable/ic_star_outline" />
+
+            <TextView
+                android:id="@+id/card_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/spacing_s"
+                android:textColor="@color/text_hint"
+                android:textSize="@dimen/text_hint"
+                tools:text="今天 14:30" />
+        </LinearLayout>
+
+        <!-- 第二行：摘要 -->
+        <TextView
+            android:id="@+id/card_summary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/spacing_xs"
+            android:ellipsize="end"
+            android:maxLines="2"
+            android:textColor="@color/text_secondary"
+            android:textSize="@dimen/text_caption"
+            tools:text="项目排期需要重新审视，李雷负责…" />
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>
