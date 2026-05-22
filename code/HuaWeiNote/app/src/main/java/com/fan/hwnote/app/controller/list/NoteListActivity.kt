@@ -11,6 +11,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.fan.hwnote.app.R
 import com.fan.hwnote.app.model.NoteRepository
+import com.fan.hwnote.app.model.entity.Note
+import com.fan.hwnote.app.model.entity.NoteContent
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.launch
 
@@ -51,8 +53,23 @@ class NoteListActivity : AppCompatActivity() {
         recycler.adapter = adapter
 
         fab.setOnClickListener {
-            // M3 Task 7 会替换为 save 空 Note；M4 再替换为跳编辑器
-            Toast.makeText(this, R.string.toast_open_editor_placeholder, Toast.LENGTH_SHORT).show()
+            // M3 占位：直接落一条空笔记，验证 列表→数据→刷新 闭环
+            // M4：替换为 startActivity(NoteEditorActivity.newIntent(this, noteId = -1L))
+            lifecycleScope.launch {
+                val now = System.currentTimeMillis()
+                NoteRepository.save(
+                    Note(
+                        id = 0L,
+                        title = "",
+                        plainText = "",
+                        isFavorite = false,
+                        createdAt = now,
+                        updatedAt = now,
+                        content = NoteContent.empty(),
+                    )
+                )
+                reload()
+            }
         }
     }
 
