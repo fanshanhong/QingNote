@@ -27,6 +27,17 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".controller.editor.NoteEditorActivity"
+            android:exported="false"
+            android:parentActivityName=".controller.list.NoteListActivity"
+            android:theme="@style/Theme.HuaWeiNote"
+            android:windowSoftInputMode="adjustResize">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".controller.list.NoteListActivity" />
+        </activity>
+
         <!-- FileProvider：M5 拍照功能用 -->
         <provider
             android:name="androidx.core.content.FileProvider"

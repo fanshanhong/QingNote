@@ -30,4 +30,36 @@
     <string name="toast_open_editor_placeholder">打开编辑器（M4 实现）</string>
     <string name="toast_new_note_placeholder">新建笔记（待实现）</string>
     <string name="untitled_note">无标题</string>
+
+    <!-- 编辑器 -->
+    <string name="editor_title_hint">标题</string>
+    <string name="editor_content_hint">开始记录…</string>
+    <string name="editor_back_cd">返回</string>
+    <string name="editor_more_cd">更多</string>
+
+    <!-- 工具栏按钮 contentDescription 与文案 -->
+    <string name="tb_bold">B</string>
+    <string name="tb_italic">I</string>
+    <string name="tb_underline">U</string>
+    <string name="tb_strike">S</string>
+    <string name="tb_size_small">A-</string>
+    <string name="tb_size_normal">A</string>
+    <string name="tb_size_large">A+</string>
+    <string name="tb_color_cd">文字颜色</string>
+    <string name="tb_h1">H1</string>
+    <string name="tb_h2">H2</string>
+    <string name="tb_image_cd">插入图片</string>
+    <string name="tb_checklist_cd">插入清单</string>
+
+    <!-- 颜色选择对话框 -->
+    <string name="dialog_pick_color_title">文字颜色</string>
+    <string name="color_black">黑</string>
+    <string name="color_red">红</string>
+    <string name="color_yellow">黄</string>
+    <string name="color_green">绿</string>
+    <string name="color_blue">蓝</string>
+
+    <!-- M5/M6 占位 -->
+    <string name="toast_image_placeholder">插入图片（M5 实现）</string>
+    <string name="toast_checklist_placeholder">插入清单（M6 实现）</string>
 </resources>
