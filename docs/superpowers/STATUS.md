@@ -1,6 +1,6 @@
 # HwNote · 项目进度
 
-最后更新：2026-05-22
+最后更新：2026-05-23
 
 ## 阶段地图
 
@@ -12,8 +12,8 @@
 | 4. 规格自审 | ✅ 完成 | 修复 7 处一致性问题（heading 块属性归位、Span 6 种、笔效/橡皮算法详写、ACTION_GET_CONTENT 替换、Glide compiler 去除、plain_text 规则补、行内/块级样式分离） |
 | 5. 用户审阅 PRD | ✅ 完成 | 用户确认无修改，进入下一步 |
 | 6. **实施计划编写** | ✅ 完成 | `docs/superpowers/plans/2026-05-22-hwnote-implementation.md`（高层版，7 个里程碑各一节，685 行） |
-| 7. 代码实施 | 🔵 **进行中（M3 完成）** | M1 + M2 + M3 详细计划 + 代码；M4-M7 未开始 |
-| 8. 手测验收 | 🔵 进行中（M3 列表页通过） | M3 五条高层验收逐条手测通过 |
+| 7. 代码实施 | 🔵 **进行中（M4 完成）** | M1 + M2 + M3 + M4 详细计划 + 代码；M5-M7 未开始 |
+| 8. 手测验收 | 🔵 进行中（M3 列表页通过；M4 自动化通过、真机 9 条留用户走查） | M3 五条高层验收逐条手测通过；M4 SpanConverter 15 项单测 PASSED + 双轨 review 全过 |
 
 ## 里程碑进度
 
@@ -22,7 +22,7 @@
 | M1 基础工程 | ✅ 完成（2026-05-22） | 工程构建 + 真机启动 + git init |
 | M2 数据层 | ✅ 完成（2026-05-22） | 数据层 + 42 单测 |
 | M3 列表页 | ✅ 完成（2026-05-22） | RecyclerView + 搜索 + 排序 + 长按菜单 + 删除二次确认 |
-| M4 编辑器骨架 | ⏳ 未开始 | — |
+| M4 编辑器骨架 | ✅ 完成（2026-05-23） | NoteEditorActivity + EditorPresenter + 块容器 + 12 键工具栏 + B/I/U/S + 字号 + 5 色 + H1/H2；SpanConverter 15 单测 |
 | M5 图片块/清单块 | ⏳ 未开始 | — |
 | M6 手写 Overlay | ⏳ 未开始 | — |
 | M7 打磨 | ⏳ 未开始 | — |
@@ -131,6 +131,50 @@
 
 **执行模式：** Subagent-Driven Development with general-purpose agent；7 波次（W1: T1+T4 并行；W2: T2+T3 并行；W3: T5；W4: T6；W5: T7-T11 五合一），每 commit 后 BUILD SUCCESSFUL 验证。
 
+## M4 完成详情（2026-05-23）
+
+**产出：**
+- 资源（Task 1）：编辑器/工具栏 drawables（ic_arrow_back / ic_more_vert / ic_color_dot / ic_image / ic_checklist / ic_format_bold/italic/underline/strikethrough/h1/h2 + shape_toolbar_btn_pressed）+ colors（toolbar_bg / toolbar_btn_selected / 5 色 palette）+ 词条（编辑器/工具栏/颜色名/M5-M6 占位）+ Manifest 注册 NoteEditorActivity
+- 布局（Task 2-3）：activity_note_editor.xml（Toolbar + ScrollView + 标题 + 块容器 + 工具栏底栏）+ block_text.xml（merge + EditText#block_edit）+ toolbar_text.xml（HorizontalScrollView + 12 按钮 + 3 分隔线）+ themes 工具栏按钮样式（EditorToolbarBtn / EditorToolbarDivider）
+- 工具（Task 4，TDD）：util/SpanConverter.kt（Spannable ↔ List&lt;TextSpan&gt; 双向转换；6 种 span 白名单：BOLD/ITALIC/UNDERLINE/STRIKETHROUGH/RelativeSizeSpan/ForegroundColorSpan；常量 SIZE_SMALL=0.85f / MEDIUM=1.0f / LARGE=1.25f；颜色 #RRGGBB 大写六位）+ SpanConverterTest 15 项 Robolectric 单测
+- View 层（Task 5、Task 8）：view/block/BlockView.kt（abstract LinearLayout 基类 + Callback 三方法 onRequestSplitAfter/onRequestDelete/onFocusGained）+ view/block/TextBlockView.kt（EditText + heading 应用 + Spannable 渲染 + ENTER/DEL key 处理 + TextWatcher pendingApplier 钩子）+ view/toolbar/TextToolbarView.kt（12 按钮 lazy + 6 方法 Listener + setColorIndicator/clearColorIndicator）
+- 控制层（Task 6、Task 8-10）：controller/editor/EditorPresenter.kt（currentBlocks 列表 + pendingInline/pendingSize/pendingColor 三态 + toggleInline / applyInlineToRange / applyPendingTo / toggleSize / pickColor / toggleHeading + onRequestSplitAfter / onRequestDelete + Image/Checklist 透传缓存 passthroughBlocks）+ NoteEditorActivity.kt（noteId 加载/保存 + Toolbar 接通 6 个 Listener callback + 5 色 AlertDialog 弹窗 + Color tint 反馈）
+- 列表页接通（Task 7）：NoteListActivity 卡片单击 + FAB 都跳 NoteEditorActivity（替换 M3 两处 Toast 占位）
+
+**测试统计：** `./gradlew :app:test` 共 **57 项 PASSED**（M2 42 + M4 15）。M4 新增的 SpanConverterTest 覆盖：
+- 6 种 span round-trip（applyTo → toTextSpans → applyTo 等价）
+- 字号 0.85/1.0/1.25 阈值 0.01 容差
+- 颜色 #RRGGBB 大写六位规范化
+- 边界防御（start&lt;0 / end&gt;length / start&gt;=end 跳过）
+- 非法颜色 runCatching 容错
+
+**M4 commit 列表（git log `2767aed..9bf0316`，共 15 个 commit）：**
+- `26b41bf` docs(m4): 提交 M4 编辑器骨架详细实施计划
+- `bf57118` feat(m4): 编辑器资源准备（drawables + 颜色 + 词条 + Manifest）
+- `e0c64d0` feat(m4): 编辑器主布局（Toolbar + ScrollView + 标题/块容器 + 底栏占位）
+- `a4aa0bd` feat(m4): 文本块与编辑器工具栏布局
+- `7df5ab1` fix(m4): 工具栏 3 个图标按钮补点击反馈与焦点态
+- `b06e94c` feat(m4): SpanConverter（Spannable↔TextSpan 互转）+ Robolectric 单测
+- `09c362a` feat(m4): BlockView 抽象基类 + TextBlockView（EditText + heading + Span 渲染）
+- `0e1a2f4` feat(m4): EditorPresenter + NoteEditorActivity 骨架（加载/保存/标题/块容器）
+- `0adb22d` fix(m4): EditorPresenter 缓存 Image/Checklist 块以避免重保存丢数据
+- `ee826fb` feat(m4): 列表页卡片点击与 FAB 接入编辑器（替换 M3 占位）
+- `2be5299` feat(m4): 编辑器工具栏 + 行内 B/I/U/S（选区生效 + 无选区 pending）
+- `d0252a4` fix(m4): 行内样式清 span 时只清 CharacterStyle + 修正插入范围
+- `52f02ed` feat(m4): 字号 A-/A/A+ + 颜色 5 色（弹窗 + 选区/pending 双模式）
+- `87cf695` fix(m4): 颜色按钮 tint 跟随 pickColor 返回值（无 pending 时清除）
+- `9bf0316` feat(m4): 块级 H1/H2 切换（光标所在 TextBlock 字号切换）
+- 收尾 commit：docs(m4): 标记 M4 编辑器骨架完成
+
+**验收：**
+- ✅ `./gradlew :app:assembleDebug` 通过（约 1s 增量构建，无警告）
+- ✅ `./gradlew :app:test` 全部 57 项 PASSED（debug + release 两轮）
+- ✅ 每个任务完成后 Spec compliance review + Code quality review 双轨通过；其中 Task 8 / Task 9 各发现 1 条 Critical/Important 已修复并复审通过
+- ✅ Task 11 静态走查 5 个 check（中段/末尾 Enter / 空块退格 / 第一块不可删 / split 后焦点 / Callback 签名）全部对齐 PRD §8.2
+- ⏳ 真机 9 条手测留待用户走查（PRD §M4 高层验收 1-9：新建/选区加粗/pending 加粗/字号/颜色/H1/段中段末回车/空块退格/退出再进数据保留）
+
+**执行模式：** Subagent-Driven Development（writing-plans → 用户审阅 → 严格串行 12 任务）；每个任务的 implementer DONE → spec reviewer → code quality reviewer → fix（如有）→ re-review → 标记完成。Task 11 仅做静态走查（无需 commit），Task 12 仅写 STATUS。
+
 ## 里程碑依赖关系
 
 ```
@@ -159,12 +203,12 @@ M1 ✅ → M2 数据层 → M3 列表页
 
 ## 下一步建议
 
-M3 已完成，建议进入 **M4 编辑器骨架**：创建 `NoteEditorActivity` + `EditorPresenter`，标题 EditText，文本块 LinearLayout 容器，富文本工具栏（B/I/U/S + 字号 + 颜色 + H1/H2），保存返回数据完整恢复。**暂不接图片/清单/手写**。预估 6-8 小时。
+M4 已完成，建议进入 **M5 图片块/清单块**：把当前编辑器工具栏中已留占位的"图片"和"清单"两个按钮接通：
+- **ImageBlock 渲染**：在 `view/block/` 下加 `ImageBlockView`，支持多选相册（`ACTION_OPEN_DOCUMENT` 多选）+ 拍照（`MediaStore.ACTION_IMAGE_CAPTURE` + FileProvider）。Glide 加载本地 URI；图片块不可编辑文字，长按弹出"删除"。
+- **ChecklistBlock 渲染**：`ChecklistBlockView` 一行一项，行首 CheckBox + 行内 EditText；末项回车新增空项；空项退格删项并上移焦点；项级"已完成"切线删除样式。
+- **EditorPresenter 接入**：补 `onImageClicked` / `onChecklistClicked` 实际逻辑（替换 Task 8 留的 Toast）；`bind` / `collectCurrentNote` 已经预留 Image/Checklist 透传，本次需把它们换成真实的 BlockView 渲染（`passthroughBlocks` 改为创建对应 View 并加入 `currentBlocks`）。
+- **存储复用**：M2 已完整支持 ImageBlock / ChecklistBlock 的 JSON round-trip 与文件清理，M5 仅做 UI 渲染层。
 
-完成 M4 后还需把 M3 留下的两处 Toast 占位换成真跳转：
-- `NoteListAdapter` 单击卡片：`startActivity(NoteEditorActivity.newIntent(this, note.id))`
-- FAB 新建：`startActivity(NoteEditorActivity.newIntent(this, noteId = -1L))`
-
-执行节奏沿用 M2/M3 的 "writing-plans → 用户审阅 → Subagent-Driven 并行执行 → 用户手测验收 → STATUS 收尾" 模式。
+执行节奏沿用 M2/M3/M4 的 "writing-plans → 用户审阅 → Subagent-Driven 串行执行 → 双轨 review → STATUS 收尾" 模式。预估 6-10 小时（图片选择 / 拍照 / FileProvider 整合较繁琐）。
 
 资源：浏览器 visual companion 仍在运行：http://localhost:61835
