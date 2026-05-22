@@ -1,16 +1,33 @@
 <resources>
     <string name="app_name">备忘录</string>
 
-    <!-- 列表页占位（M3 会换成正式文案） -->
+    <!-- 列表页 -->
+    <string name="list_search_hint">搜索笔记</string>
     <string name="list_empty_title">还没有笔记</string>
     <string name="list_empty_subtitle">点击右下角 + 新建一条</string>
     <string name="fab_new_note_cd">新建笔记</string>
+    <string name="card_favorite_cd">收藏标记</string>
+
+    <!-- 排序选项 -->
+    <string name="action_sort">排序</string>
+    <string name="sort_updated_desc">按修改时间</string>
+    <string name="sort_created_desc">按创建时间</string>
+    <string name="sort_title_asc">按标题 A-Z</string>
+
+    <!-- 长按菜单 -->
+    <string name="action_toggle_favorite">收藏 / 取消收藏</string>
+    <string name="action_delete">删除</string>
+
+    <!-- 删除二次确认 -->
+    <string name="dialog_delete_title">删除笔记</string>
+    <string name="dialog_delete_message">确定删除？此操作不可恢复</string>
 
     <!-- 通用 -->
     <string name="action_ok">确定</string>
     <string name="action_cancel">取消</string>
-    <string name="action_delete">删除</string>
 
-    <!-- M1 占位 toast -->
+    <!-- 占位 toast -->
+    <string name="toast_open_editor_placeholder">打开编辑器（M4 实现）</string>
     <string name="toast_new_note_placeholder">新建笔记（待实现）</string>
+    <string name="untitled_note">无标题</string>
 </resources>
