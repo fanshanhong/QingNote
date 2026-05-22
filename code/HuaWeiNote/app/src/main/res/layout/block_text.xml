@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <EditText
+        android:id="@+id/block_edit"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@null"
+        android:gravity="top|start"
+        android:hint="@string/editor_content_hint"
+        android:inputType="textMultiLine|textCapSentences"
+        android:minHeight="40dp"
+        android:paddingVertical="@dimen/spacing_xs"
+        android:textColor="@color/text_primary"
+        android:textColorHint="@color/text_hint"
+        android:textSize="@dimen/editor_text_normal" />
+
+</merge>

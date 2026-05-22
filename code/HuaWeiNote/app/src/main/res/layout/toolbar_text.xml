@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<HorizontalScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true"
+    android:scrollbars="none">
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="@dimen/spacing_xs">
+
+        <TextView android:id="@+id/btn_bold" style="@style/EditorToolbarBtn"
+            android:text="@string/tb_bold" android:textStyle="bold" />
+
+        <TextView android:id="@+id/btn_italic" style="@style/EditorToolbarBtn"
+            android:text="@string/tb_italic" android:textStyle="italic" />
+
+        <TextView android:id="@+id/btn_underline" style="@style/EditorToolbarBtn"
+            android:text="@string/tb_underline" />
+
+        <TextView android:id="@+id/btn_strike" style="@style/EditorToolbarBtn"
+            android:text="@string/tb_strike" />
+
+        <View style="@style/EditorToolbarDivider" />
+
+        <TextView android:id="@+id/btn_size_small" style="@style/EditorToolbarBtn"
+            android:text="@string/tb_size_small" android:textSize="12sp" />
+
+        <TextView android:id="@+id/btn_size_normal" style="@style/EditorToolbarBtn"
+            android:text="@string/tb_size_normal" />
+
+        <TextView android:id="@+id/btn_size_large" style="@style/EditorToolbarBtn"
+            android:text="@string/tb_size_large" android:textSize="20sp" />
+
+        <ImageView android:id="@+id/btn_color"
+            android:layout_width="48dp" android:layout_height="match_parent"
+            android:contentDescription="@string/tb_color_cd"
+            android:padding="12dp"
+            android:src="@drawable/ic_color_dot"
+            app:tint="@color/text_color_black"
+            xmlns:app="http://schemas.android.com/apk/res-auto" />
+
+        <View style="@style/EditorToolbarDivider" />
+
+        <TextView android:id="@+id/btn_h1" style="@style/EditorToolbarBtn"
+            android:text="@string/tb_h1" />
+
+        <TextView android:id="@+id/btn_h2" style="@style/EditorToolbarBtn"
+            android:text="@string/tb_h2" />
+
+        <View style="@style/EditorToolbarDivider" />
+
+        <ImageView android:id="@+id/btn_image"
+            android:layout_width="48dp" android:layout_height="match_parent"
+            android:contentDescription="@string/tb_image_cd"
+            android:padding="12dp"
+            android:src="@drawable/ic_image" />
+
+        <ImageView android:id="@+id/btn_checklist"
+            android:layout_width="48dp" android:layout_height="match_parent"
+            android:contentDescription="@string/tb_checklist_cd"
+            android:padding="12dp"
+            android:src="@drawable/ic_checklist" />
+
+    </LinearLayout>
+</HorizontalScrollView>
