@@ -38,6 +38,11 @@ class TextToolbarView @JvmOverloads constructor(
         btnColor.setColorFilter(color)
     }
 
+    /** 清除颜色按钮 tint，恢复 layout 默认 tint。 */
+    fun clearColorIndicator() {
+        btnColor.clearColorFilter()
+    }
+
     /** 设置按钮的 selected 高亮（pending 样式时显示）。 */
     fun setInlineSelected(type: SpanType, selected: Boolean) {
         val btn = when (type) {

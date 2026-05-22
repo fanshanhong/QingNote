@@ -95,10 +95,14 @@ class NoteEditorActivity : AppCompatActivity() {
             .setTitle(R.string.dialog_pick_color_title)
             .setItems(labels) { _, which ->
                 val hex = hexes[which]
-                presenter.pickColor(hex)
-                // 更新颜色按钮 tint 反映"当前选择"
+                val pending = presenter.pickColor(hex)
                 val toolbarView = findViewById<com.fan.hwnote.app.view.toolbar.TextToolbarView>(R.id.text_toolbar)
-                toolbarView.setColorIndicator(android.graphics.Color.parseColor(hex))
+                // 仅当 pendingColor 真的被设置时才高亮按钮；选区直接生效或取消 pending 时清除 tint
+                if (pending != null) {
+                    toolbarView.setColorIndicator(android.graphics.Color.parseColor(pending))
+                } else {
+                    toolbarView.clearColorIndicator()
+                }
             }
             .setNegativeButton(R.string.action_cancel, null)
             .show()
