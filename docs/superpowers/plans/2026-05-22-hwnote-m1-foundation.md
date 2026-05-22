@@ -908,15 +908,15 @@ git commit -m "docs: 更新 STATUS 反映 M1 完成"
 
 完成所有 Task 后，逐项确认：
 
-- [ ] `./gradlew :app:assembleDebug` 在干净目录下能通过
-- [ ] `./gradlew :app:test` 通过（SmokeTest 1 项）
-- [ ] APK 安装后能启动，看到绿色顶栏 + "备忘录" + 空白主屏 + 绿色 FAB
-- [ ] 状态栏色为 #00695C（深青绿）
-- [ ] 点 FAB 弹 toast "新建笔记（待实现）"
-- [ ] 包名为 `com.fan.hwnote.app`，App 名为 "备忘录"
-- [ ] FileProvider authority `com.fan.hwnote.app.fileprovider` 已声明且 `xml/file_paths.xml` 存在
-- [ ] git 仓库已初始化，`.gitignore` 正确排除 `build/` / `.idea/` 等
-- [ ] 至少 1 个 commit 含 M1 全部代码 + 已写文档
+- [✅] `./gradlew :app:assembleDebug` 在干净目录下能通过
+- [✅] `./gradlew :app:test` 通过（SmokeTest 1 项）
+- [✅] APK 安装后能启动，看到绿色顶栏 + "备忘录" + 空白主屏 + 绿色 FAB
+- [✅] 状态栏色为 #00695C（深青绿）
+- [✅] 点 FAB 弹 toast "新建笔记（待实现）"
+- [✅] 包名为 `com.fan.hwnote.app`，App 名为 "备忘录"
+- [✅] FileProvider authority `com.fan.hwnote.app.fileprovider` 已声明且 `xml/file_paths.xml` 存在
+- [✅] git 仓库已初始化，`.gitignore` 正确排除 `build/` / `.idea/` 等
+- [✅] 至少 1 个 commit 含 M1 全部代码 + 已写文档
 
 ---
 
