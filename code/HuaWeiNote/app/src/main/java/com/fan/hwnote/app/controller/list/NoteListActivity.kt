@@ -12,6 +12,7 @@ import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.PopupMenu
 import androidx.appcompat.widget.Toolbar
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -57,7 +58,7 @@ class NoteListActivity : AppCompatActivity() {
                 ).show()
                 // M4：替换为 startActivity(NoteEditorActivity.newIntent(this, note.id))
             },
-            onLongClick = { _, _ -> /* Task 10 接 */ },
+            onLongClick = { note, anchor -> showCardMenu(note, anchor) },
         )
         recycler.layoutManager = LinearLayoutManager(this)
         recycler.adapter = adapter
@@ -120,6 +121,29 @@ class NoteListActivity : AppCompatActivity() {
     private fun renderEmpty(empty: Boolean) {
         emptyState.visibility = if (empty) View.VISIBLE else View.GONE
         recycler.visibility = if (empty) View.GONE else View.VISIBLE
+    }
+
+    private fun showCardMenu(note: Note, anchor: View) {
+        val popup = PopupMenu(this, anchor)
+        popup.menuInflater.inflate(R.menu.menu_note_card_long_press, popup.menu)
+        popup.setOnMenuItemClickListener { item ->
+            when (item.itemId) {
+                R.id.action_toggle_favorite -> {
+                    lifecycleScope.launch {
+                        NoteRepository.setFavorite(note.id, !note.isFavorite)
+                        reload()
+                    }
+                    true
+                }
+                R.id.action_delete -> {
+                    // Task 11 接二次确认；本任务先 Toast 占位
+                    Toast.makeText(this, "删除（Task 11 实现）", Toast.LENGTH_SHORT).show()
+                    true
+                }
+                else -> false
+            }
+        }
+        popup.show()
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
