@@ -136,8 +136,17 @@ class NoteListActivity : AppCompatActivity() {
                     true
                 }
                 R.id.action_delete -> {
-                    // Task 11 接二次确认；本任务先 Toast 占位
-                    Toast.makeText(this, "删除（Task 11 实现）", Toast.LENGTH_SHORT).show()
+                    AlertDialog.Builder(this)
+                        .setTitle(R.string.dialog_delete_title)
+                        .setMessage(R.string.dialog_delete_message)
+                        .setPositiveButton(R.string.action_ok) { _, _ ->
+                            lifecycleScope.launch {
+                                NoteRepository.delete(note.id)
+                                reload()
+                            }
+                        }
+                        .setNegativeButton(R.string.action_cancel, null)
+                        .show()
                     true
                 }
                 else -> false
