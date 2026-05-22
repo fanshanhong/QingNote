@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 间距 -->
+    <dimen name="spacing_xs">4dp</dimen>
+    <dimen name="spacing_s">8dp</dimen>
+    <dimen name="spacing_m">12dp</dimen>
+    <dimen name="spacing_l">16dp</dimen>
+    <dimen name="spacing_xl">24dp</dimen>
+
+    <!-- 圆角 -->
+    <dimen name="radius_card">10dp</dimen>
+
+    <!-- 字号 -->
+    <dimen name="text_title">16sp</dimen>
+    <dimen name="text_body">14sp</dimen>
+    <dimen name="text_caption">12sp</dimen>
+    <dimen name="text_hint">11sp</dimen>
+
+    <!-- 编辑器字号（M4 用） -->
+    <dimen name="editor_text_normal">16sp</dimen>
+    <dimen name="editor_text_h2">18sp</dimen>
+    <dimen name="editor_text_h1">22sp</dimen>
+</resources>

@@ -1,0 +1,28 @@
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Claude Code 工作目录（本地状态、不应入仓）
+.claude/
+.superpowers/
+
+# Android 工程构建产物 + IDE 状态
+code/HuaWeiNote/.gradle/
+code/HuaWeiNote/.kotlin/
+code/HuaWeiNote/.idea/
+code/HuaWeiNote/build/
+code/HuaWeiNote/app/build/
+code/HuaWeiNote/local.properties
+code/HuaWeiNote/captures/
+code/HuaWeiNote/.externalNativeBuild/
+code/HuaWeiNote/.cxx/
+
+# 通用
+*.iml
+*.log
+*.apk
+*.aab
+*.ap_
+*.dex
+*.jks
+*.keystore

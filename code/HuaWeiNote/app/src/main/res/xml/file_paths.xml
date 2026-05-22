@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- 笔记文件目录（filesDir/notes/...）-->
+    <files-path
+        name="note_files"
+        path="notes/" />
+
+    <!-- 拍照临时文件（cacheDir/camera/...）-->
+    <cache-path
+        name="camera_cache"
+        path="camera/" />
+</paths>

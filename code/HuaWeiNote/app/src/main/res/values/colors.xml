@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 主色（PRD §5.1） -->
+    <color name="primary">#00897B</color>
+    <color name="primary_dark">#00695C</color>
+    <color name="primary_light">#E0F2F1</color>
+
+    <!-- 强调与状态 -->
+    <color name="accent_star">#FFB300</color>
+    <color name="error">#E53935</color>
+
+    <!-- 文本 -->
+    <color name="text_primary">#212121</color>
+    <color name="text_secondary">#666666</color>
+    <color name="text_hint">#9E9E9E</color>
+
+    <!-- 背景 -->
+    <color name="bg_window">#FAFAFA</color>
+    <color name="bg_card">#FFFFFF</color>
+    <color name="divider">#EEEEEE</color>
+
+    <!-- 通用 -->
+    <color name="white">#FFFFFFFF</color>
+    <color name="black">#FF000000</color>
+</resources>
