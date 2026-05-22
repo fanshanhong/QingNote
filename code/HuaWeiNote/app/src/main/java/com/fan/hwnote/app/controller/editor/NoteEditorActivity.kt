@@ -45,8 +45,13 @@ class NoteEditorActivity : AppCompatActivity() {
                 val pending = presenter.toggleInline(type)
                 toolbarView.setInlineSelected(type, pending)
             }
-            override fun onSizePicked(value: String) { /* Task 9 */ }
-            override fun onColorClicked() { /* Task 9 */ }
+            override fun onSizePicked(value: String) {
+                presenter.toggleSize(value)
+                // 字号档位无需高亮（用户能直接看到字大小变化），可省略 selected 反馈
+            }
+            override fun onColorClicked() {
+                showColorPickerDialog()
+            }
             override fun onHeadingToggle(isH1: Boolean) { /* Task 10 */ }
             override fun onImageClicked() {
                 android.widget.Toast.makeText(this@NoteEditorActivity,
@@ -75,6 +80,28 @@ class NoteEditorActivity : AppCompatActivity() {
             titleInput.setText(note.title)
             presenter.bind(note)
         }
+    }
+
+    private fun showColorPickerDialog() {
+        val labels = arrayOf(
+            getString(R.string.color_black),
+            getString(R.string.color_red),
+            getString(R.string.color_yellow),
+            getString(R.string.color_green),
+            getString(R.string.color_blue),
+        )
+        val hexes = arrayOf("#212121", "#E53935", "#FB8C00", "#43A047", "#1E88E5")
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle(R.string.dialog_pick_color_title)
+            .setItems(labels) { _, which ->
+                val hex = hexes[which]
+                presenter.pickColor(hex)
+                // 更新颜色按钮 tint 反映"当前选择"
+                val toolbarView = findViewById<com.fan.hwnote.app.view.toolbar.TextToolbarView>(R.id.text_toolbar)
+                toolbarView.setColorIndicator(android.graphics.Color.parseColor(hex))
+            }
+            .setNegativeButton(R.string.action_cancel, null)
+            .show()
     }
 
     private fun saveNote() {

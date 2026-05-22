@@ -33,6 +33,11 @@ class TextToolbarView @JvmOverloads constructor(
         wireListeners()
     }
 
+    /** 把颜色按钮的圆点 tint 改为指定色。 */
+    fun setColorIndicator(color: Int) {
+        btnColor.setColorFilter(color)
+    }
+
     /** 设置按钮的 selected 高亮（pending 样式时显示）。 */
     fun setInlineSelected(type: SpanType, selected: Boolean) {
         val btn = when (type) {
