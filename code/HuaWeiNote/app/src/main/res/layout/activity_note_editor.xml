@@ -62,7 +62,7 @@
 
     </androidx.core.widget.NestedScrollView>
 
-    <View
+    <com.fan.hwnote.app.view.toolbar.TextToolbarView
         android:id="@+id/text_toolbar"
         android:layout_width="match_parent"
         android:layout_height="48dp"

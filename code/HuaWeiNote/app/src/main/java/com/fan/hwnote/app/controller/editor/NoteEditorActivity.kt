@@ -39,6 +39,25 @@ class NoteEditorActivity : AppCompatActivity() {
 
         presenter = EditorPresenter(this, blocksContainer)
 
+        val toolbarView = findViewById<com.fan.hwnote.app.view.toolbar.TextToolbarView>(R.id.text_toolbar)
+        toolbarView.listener = object : com.fan.hwnote.app.view.toolbar.TextToolbarView.Listener {
+            override fun onInlineToggle(type: com.fan.hwnote.app.model.entity.SpanType) {
+                val pending = presenter.toggleInline(type)
+                toolbarView.setInlineSelected(type, pending)
+            }
+            override fun onSizePicked(value: String) { /* Task 9 */ }
+            override fun onColorClicked() { /* Task 9 */ }
+            override fun onHeadingToggle(isH1: Boolean) { /* Task 10 */ }
+            override fun onImageClicked() {
+                android.widget.Toast.makeText(this@NoteEditorActivity,
+                    R.string.toast_image_placeholder, android.widget.Toast.LENGTH_SHORT).show()
+            }
+            override fun onChecklistClicked() {
+                android.widget.Toast.makeText(this@NoteEditorActivity,
+                    R.string.toast_checklist_placeholder, android.widget.Toast.LENGTH_SHORT).show()
+            }
+        }
+
         noteId = intent.getLongExtra(EXTRA_NOTE_ID, -1L)
         loadNote()
     }

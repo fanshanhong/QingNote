@@ -30,6 +30,9 @@ class TextBlockView @JvmOverloads constructor(
     private var heading: Heading? = null
     val edit: EditText
 
+    /** Presenter 注入：把 pending 样式应用到刚插入的文字范围。 */
+    var pendingApplier: ((android.text.Spannable, Int, Int) -> Unit)? = null
+
     init {
         LayoutInflater.from(context).inflate(R.layout.block_text, this, true)
         edit = findViewById(R.id.block_edit)
@@ -103,11 +106,19 @@ class TextBlockView @JvmOverloads constructor(
             false
         }
 
-        // TextWatcher 暂不做事，留给 Task 8（pendingStyles 应用到刚插入字符）
         edit.addTextChangedListener(object : TextWatcher {
+            private var insertStart = 0
+            private var insertCount = 0
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-            override fun afterTextChanged(s: Editable?) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                insertStart = start
+                insertCount = count - before  // 净插入量；正常打字 count=1 before=0
+            }
+            override fun afterTextChanged(s: Editable?) {
+                if (insertCount > 0 && s is android.text.Spannable) {
+                    pendingApplier?.invoke(s, insertStart, insertCount)
+                }
+            }
         })
     }
 }
