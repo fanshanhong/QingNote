@@ -22,6 +22,7 @@ import com.fan.hwnote.app.util.applyTo
 import com.fan.hwnote.app.util.toTextSpans
 import com.fan.hwnote.app.view.block.BlockView
 import com.fan.hwnote.app.view.block.ChecklistBlockView
+import com.fan.hwnote.app.view.block.ChecklistItemView
 import com.fan.hwnote.app.view.block.ImageBlockView
 import com.fan.hwnote.app.view.block.TextBlockView
 import java.util.UUID
@@ -379,10 +380,10 @@ class EditorPresenter(
     fun toggleChecklistAtFocus() {
         val focused = container.findFocus()
         var v: android.view.View? = focused
-        var itemView: com.fan.hwnote.app.view.block.ChecklistItemView? = null
+        var itemView: ChecklistItemView? = null
         var blockView: ChecklistBlockView? = null
         while (v != null) {
-            if (itemView == null && v is com.fan.hwnote.app.view.block.ChecklistItemView) itemView = v
+            if (itemView == null && v is ChecklistItemView) itemView = v
             if (v is ChecklistBlockView) { blockView = v; break }
             v = v.parent as? android.view.View
         }
@@ -396,7 +397,7 @@ class EditorPresenter(
     /** 把某个清单项变成 TextBlock：取文字 → 在清单块后插 TextBlock → 从清单删该项；清单空了连块一起删（替换为 TextBlock 在原位）。 */
     private fun convertChecklistItemToText(
         block: ChecklistBlockView,
-        item: com.fan.hwnote.app.view.block.ChecklistItemView,
+        item: ChecklistItemView,
     ) {
         val blockIdx = currentBlocks.indexOf(block)
         if (blockIdx < 0) return
