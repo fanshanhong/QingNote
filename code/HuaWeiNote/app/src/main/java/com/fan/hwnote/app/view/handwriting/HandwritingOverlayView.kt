@@ -39,6 +39,7 @@ class HandwritingOverlayView @JvmOverloads constructor(
             // 切换模式时丢掉正在收集的中间 stroke（双向都清，防残留）
             inProgressPoints.clear()
             erasedThisGesture.clear()
+            gestureSnapshot.clear()
             invalidate()
         }
 
@@ -128,6 +129,8 @@ class HandwritingOverlayView @JvmOverloads constructor(
     internal fun eraserRadius(): Float = eraserRadiusPx
     internal fun brushPainter(): BrushPainter = brushPainter
     internal fun strokesRef(): List<Stroke> = strokes
+    /** 仅 Overlay 内部使用：返回 strokes 的可变引用。避免 strokesRef() 上的硬转。 */
+    internal fun strokesMut(): MutableList<Stroke> = strokes
 
     // Task 5 接管
     override fun onTouchEvent(event: MotionEvent): Boolean {
@@ -187,7 +190,7 @@ class HandwritingOverlayView @JvmOverloads constructor(
     private fun eraseAt(ex: Float, ey: Float) {
         val hit = StrokeEraser.hitTest(ex, ey, eraserRadiusPx, strokesRef())
         if (hit.isEmpty()) return
-        val mut = strokesRef() as MutableList<Stroke>
+        val mut = strokesMut()
         for (s in hit) {
             if (mut.remove(s)) erasedThisGesture.add(s)
         }
