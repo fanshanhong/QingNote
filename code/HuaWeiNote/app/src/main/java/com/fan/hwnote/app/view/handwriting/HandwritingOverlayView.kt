@@ -40,6 +40,7 @@ class HandwritingOverlayView @JvmOverloads constructor(
             inProgressPoints.clear()
             erasedThisGesture.clear()
             gestureSnapshot.clear()
+            inProgressBuffer.clear()
             invalidate()
         }
 
@@ -62,6 +63,12 @@ class HandwritingOverlayView @JvmOverloads constructor(
     /** Task 5 橡皮：ACTION_DOWN 抓拍 strokes 列表，ACTION_UP 用它解析 IndexedValue 还原 Z-order。 */
     private val gestureSnapshot = mutableListOf<Stroke>()
 
+    /** T5 复用：onDraw 内 drawStroke 用 Path，每帧 reset 后复用。 */
+    private val reusablePath = android.graphics.Path()
+
+    /** T5 复用：in-progress 渲染段的 StrokePoint 缓冲，避免每帧 .map 分配新列表。 */
+    private val inProgressBuffer = mutableListOf<com.fan.hwnote.app.model.entity.StrokePoint>()
+
     fun setStrokes(list: List<Stroke>) {
         strokes.clear()
         strokes.addAll(list)
@@ -78,6 +85,8 @@ class HandwritingOverlayView @JvmOverloads constructor(
         undoStack.addLast(Action.Erase(snapshot))
         redoStack.clear()
         strokes.clear()
+        inProgressPoints.clear()
+        inProgressBuffer.clear()
         invalidate()
     }
 
@@ -179,6 +188,7 @@ class HandwritingOverlayView @JvmOverloads constructor(
                     val s = Stroke(currentBrush, currentColor, currentWidth, pts)
                     pushAdd(s)
                     inProgressPoints.clear()
+                    inProgressBuffer.clear()
                 }
                 invalidate()
                 return true
@@ -205,11 +215,26 @@ class HandwritingOverlayView @JvmOverloads constructor(
             drawStroke(canvas, s)
         }
         if (!isErasing && inProgressPoints.size >= 1) {
-            val pts = inProgressPoints.map {
-                com.fan.hwnote.app.model.entity.StrokePoint(it.first, it.second, it.third)
-            }
-            val tmp = Stroke(currentBrush, currentColor, currentWidth, pts)
+            syncInProgressBuffer()
+            val tmp = Stroke(currentBrush, currentColor, currentWidth, inProgressBuffer)
             drawStroke(canvas, tmp)
+        }
+    }
+
+    /** 同步 inProgressPoints → inProgressBuffer，复用 buffer 容器避免 .map 分配。 */
+    private fun syncInProgressBuffer() {
+        val n = inProgressPoints.size
+        while (inProgressBuffer.size > n) {
+            inProgressBuffer.removeAt(inProgressBuffer.size - 1)
+        }
+        for (i in 0 until n) {
+            val p = inProgressPoints[i]
+            val sp = com.fan.hwnote.app.model.entity.StrokePoint(p.first, p.second, p.third)
+            if (i < inProgressBuffer.size) {
+                inProgressBuffer[i] = sp
+            } else {
+                inProgressBuffer.add(sp)
+            }
         }
     }
 
@@ -236,11 +261,11 @@ class HandwritingOverlayView @JvmOverloads constructor(
             canvas.drawPoint(p.x.toFloat(), p.y.toFloat(), paint)
             return
         }
-        val path = android.graphics.Path()
-        path.moveTo(s.points[0].x.toFloat(), s.points[0].y.toFloat())
+        reusablePath.reset()
+        reusablePath.moveTo(s.points[0].x.toFloat(), s.points[0].y.toFloat())
         for (i in 1 until s.points.size) {
-            path.lineTo(s.points[i].x.toFloat(), s.points[i].y.toFloat())
+            reusablePath.lineTo(s.points[i].x.toFloat(), s.points[i].y.toFloat())
         }
-        canvas.drawPath(path, paint)
+        canvas.drawPath(reusablePath, paint)
     }
 }
