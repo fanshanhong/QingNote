@@ -27,6 +27,7 @@ class NoteEditorActivity : AppCompatActivity() {
 
     private var noteId: Long = -1L
     private var loadedNote: Note? = null
+    @Volatile private var saveInFlight: Boolean = false
 
     private val galleryLauncher = registerForActivityResult(
         androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
@@ -286,12 +287,15 @@ class NoteEditorActivity : AppCompatActivity() {
         if (loaded != null && loaded.id > 0L) {
             block(); return
         }
+        if (saveInFlight) return
+        saveInFlight = true
         // 这里复用 saveNote 路径，但要等 IO 完成后再回主线程跑 block
         val title = titleInput.text.toString()
         val toSave = presenter.collectCurrentNote(title)
         lifecycleScope.launch(Dispatchers.IO) {
             val newId = NoteRepository.save(toSave)
             withContext(Dispatchers.Main) {
+                saveInFlight = false
                 if (newId > 0L) {
                     noteId = newId
                     loadedNote = toSave.copy(id = newId)
@@ -312,6 +316,7 @@ class NoteEditorActivity : AppCompatActivity() {
         // 全空且是新笔记则不存
         val isAllEmpty = title.isEmpty() && toSave.plainText.isEmpty()
         if (loaded.id == 0L && isAllEmpty) return
+        if (loaded.id == 0L && saveInFlight) return  // ensureNoteSavedAndThen 正在跑同一条 INSERT
         lifecycleScope.launch(Dispatchers.IO) {
             val newId = NoteRepository.save(toSave)
             // 更新 noteId / loadedNote，避免下次 onPause 再 insert 一条
