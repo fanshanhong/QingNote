@@ -51,7 +51,6 @@
     <string name="tb_checklist_cd">插入清单</string>
     <string name="tb_style_cd">样式</string>
     <string name="tb_handwriting_cd">手写</string>
-    <string name="toast_handwriting_placeholder">手写功能（M6 实现）</string>
 
     <!-- 颜色选择对话框 -->
     <string name="color_black">黑</string>
