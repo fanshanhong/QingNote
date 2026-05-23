@@ -1,6 +1,6 @@
 # HwNote · 项目进度
 
-最后更新：2026-05-23
+最后更新：2026-05-23（M5 完成）
 
 ## 阶段地图
 
@@ -12,8 +12,8 @@
 | 4. 规格自审 | ✅ 完成 | 修复 7 处一致性问题（heading 块属性归位、Span 6 种、笔效/橡皮算法详写、ACTION_GET_CONTENT 替换、Glide compiler 去除、plain_text 规则补、行内/块级样式分离） |
 | 5. 用户审阅 PRD | ✅ 完成 | 用户确认无修改，进入下一步 |
 | 6. **实施计划编写** | ✅ 完成 | `docs/superpowers/plans/2026-05-22-hwnote-implementation.md`（高层版，7 个里程碑各一节，685 行） |
-| 7. 代码实施 | 🔵 **进行中（M4 完成）** | M1 + M2 + M3 + M4 详细计划 + 代码；M5-M7 未开始 |
-| 8. 手测验收 | 🔵 进行中（M3 列表页通过；M4 自动化通过、真机 9 条留用户走查） | M3 五条高层验收逐条手测通过；M4 SpanConverter 15 项单测 PASSED + 双轨 review 全过 |
+| 7. 代码实施 | 🔵 **进行中（M5 完成）** | M1 + M2 + M3 + M4 + M5 详细计划 + 代码；M6-M7 未开始 |
+| 8. 手测验收 | 🔵 进行中（M3 列表页通过；M4 自动化通过、真机 9 条留用户走查；M5 自动化通过、真机 7 条留用户走查） | M3 五条高层验收逐条手测通过；M4 SpanConverter 15 项单测 PASSED + 双轨 review 全过；M5 ImageCompressor 3 项单测 PASSED + 12 任务双轨 review 全过 |
 
 ## 里程碑进度
 
@@ -23,7 +23,7 @@
 | M2 数据层 | ✅ 完成（2026-05-22） | 数据层 + 42 单测 |
 | M3 列表页 | ✅ 完成（2026-05-22） | RecyclerView + 搜索 + 排序 + 长按菜单 + 删除二次确认 |
 | M4 编辑器骨架 | ✅ 完成（2026-05-23） | NoteEditorActivity + EditorPresenter + 块容器 + 12 键工具栏 + B/I/U/S + 字号 + 5 色 + H1/H2；SpanConverter 15 单测 |
-| M5 图片块/清单块 | ⏳ 未开始 | — |
+| M5 图片块/清单块 | ✅ 完成（2026-05-23） | ImageBlockView + ChecklistBlockView + ImageCompressor（长边 1920/JPEG 85）+ 多选相册 / 拍照 + CAMERA 运行时权限；passthroughBlocks 已删 |
 | M6 手写 Overlay | ⏳ 未开始 | — |
 | M7 打磨 | ⏳ 未开始 | — |
 
@@ -201,14 +201,55 @@ M1 ✅ → M2 数据层 → M3 列表页
 - 编辑器架构：FrameLayout > ScrollView > [LinearLayout 内容层 + HandwritingOverlayView 手写层]
 - 7 个实施里程碑：基础工程 → 数据层 → 列表页 → 编辑器骨架 → 图片/清单 → 手写 Overlay → 打磨
 
+## M5 完成详情（2026-05-23）
+
+**产出：**
+- 资源（Task 1-2）：图片来源 / 删除二确认 / 清单项 hint 等 strings 词条 + ic_camera/ic_gallery vector + bg_image_block/bg_checklist_item 背景 + block_image.xml + block_checklist_item.xml
+- 工具（Task 3，TDD）：`util/ImageCompressor.kt`（二阶段解码 inJustDecodeBounds + inSampleSize → Matrix.postScale；长边 ≤1920 / JPEG 85；返回 Result(width, height)；OOM-safe scale + IOException 收窄 + 半成品清理）+ 3 项 Robolectric 单测
+- View 层（Task 4-6）：`view/block/ImageBlockView.kt`（Glide 加载 `NoteFileStorage.imageFile(noteId, fileName)` + 长按 AlertDialog 二确认 + `onDetachedFromWindow` 释放 dialog + `.dontAnimate()` 防闪烁）+ `view/block/ChecklistItemView.kt`（CheckBox + EditText + STRIKE_THRU paint flag + 抽提的 OnCheckedChangeListener + ENTER/DEL key listener）+ `view/block/ChecklistBlockView.kt`（多 item 编排：onEnterAtEnd 新增 / onBackspaceWhenEmpty 删项或整块）
+- 控制层（Task 7-11）：`EditorPresenter` 删 `passthroughBlocks` 改真渲染（`bind` / `collectCurrentNote` / `addImageBlockView` / `addChecklistBlockView` / `insertImageBlocksAtFocus` / `insertChecklistBlockAtFocus` / `onRequestDelete` 图片清文件 + `var noteId` 字段）+ `NoteEditorActivity` 三 launcher（gallery / camera / camera-permission，均为 property initializer）+ `ensureNoteSavedAndThen`（新笔记落库后再插图）+ `showImageSourceDialog`（弹"相册/拍照"）+ `compressAndInsertImages`（IO 解压 + Main 插入；新增 `onDone` 参数让拍照清理跟 IO 完成排队）+ `launchCamera`（FileProvider authority `com.fan.hwnote.app.fileprovider`；`cacheDir/camera/<uuid>.jpg`）
+
+**测试统计：** `./gradlew :app:test` 共 **60 项 PASSED**（M2 42 + M4 15 + M5 ImageCompressor 3）。Clean build：`./gradlew :app:clean :app:assembleDebug :app:test` BUILD SUCCESSFUL in 11s，0 skipped / 0 failures / 0 errors。
+
+**M5 commit 列表（git log `2767aed..HEAD`，共 16 个 commit）：**
+- `2af2530` docs(m5): 提交 M5 图片/清单块详细实施计划
+- `fbfb8eb` feat(m5): 图片/清单块资源准备（drawables + 词条 + 颜色）
+- `890b5e8` feat(m5): 图片块与清单项布局 xml
+- `9f583a5` style(m5): block_checklist_item 字号改用 @dimen/editor_text_normal
+- `003fc47` feat(m5): ImageCompressor 长边 1920 JPEG 85 压缩 + Robolectric 单测
+- `93224e4` fix(m5): ImageCompressor 防 OOM 泄漏 + 收窄异常 + 清理半成品
+- `b7c545c` feat(m5): ImageBlockView 用 Glide 加载本地图片 + 长按删除
+- `f91196b` fix(m5): ImageBlockView 去重长按 + 对话框生命周期 + Glide 优化
+- `666fb3a` feat(m5): ChecklistItemView 单行 CheckBox + EditText + 删除线
+- `12d2681` fix(m5): ChecklistItemView 删除死代码 TextWatcher + 抽提勾选监听
+- `0a3d02c` feat(m5): ChecklistBlockView 多项编排（新增/删除/焦点迁移）
+- `77b3b08` style(m5): ChecklistBlockView 删除未使用的 LinearLayout 导入
+- `5cbb9e7` feat(m5): EditorPresenter 接通真实图片/清单渲染（删 passthroughBlocks）
+- `beb12f5` feat(m5): 清单工具栏按钮接通 Presenter + loadNote/saveNote 同步 noteId
+- `7271b3d` feat(m5): 图片工具栏按钮 → 弹相册/拍照 + 多选解压 + CAMERA 权限
+- `7c0cf6c` fix(m5): 拍照清理改到 IO 完成后执行（修复删除竞态）
+- 收尾 commit：docs(m5): 标记 M5 图片/清单块完成
+
+**验收：**
+- ✅ `./gradlew :app:clean :app:assembleDebug` 通过（11s 全量构建，无 warning）
+- ✅ `./gradlew :app:test` 全部 60 项 PASSED（debug + release 两轮）
+- ✅ Task 12 静态走查 5 条 Check 全部对齐 PRD §8.4（图片插入焦点回 TextBlock / 长按删图清文件+块 / 清单 ENTER 仅末尾新增 / 空项退格唯一→整块上抛非唯一→删项 / CAMERA 拒绝不崩相册仍可用）
+- ⏳ 真机手测留待用户走查（PRD §M5 高层验收 1-7：单图插入/多图插入/拍照插入/长按删图（含文件）/清单基础编辑/清单勾选删除线/清单空项退格删项 + 杀进程重启数据保留）
+
+**执行模式：** Subagent-Driven Development（writing-plans → 用户审阅 → 严格串行 12 任务）。每个任务的 implementer DONE → spec reviewer → code quality reviewer → fix（如有）→ re-review → 标记完成。Task 9/10/11 合并为一次 commit（Activity 三段相互依赖编译），Task 12 仅做静态走查 + STATUS 收尾。code quality review 共触发 4 次 Important fix：T3 ImageCompressor OOM/exception、T4 ImageBlockView dialog 生命周期/Glide 闪烁、T5 ChecklistItemView 死 TextWatcher、T11 拍照清理竞态。
+
+**M7（打磨）待办（M5 评审遗留的 Important，因超出 M5 计划范围未在 M5 内修）：**
+- `pendingCameraOutputUri` / `pendingCameraOutputFile` 不走 `onSaveInstanceState`：相机触发系统级 process death 后重启会丢拍照结果 + 泄漏 cache 文件。M7 加 Parcelable 持久化。
+- `ensureNoteSavedAndThen` 与 `onPause.saveNote` 在新笔记 0L→insert 路径上存在窄竞态窗口（用户点图标后立刻按 Home 可能 double-insert）。M7 加 "save-in-flight" flag 互斥。
+
 ## 下一步建议
 
-M4 已完成，建议进入 **M5 图片块/清单块**：把当前编辑器工具栏中已留占位的"图片"和"清单"两个按钮接通：
-- **ImageBlock 渲染**：在 `view/block/` 下加 `ImageBlockView`，支持多选相册（`ACTION_OPEN_DOCUMENT` 多选）+ 拍照（`MediaStore.ACTION_IMAGE_CAPTURE` + FileProvider）。Glide 加载本地 URI；图片块不可编辑文字，长按弹出"删除"。
-- **ChecklistBlock 渲染**：`ChecklistBlockView` 一行一项，行首 CheckBox + 行内 EditText；末项回车新增空项；空项退格删项并上移焦点；项级"已完成"切线删除样式。
-- **EditorPresenter 接入**：补 `onImageClicked` / `onChecklistClicked` 实际逻辑（替换 Task 8 留的 Toast）；`bind` / `collectCurrentNote` 已经预留 Image/Checklist 透传，本次需把它们换成真实的 BlockView 渲染（`passthroughBlocks` 改为创建对应 View 并加入 `currentBlocks`）。
-- **存储复用**：M2 已完整支持 ImageBlock / ChecklistBlock 的 JSON round-trip 与文件清理，M5 仅做 UI 渲染层。
+M5 已完成，建议进入 **M6 手写 Overlay**：实现 `HandwritingOverlayView`（透明层覆盖在内容层之上）：
+- **笔种**：4 种（pen / brush / marker / pencil）+ 笔粗细 3 档 + 8 色调色板 + 橡皮 + 撤销/重做 + 清空 — 来自 PRD §8.5
+- **架构**：在 `activity_note_editor.xml` 的 FrameLayout 内已经预留 overlay 位置（M4 骨架时拉的层），M6 把它换成 `HandwritingOverlayView`；Stroke 数据沿用 M2 已序列化的 `Stroke` 实体（4 笔种 + 颜色 + 粗细 + 点序列）
+- **存储复用**：M2 已完整支持 Stroke 的 JSON round-trip；笔迹文件目录 `filesDir/notes/<id>/handwriting/` 也已建好（M2 `NoteFileStorage`）；M6 仅做 UI 渲染层 + 工具栏切换
+- **工具栏切换**：编辑器底部 Tab 已经有"文本/手写"两挡占位（M4 骨架时拉的），M6 把"手写"挡换成手写工具条（笔种/颜色/粗细 + 橡皮 + 撤销/重做 + 清空 7 个按钮）
 
-执行节奏沿用 M2/M3/M4 的 "writing-plans → 用户审阅 → Subagent-Driven 串行执行 → 双轨 review → STATUS 收尾" 模式。预估 6-10 小时（图片选择 / 拍照 / FileProvider 整合较繁琐）。
+执行节奏沿用 M2/M3/M4/M5 的 "writing-plans → 用户审阅 → Subagent-Driven 串行执行 → 双轨 review → STATUS 收尾" 模式。预估 8-12 小时（手写 path 算法 / 4 种笔效真实着色 / 撤销重做栈较繁琐）。
 
 资源：浏览器 visual companion 仍在运行：http://localhost:61835
