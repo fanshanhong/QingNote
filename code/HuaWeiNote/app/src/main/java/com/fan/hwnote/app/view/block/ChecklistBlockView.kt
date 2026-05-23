@@ -34,6 +34,18 @@ class ChecklistBlockView @JvmOverloads constructor(
     override fun onEnterAtEnd(view: ChecklistItemView) {
         val idx = items.indexOf(view)
         if (idx < 0) return
+        // 末尾空项 → 退出清单（删该空项 + 通知 Presenter 在清单后插 TextBlock；清单空了则整块替换）
+        if (view.edit.text.isEmpty()) {
+            removeView(view)
+            items.removeAt(idx)
+            if (items.isEmpty()) {
+                callback?.onChecklistConvertBlockToText(this)
+            } else {
+                callback?.onChecklistAppendTextAfter(this)
+            }
+            return
+        }
+        // 末尾非空项 → 原行为（新增空项 + 焦点到新项）
         val newItem = ChecklistItem(false, "")
         addItemView(newItem, insertAt = idx + 1)
         items[idx + 1].focusEditEnd()
@@ -43,14 +55,24 @@ class ChecklistBlockView @JvmOverloads constructor(
         val idx = items.indexOf(view)
         if (idx < 0) return
         if (items.size <= 1) {
-            // 唯一项空且按退格 → 整个清单块删除
-            callback?.onRequestDelete(this)
+            // 唯一项空且按退格 → 整块替换为空 TextBlock（焦点稳交 TextBlock）
+            callback?.onChecklistConvertBlockToText(this)
             return
         }
         removeView(view)
         items.removeAt(idx)
         val target = items[(idx - 1).coerceAtLeast(0)]
         target.focusEditEnd()
+    }
+
+    /** 删除指定 item view（不通知 callback），返回 true 表示清单变空。供 Presenter 在 toggle 取消单项时调用。 */
+    fun removeItemAndReturnEmpty(item: ChecklistItemView): Boolean {
+        val idx = items.indexOf(item)
+        if (idx >= 0) {
+            removeView(item)
+            items.removeAt(idx)
+        }
+        return items.isEmpty()
     }
 
     override fun onItemFocusGained(view: ChecklistItemView) {

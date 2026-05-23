@@ -38,5 +38,13 @@ abstract class BlockView @JvmOverloads constructor(
         fun onImageLoadFailed(view: BlockView) {
             onRequestDelete(view)
         }
+        /** 清单整块替换为一个空 TextBlock（焦点交给它）。默认行为：等同请求删除。 */
+        fun onChecklistConvertBlockToText(view: BlockView) {
+            onRequestDelete(view)
+        }
+        /** 在清单块之后追加一个空 TextBlock（焦点交给它）。默认行为：等同请求 split-after。 */
+        fun onChecklistAppendTextAfter(view: BlockView) {
+            onRequestSplitAfter(view)
+        }
     }
 }

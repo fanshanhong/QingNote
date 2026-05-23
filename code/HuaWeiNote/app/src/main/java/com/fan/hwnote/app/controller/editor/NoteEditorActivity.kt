@@ -106,7 +106,7 @@ class NoteEditorActivity : AppCompatActivity() {
         handwritingToolbar = findViewById(R.id.handwriting_toolbar)
         textToolbar.listener = object : com.fan.hwnote.app.view.toolbar.TextToolbarView.Listener {
             override fun onChecklistClicked() {
-                presenter.insertChecklistBlockAtFocus()
+                presenter.toggleChecklistAtFocus()
             }
             override fun onStyleClicked() {
                 com.fan.hwnote.app.view.toolbar.StylePickerBottomSheet(

@@ -243,6 +243,26 @@ class EditorPresenter(
         }
     }
 
+    /** 清单整块替换为一个空 TextBlock（原位）；焦点交给它。供 ChecklistBlockView 在唯一项退格或末尾空项回车时调用。 */
+    override fun onChecklistConvertBlockToText(view: BlockView) {
+        val idx = currentBlocks.indexOf(view)
+        if (idx < 0) return
+        container.removeView(view)
+        currentBlocks.removeAt(idx)
+        val newBlock = emptyTextBlock()
+        addTextBlockView(newBlock, insertAt = idx)
+        (currentBlocks[idx] as TextBlockView).focusEditEnd()
+    }
+
+    /** 在清单块之后追加空 TextBlock，焦点交给它。供清单末尾空项回车时调用（清单还剩其他项的情况）。 */
+    override fun onChecklistAppendTextAfter(view: BlockView) {
+        val idx = currentBlocks.indexOf(view)
+        if (idx < 0) return
+        val newBlock = emptyTextBlock()
+        addTextBlockView(newBlock, insertAt = idx + 1)
+        (currentBlocks[idx + 1] as TextBlockView).focusEditEnd()
+    }
+
     /** 删除某图片块对应的本地 jpg。noteId<=0 视为未落库，no-op。失败吞掉（无关键路径）。 */
     private fun purgeImageOnDisk(block: Block.ImageBlock) {
         if (noteId <= 0L) return
@@ -347,5 +367,55 @@ class EditorPresenter(
         )
         addChecklistBlockView(block, insertAt = insertAt)
         (currentBlocks[insertAt] as ChecklistBlockView).focusLastItemEnd()
+    }
+
+    /**
+     * "清单"按钮入口：
+     * - 焦点在 TextBlock → 在其后插新清单块（同 [insertChecklistBlockAtFocus]）
+     * - 焦点在某清单项 → 取消该项：把该项文字搬出来作 TextBlock 插到清单块之后；删该项；
+     *   清单空了则整块替换 TextBlock；焦点交新 TextBlock
+     * - 无焦点 → 走 [insertChecklistBlockAtFocus] 兜底（追加到末尾）
+     */
+    fun toggleChecklistAtFocus() {
+        val focused = container.findFocus()
+        var v: android.view.View? = focused
+        var itemView: com.fan.hwnote.app.view.block.ChecklistItemView? = null
+        var blockView: ChecklistBlockView? = null
+        while (v != null) {
+            if (itemView == null && v is com.fan.hwnote.app.view.block.ChecklistItemView) itemView = v
+            if (v is ChecklistBlockView) { blockView = v; break }
+            v = v.parent as? android.view.View
+        }
+        if (itemView != null && blockView != null) {
+            convertChecklistItemToText(blockView, itemView)
+        } else {
+            insertChecklistBlockAtFocus()
+        }
+    }
+
+    /** 把某个清单项变成 TextBlock：取文字 → 在清单块后插 TextBlock → 从清单删该项；清单空了连块一起删（替换为 TextBlock 在原位）。 */
+    private fun convertChecklistItemToText(
+        block: ChecklistBlockView,
+        item: com.fan.hwnote.app.view.block.ChecklistItemView,
+    ) {
+        val blockIdx = currentBlocks.indexOf(block)
+        if (blockIdx < 0) return
+        val text = item.edit.text.toString()
+        val becameEmpty = block.removeItemAndReturnEmpty(item)
+        val newBlock = Block.TextBlock(
+            id = "b-${UUID.randomUUID().toString().take(8)}",
+            text = text,
+        )
+        if (becameEmpty) {
+            // 清单空了：原位替换为 TextBlock
+            container.removeView(block)
+            currentBlocks.removeAt(blockIdx)
+            addTextBlockView(newBlock, insertAt = blockIdx)
+            (currentBlocks[blockIdx] as TextBlockView).focusEditEnd()
+        } else {
+            // 清单还剩项：TextBlock 插在清单块后
+            addTextBlockView(newBlock, insertAt = blockIdx + 1)
+            (currentBlocks[blockIdx + 1] as TextBlockView).focusEditEnd()
+        }
     }
 }
