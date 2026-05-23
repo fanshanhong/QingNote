@@ -136,6 +136,7 @@ class HandwritingOverlayView @JvmOverloads constructor(
         val y = event.y.toInt()
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
+                parent?.requestDisallowInterceptTouchEvent(true)
                 gestureStartElapsedMs = android.os.SystemClock.uptimeMillis()
                 if (isErasing) {
                     erasedThisGesture.clear()
