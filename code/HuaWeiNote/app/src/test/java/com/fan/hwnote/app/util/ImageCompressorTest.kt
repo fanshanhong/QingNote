@@ -3,6 +3,7 @@ package com.fan.hwnote.app.util
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import androidx.test.core.app.ApplicationProvider
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -18,6 +19,11 @@ class ImageCompressorTest {
 
     private val context = ApplicationProvider.getApplicationContext<android.content.Context>()
     private val tmpDir: File get() = File(context.cacheDir, "compressor_test").apply { mkdirs() }
+
+    @After
+    fun tearDown() {
+        tmpDir.deleteRecursively()
+    }
 
     private fun writeSolidColor(w: Int, h: Int, file: File) {
         val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
