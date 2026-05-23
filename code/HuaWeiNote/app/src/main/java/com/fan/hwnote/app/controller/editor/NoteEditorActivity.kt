@@ -95,27 +95,23 @@ class NoteEditorActivity : AppCompatActivity() {
 
         val toolbarView = findViewById<com.fan.hwnote.app.view.toolbar.TextToolbarView>(R.id.text_toolbar)
         toolbarView.listener = object : com.fan.hwnote.app.view.toolbar.TextToolbarView.Listener {
-            override fun onInlineToggle(type: com.fan.hwnote.app.model.entity.SpanType) {
-                val pending = presenter.toggleInline(type)
-                toolbarView.setInlineSelected(type, pending)
+            override fun onChecklistClicked() {
+                presenter.insertChecklistBlockAtFocus()
             }
-            override fun onSizePicked(value: String) {
-                presenter.toggleSize(value)
-                // 字号档位无需高亮（用户能直接看到字大小变化），可省略 selected 反馈
-            }
-            override fun onColorClicked() {
-                showColorPickerDialog()
-            }
-            override fun onHeadingToggle(isH1: Boolean) {
-                val target = if (isH1) com.fan.hwnote.app.model.entity.Heading.H1
-                             else com.fan.hwnote.app.model.entity.Heading.H2
-                presenter.toggleHeading(target)
+            override fun onStyleClicked() {
+                com.fan.hwnote.app.view.toolbar.StylePickerBottomSheet(
+                    this@NoteEditorActivity, presenter
+                ).show()
             }
             override fun onImageClicked() {
                 ensureNoteSavedAndThen { showImageSourceDialog() }
             }
-            override fun onChecklistClicked() {
-                presenter.insertChecklistBlockAtFocus()
+            override fun onHandwritingClicked() {
+                android.widget.Toast.makeText(
+                    this@NoteEditorActivity,
+                    R.string.toast_handwriting_placeholder,
+                    android.widget.Toast.LENGTH_SHORT,
+                ).show()
             }
         }
 
@@ -137,32 +133,6 @@ class NoteEditorActivity : AppCompatActivity() {
             titleInput.setText(note.title)
             presenter.bind(note)
         }
-    }
-
-    private fun showColorPickerDialog() {
-        val labels = arrayOf(
-            getString(R.string.color_black),
-            getString(R.string.color_red),
-            getString(R.string.color_yellow),
-            getString(R.string.color_green),
-            getString(R.string.color_blue),
-        )
-        val hexes = arrayOf("#212121", "#E53935", "#FB8C00", "#43A047", "#1E88E5")
-        androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle(R.string.dialog_pick_color_title)
-            .setItems(labels) { _, which ->
-                val hex = hexes[which]
-                val pending = presenter.pickColor(hex)
-                val toolbarView = findViewById<com.fan.hwnote.app.view.toolbar.TextToolbarView>(R.id.text_toolbar)
-                // 仅当 pendingColor 真的被设置时才高亮按钮；选区直接生效或取消 pending 时清除 tint
-                if (pending != null) {
-                    toolbarView.setColorIndicator(android.graphics.Color.parseColor(pending))
-                } else {
-                    toolbarView.clearColorIndicator()
-                }
-            }
-            .setNegativeButton(R.string.action_cancel, null)
-            .show()
     }
 
     private fun showImageSourceDialog() {
