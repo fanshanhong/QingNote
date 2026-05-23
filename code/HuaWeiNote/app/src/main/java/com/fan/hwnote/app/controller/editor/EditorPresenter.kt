@@ -234,6 +234,25 @@ class EditorPresenter(
         if (view is TextBlockView) focusedTextBlock = view
     }
 
+    /** 图片加载失败的安全移除：第一块时退化为换成空 TextBlock，避免列表为空崩溃。同时清磁盘 jpg。 */
+    fun removeImageBlockOnLoadFailure(view: ImageBlockView) {
+        val idx = currentBlocks.indexOf(view)
+        if (idx < 0) return
+        val block = view.toBlock() as? Block.ImageBlock
+        if (block != null && noteId > 0L) {
+            runCatching {
+                com.fan.hwnote.app.model.storage.NoteFileStorage(context)
+                    .imageFile(noteId, block.fileName).delete()
+            }
+        }
+        container.removeView(view)
+        currentBlocks.removeAt(idx)
+        if (idx == 0 && currentBlocks.isEmpty()) {
+            addTextBlockView(emptyTextBlock())
+            (currentBlocks[0] as? TextBlockView)?.focusEditEnd()
+        }
+    }
+
     // ----- private -----
 
     private fun emptyTextBlock(): Block.TextBlock =

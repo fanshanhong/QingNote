@@ -42,6 +42,33 @@ class ImageBlockView @JvmOverloads constructor(
             .load(file)
             .error(R.drawable.bg_image_block)
             .dontAnimate()
+            .listener(object : com.bumptech.glide.request.RequestListener<android.graphics.drawable.Drawable> {
+                override fun onLoadFailed(
+                    e: com.bumptech.glide.load.engine.GlideException?,
+                    model: Any?,
+                    target: com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable>,
+                    isFirstResource: Boolean,
+                ): Boolean {
+                    android.widget.Toast.makeText(
+                        context, R.string.image_load_failed, android.widget.Toast.LENGTH_SHORT,
+                    ).show()
+                    val cb = callback
+                    if (cb is com.fan.hwnote.app.controller.editor.EditorPresenter) {
+                        cb.removeImageBlockOnLoadFailure(this@ImageBlockView)
+                    } else {
+                        cb?.onRequestDelete(this@ImageBlockView)
+                    }
+                    return false // 不拦截 error drawable 渲染
+                }
+
+                override fun onResourceReady(
+                    resource: android.graphics.drawable.Drawable,
+                    model: Any,
+                    target: com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable>?,
+                    dataSource: com.bumptech.glide.load.DataSource,
+                    isFirstResource: Boolean,
+                ): Boolean = false
+            })
             .into(imageView)
     }
 
