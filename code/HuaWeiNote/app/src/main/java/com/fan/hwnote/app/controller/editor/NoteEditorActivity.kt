@@ -156,6 +156,11 @@ class NoteEditorActivity : AppCompatActivity() {
             }
         }
 
+        if (savedInstanceState != null) {
+            pendingCameraOutputUri =
+                @Suppress("DEPRECATION") savedInstanceState.getParcelable(STATE_CAMERA_URI)
+            pendingCameraOutputFile = savedInstanceState.getString(STATE_CAMERA_FILE)?.let { java.io.File(it) }
+        }
         noteId = intent.getLongExtra(EXTRA_NOTE_ID, -1L)
         loadNote()
     }
@@ -164,6 +169,12 @@ class NoteEditorActivity : AppCompatActivity() {
         super.onPause()
         // 退出（包括按返回 / Home / 横屏）都落库一次。
         saveNote()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        pendingCameraOutputUri?.let { outState.putParcelable(STATE_CAMERA_URI, it) }
+        pendingCameraOutputFile?.let { outState.putString(STATE_CAMERA_FILE, it.absolutePath) }
     }
 
     private fun loadNote() {
@@ -342,6 +353,8 @@ class NoteEditorActivity : AppCompatActivity() {
 
     companion object {
         private const val EXTRA_NOTE_ID = "noteId"
+        private const val STATE_CAMERA_URI = "pendingCameraOutputUri"
+        private const val STATE_CAMERA_FILE = "pendingCameraOutputFile"
         fun newIntent(context: Context, noteId: Long): Intent =
             Intent(context, NoteEditorActivity::class.java).apply {
                 putExtra(EXTRA_NOTE_ID, noteId)
