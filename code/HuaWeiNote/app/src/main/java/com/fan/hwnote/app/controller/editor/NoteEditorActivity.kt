@@ -88,6 +88,11 @@ class NoteEditorActivity : AppCompatActivity() {
 
         presenter = EditorPresenter(this, blocksContainer)
 
+        val editorContent = findViewById<android.view.View>(R.id.editor_content)
+        editorContent.setOnClickListener {
+            presenter.focusLastTextBlock()
+        }
+
         val toolbarView = findViewById<com.fan.hwnote.app.view.toolbar.TextToolbarView>(R.id.text_toolbar)
         toolbarView.listener = object : com.fan.hwnote.app.view.toolbar.TextToolbarView.Listener {
             override fun onInlineToggle(type: com.fan.hwnote.app.model.entity.SpanType) {

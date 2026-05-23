@@ -172,6 +172,13 @@ class EditorPresenter(
 
     fun currentFocusedTextBlock(): TextBlockView? = focusedTextBlock
 
+    /** 空白点击入口：优先聚焦最近一次有焦点的 TextBlock；否则倒着找最后一个 TextBlockView 聚焦；都没有则 no-op。 */
+    fun focusLastTextBlock() {
+        val target = focusedTextBlock
+            ?: (currentBlocks.lastOrNull { it is TextBlockView } as? TextBlockView)
+        target?.focusEditEnd()
+    }
+
     /**
      * 把 UI 当前内容收集成一份新 Note（保留原 id / createdAt / isFavorite，更新 title / content）。
      * 调用方负责 save 到 Repository。
