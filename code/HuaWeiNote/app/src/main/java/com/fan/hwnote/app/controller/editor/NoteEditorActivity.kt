@@ -51,9 +51,7 @@ class NoteEditorActivity : AppCompatActivity() {
         pendingCameraOutputUri = null
         pendingCameraOutputFile = null
         if (success && uri != null) {
-            compressAndInsertImages(listOf(uri))
-            // 等 compressAndInsertImages 完成后删 cache（它已经把内容复制走了；用 post 避免争用）
-            blocksContainer.post { runCatching { file?.delete() } }
+            compressAndInsertImages(listOf(uri), onDone = { runCatching { file?.delete() } })
         } else {
             runCatching { file?.delete() }
         }
@@ -180,7 +178,7 @@ class NoteEditorActivity : AppCompatActivity() {
         galleryLauncher.launch(Intent.createChooser(intent, getString(R.string.image_source_gallery)))
     }
 
-    private fun compressAndInsertImages(uris: List<android.net.Uri>) {
+    private fun compressAndInsertImages(uris: List<android.net.Uri>, onDone: (() -> Unit)? = null) {
         val curNoteId = loadedNote?.id ?: return
         if (curNoteId <= 0L) return
         val storage = com.fan.hwnote.app.model.storage.NoteFileStorage(this)
@@ -205,6 +203,7 @@ class NoteEditorActivity : AppCompatActivity() {
                     R.string.image_save_failed, android.widget.Toast.LENGTH_SHORT).show()
             } else {
                 presenter.insertImageBlocksAtFocus(results)
+                onDone?.invoke()
             }
         }
     }
