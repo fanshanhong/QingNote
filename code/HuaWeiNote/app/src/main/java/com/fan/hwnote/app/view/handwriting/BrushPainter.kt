@@ -28,8 +28,11 @@ class BrushPainter(context: Context) {
     private val density = context.resources.displayMetrics.density
     private val noiseShader: BitmapShader by lazy { buildNoiseShader() }
     private val blurFilter by lazy { BlurMaskFilter(2f * density, BlurMaskFilter.Blur.NORMAL) }
+    private val cache = HashMap<Triple<BrushType, String, Int>, Paint>()
 
     fun paintFor(stroke: Stroke): Paint {
+        val key = Triple(stroke.brush, stroke.color, stroke.width)
+        cache[key]?.let { return it }
         val basePx = dpToPx(stroke.width)
         val color = runCatching { Color.parseColor(stroke.color) }.getOrDefault(Color.BLACK)
         val p = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -58,6 +61,7 @@ class BrushPainter(context: Context) {
                 p.shader = noiseShader
             }
         }
+        cache[key] = p
         return p
     }
 
