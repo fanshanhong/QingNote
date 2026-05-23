@@ -85,7 +85,7 @@ class NoteEditorActivity : AppCompatActivity() {
         androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(editorRoot) { v, insets ->
             val ime = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.ime())
             val bars = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars())
-            v.setPadding(v.paddingLeft, v.paddingTop, v.paddingRight, kotlin.math.max(ime.bottom, bars.bottom))
+            v.setPadding(v.paddingLeft, bars.top, v.paddingRight, kotlin.math.max(ime.bottom, bars.bottom))
             insets
         }
 
