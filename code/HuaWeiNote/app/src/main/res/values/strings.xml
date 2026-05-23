@@ -59,10 +59,6 @@
     <string name="color_green">绿</string>
     <string name="color_blue">蓝</string>
 
-    <!-- M5/M6 占位（T8/T9 接通真实逻辑后会移除） -->
-    <string name="toast_image_placeholder">插入图片（M5 实现）</string>
-    <string name="toast_checklist_placeholder">插入清单（M6 实现）</string>
-
     <!-- M5 图片块 -->
     <string name="image_source_title">插入图片</string>
     <string name="image_source_gallery">从相册选择</string>
