@@ -85,6 +85,7 @@
     <string name="tb_redo_cd">重做</string>
     <string name="tb_clear_cd">清空</string>
     <string name="tb_done_cd">完成</string>
+    <string name="dialog_clear_handwriting_message">清空当前所有手写笔画？此操作不可恢复</string>
     <string name="tb_hw_color_cd">画笔颜色</string>
     <string name="tb_hw_width_cd">画笔粗细</string>
     <string name="hw_width_thin">细</string>

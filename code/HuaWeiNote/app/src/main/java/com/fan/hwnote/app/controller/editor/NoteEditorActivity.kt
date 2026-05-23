@@ -133,7 +133,7 @@ class NoteEditorActivity : AppCompatActivity() {
             override fun onClearClicked() {
                 androidx.appcompat.app.AlertDialog.Builder(this@NoteEditorActivity)
                     .setTitle(R.string.tb_clear_cd)
-                    .setMessage(R.string.dialog_delete_message)
+                    .setMessage(R.string.dialog_clear_handwriting_message)
                     .setPositiveButton(R.string.action_ok) { _, _ ->
                         handwritingOverlay.clear()
                         refreshUndoRedoEnabled()
