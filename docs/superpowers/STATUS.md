@@ -273,6 +273,51 @@ M1 ✅ → M2 数据层 → M3 列表页
 
 **执行模式：** Subagent-Driven Development，串行 7 任务（T1→T2→T3→T4→T5→T6→T7），每任务双轨 review；T6 因 Listener 接口变更跨 3 文件做合并 commit。
 
+## M6 完成详情（2026-05-23）
+
+**产出：**
+- 资源（T1）：8 色调色板（hw_color_black/red/orange/yellow/green/teal/blue/purple）+ 9 vector drawables（ic_pen/brush/marker/pencil/eraser/undo/redo/clear_all/check）+ 11 个手写工具栏 strings 词条。`toast_handwriting_placeholder` 暂保留（T9 引用已替换为 `enterHandwritingMode()`，可在 M7 清理）。
+- 笔效（T2）：`view/handwriting/BrushPainter.kt` — 4 笔种 Paint 工厂（pen / brush + BlurMaskFilter / marker alpha=140 + 宽×1.6 / pencil + 16×16 代码生成噪点 BitmapShader）。无 PNG 资源依赖。
+- 橡皮（T3，TDD）：`view/handwriting/StrokeEraser.kt` — 笔画级 hit-test：bbox 粗筛 + 圆心到线段细判 + width/2 容差。**算法修正**：plan 原码 broad-phase 用裸 radiusPx 与 fine-phase（radius+width/2）不一致，对零高度/零宽度 bbox（水平/垂直笔画）误剔除；implementer 统一用 `threshold = radiusPx + s.width/2f`。`StrokeEraserTest` 5 项 JUnit 5 单测覆盖空集 / 单 stroke 命中 / bbox 内但远离段落 / 半径加 width/2 阈值 / 单点 stroke 退化。
+- Overlay 骨架（T4）：`view/handwriting/HandwritingOverlayView.kt` — 透明 View，状态自洽（strokes / undoStack / redoStack / inProgressPoints / isErasing / currentBrush/Color/Width / isHandwritingMode）。**Z-order 修正**：`Action.Erase` 改持 `List<IndexedValue<Stroke>>`（commit `ec4cbe5`），undo 部分擦除时按原索引插回保留绘制顺序，避免 MARKER/PENCIL 半透明叠加错位。`isHandwritingMode` setter 增加 `field == value` 短路 + 双向清 in-progress 状态。
+- Overlay 行为（T5）：onTouchEvent 区分画笔与橡皮路径；onDraw 把 stroke 转 Path 用 BrushPainter 重绘。**T4 桥接**：plan 原码 `pushErase(erasedThisGesture.toList())` 与 T4 修正后的 `pushErase(List<IndexedValue<Stroke>>)` 签名不兼容；implementer 在 ACTION_DOWN 用 `gestureSnapshot.addAll(strokesRef())` 抓快照，ACTION_UP 用 `gestureSnapshot.withIndex().filter { it.value in erasedSet }` 反查原索引，保证 Z-order 撤销正确。
+- 布局接入（T6）：`activity_note_editor.xml` 在 NestedScrollView 与 editor_content 之间插一层 FrameLayout，Overlay 与内容层同尺寸覆盖；padding 从 NestedScrollView 下沉到 editor_content 让 Overlay 像素对齐内容区。
+- 控制层 + 工具栏（T7+T8+T9 合并 commit `1c4732f`）：
+  - `EditorPresenter` 增构造参数 `overlay`；`bind()` 把 strokes 给 Overlay；`collectCurrentNote()` 从 Overlay 收 strokes 写回 `NoteContent.handwriting`（替换 emptyList）。
+  - `toolbar_handwriting.xml`（11 控件 merge）+ `view/toolbar/HandwritingToolbarView.kt`（4 笔种互斥 selected + 橡皮独立 selected + 颜色 tint + 撤销重做 enabled/alpha 反馈）。
+  - `NoteEditorActivity` 新增 handwritingOverlay/handwritingToolbar/textToolbar 三字段；onCreate 接 `editor_content` 的 OnLayoutChangeListener 同步 Overlay 高度（实现内容增长时 Overlay 跟着撑高）；`onHandwritingClicked` 改为 `enterHandwritingMode()`（替换 Toast）；新增 enter/exit/showHandwritingColorDialog（8 色 AlertDialog）/ cycleHandwritingWidth（3 档 1→3→6 循环 Toast）/ refreshUndoRedoEnabled。`editor_content.setOnClickListener` 加 `!isHandwritingMode` 守卫。
+  - **Eraser 状态泄漏修正**（commit `40efb78`）：code reviewer 发现 enterHandwritingMode 不重置 `isErasing`，会导致"上次退出时是橡皮，下次进入时 UI 显示笔但实际仍是橡皮"。一行修：进入时强制 `isErasing = false`。
+- 静态走查（T10）：4 项 PRD §10 行为通过——手写模式 Overlay 拦截全部 touch（NestedScrollView 不滚动）；进入即收键盘；退出后 Overlay 设 INVISIBLE 而非 GONE 且 onTouchEvent 返回 false 让事件下传滚动恢复；editor_content 空白点击有 `!isHandwritingMode` 守卫。
+- 性能（T11）：onDraw 按 `canvas.clipBounds` 跳过 bbox 不相交的 stroke（per-stroke broad-phase culling，pad = width/2 + 4 含 BlurMaskFilter halo）。
+
+**测试统计：** `:app:clean :app:assembleDebug :app:test` 全绿，**65 项 PASSED**（M2 42 + M4 SpanConverter 15 + M5 ImageCompressor 3 + M6 StrokeEraser 5），0 failures / 0 errors / 0 skipped。
+
+**M6 commit 列表（按时间序）：**
+- `feat(m6): 手写工具栏资源准备（8 色 + 9 图标 + 词条）`（T1, `be4e183`）
+- `feat(m6): BrushPainter 4 笔种 Paint 工厂 + 代码生成噪点`（T2, `467e03e`）
+- `feat(m6): StrokeEraser 笔画级橡皮 hit-test + 5 项单测`（T3, `d7427ec`）
+- `feat(m6): HandwritingOverlayView 骨架（state + 撤销栈 + setStrokes/getStrokes）`（T4, `655d0e2`）
+- `fix(m6): Erase 撤销保留原始 Z-order + isHandwritingMode 双向清状态`（T4 fix, `ec4cbe5`）
+- `feat(m6): Overlay 落笔/橡皮 onTouch + Path 回放 onDraw`（T5, `2bf46a9`）
+- `feat(m6): 编辑器布局插 FrameLayout 容纳内容层 + 手写 Overlay`（T6, `a17d868`）
+- `feat(m6): 接通手写工具栏 + Overlay 模式切换 + 高度同步`（T7+T8+T9, `1c4732f`）
+- `fix(m6): 进入手写模式重置橡皮状态防止 UI 与状态错位`（T9 fix, `40efb78`）
+- `perf(m6): Overlay onDraw 按 clipRect 裁剪笔画绘制`（T11, `c1eea55`）
+
+**M7（打磨）跟进项（仍来自 M5 + 本里程碑新增）：**
+1. （M5 留存）`NoteEditorActivity.pendingCameraOutputUri/File` 不参与 `onSaveInstanceState`，相机进程死亡丢照片 + 缓存泄漏，需 Parcelable 持久化。
+2. （M5 留存）新笔记 `ensureNoteSavedAndThen` × `onPause.saveNote` 窄竞态可能 double-insert，需 save-in-flight 标志。
+3. （M6 新增）`HandwritingOverlayView.eraseAt` 用 `strokesRef() as MutableList` 硬转，若日后 `strokesRef()` 改返不可变拷贝会静默失效；建议加专属 `internal fun strokesMut(): MutableList<Stroke>`。
+4. （M6 新增）`BrushPainter.paintFor` 每次返回新 Paint，onDraw 热路径 50 strokes × 60fps 会 alloc 3000 个 Paint/秒；建议在 BrushPainter 内做 (brush, color, widthDp) 三键缓存。
+5. （M6 新增）onDraw 内 `Path` 与 `inProgressPoints.map { StrokePoint(...) }` 每帧重建，可改为类成员复用 `path.reset()` + 仅在 size 变化时 rebuild StrokePoint 列表。
+6. （M6 新增）`isHandwritingMode` setter 未清 `gestureSnapshot`，目前依赖 ACTION_UP 自清；属一致性 nit。
+7. （M6 新增）`handwriting` 模式下若被外部代码中途切换 `isErasing`，可能丢失 undo（pen DOWN 起始未抓 snapshot，UP 时 erase 分支拿不到原索引）；当前 UI 没有触发路径，留作 M7 加守卫。
+8. （M6 新增）`onClearClicked` AlertDialog 复用 `R.string.dialog_delete_message`（"确定删除？此操作不可恢复"），文案与"清空手写"语义略错位；M7 加专属 string。
+9. （M6 新增）颜色 8 色 hex 在 `showHandwritingColorDialog` 硬编码，与 `colors.xml` 的 hw_color_* 重复；M7 改为从 resources 读取。
+10. （M6 新增）`cycleHandwritingWidth` Toast 文案"细/中/粗"硬编码 Chinese 字面量，未走 strings.xml；M7 抽取。
+
+**PRD §M6 验收（13 条）：** 留 T13 真机走查时核对，本里程碑代码就绪。
+
 ## 下一步建议
 
 M5 已完成，建议进入 **M6 手写 Overlay**：实现 `HandwritingOverlayView`（透明层覆盖在内容层之上）：
