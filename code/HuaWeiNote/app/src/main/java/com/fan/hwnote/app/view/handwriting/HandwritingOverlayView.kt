@@ -195,7 +195,11 @@ class HandwritingOverlayView @JvmOverloads constructor(
     // Task 5 接管
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        for (s in strokesRef()) drawStroke(canvas, s)
+        val clip = canvas.clipBounds
+        for (s in strokesRef()) {
+            if (!strokeIntersectsClip(s, clip)) continue
+            drawStroke(canvas, s)
+        }
         if (!isErasing && inProgressPoints.size >= 1) {
             val pts = inProgressPoints.map {
                 com.fan.hwnote.app.model.entity.StrokePoint(it.first, it.second, it.third)
@@ -203,6 +207,21 @@ class HandwritingOverlayView @JvmOverloads constructor(
             val tmp = Stroke(currentBrush, currentColor, currentWidth, pts)
             drawStroke(canvas, tmp)
         }
+    }
+
+    private fun strokeIntersectsClip(s: Stroke, clip: android.graphics.Rect): Boolean {
+        if (s.points.isEmpty()) return false
+        var minX = Int.MAX_VALUE; var minY = Int.MAX_VALUE
+        var maxX = Int.MIN_VALUE; var maxY = Int.MIN_VALUE
+        for (p in s.points) {
+            if (p.x < minX) minX = p.x
+            if (p.x > maxX) maxX = p.x
+            if (p.y < minY) minY = p.y
+            if (p.y > maxY) maxY = p.y
+        }
+        val pad = (s.width / 2 + 4)
+        return !(maxX + pad < clip.left || minX - pad > clip.right
+              || maxY + pad < clip.top  || minY - pad > clip.bottom)
     }
 
     private fun drawStroke(canvas: Canvas, s: Stroke) {
