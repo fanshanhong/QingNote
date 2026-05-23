@@ -2,12 +2,11 @@ package com.fan.hwnote.app.view.block
 
 import android.content.Context
 import android.graphics.Paint
-import android.text.Editable
-import android.text.TextWatcher
 import android.util.AttributeSet
 import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.widget.CheckBox
+import android.widget.CompoundButton
 import android.widget.EditText
 import android.widget.LinearLayout
 import androidx.core.content.ContextCompat
@@ -34,6 +33,10 @@ class ChecklistItemView @JvmOverloads constructor(
 
     var listener: Listener? = null
 
+    private val checkChangeListener = CompoundButton.OnCheckedChangeListener { _, isChecked ->
+        applyCheckedStyle(isChecked)
+    }
+
     init {
         orientation = HORIZONTAL
         setPadding(0, 0, 0, 0)
@@ -43,7 +46,7 @@ class ChecklistItemView @JvmOverloads constructor(
         checkbox = findViewById(R.id.item_checkbox)
         edit = findViewById(R.id.item_edit)
 
-        checkbox.setOnCheckedChangeListener { _, isChecked -> applyCheckedStyle(isChecked) }
+        checkbox.setOnCheckedChangeListener(checkChangeListener)
 
         edit.setOnFocusChangeListener { _, hasFocus ->
             if (hasFocus) listener?.onItemFocusGained(this)
@@ -54,14 +57,14 @@ class ChecklistItemView @JvmOverloads constructor(
             when (keyCode) {
                 KeyEvent.KEYCODE_ENTER -> {
                     val sel = edit.selectionStart
-                    val len = edit.text?.length ?: 0
+                    val len = edit.text.length
                     if (sel == len) {
                         listener?.onEnterAtEnd(this)
                         true
                     } else false
                 }
                 KeyEvent.KEYCODE_DEL -> {
-                    if ((edit.text?.length ?: 0) == 0) {
+                    if (edit.text.length == 0) {
                         listener?.onBackspaceWhenEmpty(this)
                         true
                     } else false
@@ -69,13 +72,6 @@ class ChecklistItemView @JvmOverloads constructor(
                 else -> false
             }
         }
-
-        // 防 paste / 程序 setText 后 strike 样式失效
-        edit.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-            override fun afterTextChanged(s: Editable?) { /* no-op，样式只跟 checked 走 */ }
-        })
     }
 
     fun bind(item: ChecklistItem) {
@@ -83,18 +79,18 @@ class ChecklistItemView @JvmOverloads constructor(
         checkbox.setOnCheckedChangeListener(null)
         checkbox.isChecked = item.checked
         applyCheckedStyle(item.checked)
-        checkbox.setOnCheckedChangeListener { _, isChecked -> applyCheckedStyle(isChecked) }
+        checkbox.setOnCheckedChangeListener(checkChangeListener)
         edit.setText(item.text)
     }
 
     fun toItem(): ChecklistItem = ChecklistItem(
         checked = checkbox.isChecked,
-        text = edit.text?.toString().orEmpty(),
+        text = edit.text.toString(),
     )
 
     fun focusEditEnd() {
         edit.requestFocus()
-        edit.setSelection(edit.text?.length ?: 0)
+        edit.setSelection(edit.text.length)
     }
 
     private fun applyCheckedStyle(checked: Boolean) {
