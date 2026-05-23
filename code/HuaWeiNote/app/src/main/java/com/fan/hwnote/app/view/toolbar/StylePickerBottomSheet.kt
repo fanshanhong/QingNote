@@ -83,7 +83,7 @@ class StylePickerBottomSheet(
         btnStrike.setOnClickListener { presenter.toggleInline(SpanType.STRIKETHROUGH); refreshSelected() }
 
         btnSizeSmall.setOnClickListener { presenter.toggleSize("small"); refreshSelected() }
-        btnSizeNormal.setOnClickListener { presenter.toggleSize("normal"); refreshSelected() }
+        btnSizeNormal.setOnClickListener { presenter.toggleSize("medium"); refreshSelected() }
         btnSizeLarge.setOnClickListener { presenter.toggleSize("large"); refreshSelected() }
 
         for ((view, hex) in colorButtons) {
@@ -103,7 +103,7 @@ class StylePickerBottomSheet(
 
         val pendingSize = presenter.pendingSize()
         btnSizeSmall.isSelected = pendingSize == "small"
-        btnSizeNormal.isSelected = pendingSize == "normal"
+        btnSizeNormal.isSelected = pendingSize == "medium"
         btnSizeLarge.isSelected = pendingSize == "large"
 
         val pendingColor = presenter.pendingColor()
