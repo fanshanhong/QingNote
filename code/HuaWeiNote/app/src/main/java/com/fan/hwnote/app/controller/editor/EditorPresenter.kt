@@ -176,7 +176,13 @@ class EditorPresenter(
     fun focusLastTextBlock() {
         val target = focusedTextBlock
             ?: (currentBlocks.lastOrNull { it is TextBlockView } as? TextBlockView)
-        target?.focusEditEnd()
+            ?: return
+        target.focusEditEnd()
+        // requestFocus 不会自动拉起 IME（Manifest 无 stateVisible），在「无键盘 → 点空白」
+        // 场景下显式 showSoftInput 兜底；SHOW_IMPLICIT 不强制覆盖系统状态。
+        val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE)
+            as android.view.inputmethod.InputMethodManager
+        imm.showSoftInput(target.edit, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
     }
 
     /**
