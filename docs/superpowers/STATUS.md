@@ -1,6 +1,6 @@
 # HwNote · 项目进度
 
-最后更新：2026-05-23（M5 完成）
+最后更新：2026-05-23（编辑器 UX 打磨完成）
 
 ## 阶段地图
 
@@ -241,6 +241,37 @@ M1 ✅ → M2 数据层 → M3 列表页
 **M7（打磨）待办（M5 评审遗留的 Important，因超出 M5 计划范围未在 M5 内修）：**
 - `pendingCameraOutputUri` / `pendingCameraOutputFile` 不走 `onSaveInstanceState`：相机触发系统级 process death 后重启会丢拍照结果 + 泄漏 cache 文件。M7 加 Parcelable 持久化。
 - `ensureNoteSavedAndThen` 与 `onPause.saveNote` 在新笔记 0L→insert 路径上存在窄竞态窗口（用户点图标后立刻按 Home 可能 double-insert）。M7 加 "save-in-flight" flag 互斥。
+
+## 编辑器 UX 打磨（2026-05-23）
+
+**起因：** M5 真机走查暴露 3 个对齐华为 Note 的 UX 缺陷，用户给出明确改动方向后立项打磨。仅改 UI 表现层，逻辑层（EditorPresenter / BlockView / 数据层）零改动；60 项单测全部沿用通过。
+
+**改动点：**
+1. **空白区点击聚焦** — `blocks_container` 内层 LinearLayout 加 `clickable=true; focusable=false`；`EditorPresenter.focusLastTextBlock()` 倒序找最后一个 `TextBlockView` 聚焦并 `imm.showSoftInput()` 弹键盘；`importantForAccessibility="no"` 防 TalkBack 误读。
+2. **软键盘顶起工具栏** — 根布局 `LinearLayout` 加 `id=editor_root` + `fitsSystemWindows=true`；`onCreate` 注册 `ViewCompat.setOnApplyWindowInsetsListener`，取 `Type.ime()` + `Type.systemBars()` 两类 inset 的 `bottom` 最大值，设为根 padding（修复 Android 15 + targetSdk 36 强制 edge-to-edge 后 `adjustResize` 不再自动缩布局的问题）。
+3. **12 键工具栏 → 4 键 + 样式 BottomSheet** — `toolbar_text.xml` 重写为横排 4 个 `ImageView`（清单 / 样式 / 图片 / 手写），`weight=1` 平铺；`TextToolbarView` 简化为 4 callback；新增 `view/toolbar/StylePickerBottomSheet.kt`（`BottomSheetDialog`，4 行控件 = B/I/U/S + 字号 3 档 + 5 色圆点 + H1/H2，直调 Presenter 既有方法）；新增 `dialog_style_picker.xml`；新建 `ic_handwriting.xml` + `ic_format_style.xml`（Material `text_format` Aa 字形）；删 `tb_color_cd` / `dialog_pick_color_title` / `toolbar_btn_selected` 三个死资源；删 `NoteEditorActivity.showColorPickerDialog()`。
+
+**涉及文件（共 9 个 + 2 新增 drawable）：**
+- 修改：`activity_note_editor.xml`、`NoteEditorActivity.kt`、`EditorPresenter.kt`、`toolbar_text.xml`、`TextToolbarView.kt`、`strings.xml`、`colors.xml`
+- 新增：`dialog_style_picker.xml`、`StylePickerBottomSheet.kt`、`ic_handwriting.xml`、`ic_format_style.xml`
+
+**polish commit 列表（git log，按时间序）：**
+- `3e56276` feat(polish): 根布局接通 IME inset 顶起工具栏
+- `907d85c` feat(polish): blocks_container 空白点击聚焦最后 TextBlock
+- `d3963e1` fix(polish): 空白点击补 showSoftInput + a11y 收拢
+- `aa068a3` feat(polish): 新增 ic_handwriting + 样式/手写词条
+- `75f58d9` feat(polish): 新增 dialog_style_picker BottomSheet 布局
+- `0b7c34a` feat(polish): 新增 StylePickerBottomSheet
+- `6a2b548` fix(polish): StylePickerBottomSheet 字号 token 对齐 medium
+- `2547032` feat(polish): 工具栏改 4 键 + 接通 StylePickerBottomSheet
+- `47f3918` fix(polish): 工具栏样式按钮换 text_format 图标 + 清死资源
+
+**验收：**
+- ✅ `./gradlew :app:clean :app:assembleDebug :app:test` 全绿，60/60 PASSED（debug + release 两轮）
+- ✅ 每个 polish 任务双轨 review 通过；T2 Important（`focusEditEnd` 不弹键盘）+ T5 Critical（size token 不一致）+ T6 Important（btn_style 图标白底白，且语义不准）已修
+- ⏳ 真机手测留待用户走查（PRD 对齐：空白点焦 / IME 顶栏 / 4 键工具栏 / 样式 BottomSheet 行内+字号+颜色+H1/H2 / 手写按钮占位 Toast / 现有功能回归）
+
+**执行模式：** Subagent-Driven Development，串行 7 任务（T1→T2→T3→T4→T5→T6→T7），每任务双轨 review；T6 因 Listener 接口变更跨 3 文件做合并 commit。
 
 ## 下一步建议
 
