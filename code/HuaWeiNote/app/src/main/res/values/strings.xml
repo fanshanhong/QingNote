@@ -88,4 +88,7 @@
     <string name="tb_done_cd">完成</string>
     <string name="tb_hw_color_cd">画笔颜色</string>
     <string name="tb_hw_width_cd">画笔粗细</string>
+    <string name="hw_width_thin">细</string>
+    <string name="hw_width_medium">中</string>
+    <string name="hw_width_thick">粗</string>
 </resources>

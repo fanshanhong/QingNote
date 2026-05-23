@@ -125,21 +125,6 @@ class NoteEditorActivity : AppCompatActivity() {
         }
         handwritingToolbar.listener = object : com.fan.hwnote.app.view.toolbar.HandwritingToolbarView.Listener {
             override fun onDoneClicked() = exitHandwritingMode()
-            override fun onBrushClicked(brush: com.fan.hwnote.app.model.entity.BrushType) {
-                handwritingOverlay.isErasing = false
-                handwritingOverlay.currentBrush = brush
-                handwritingToolbar.highlightBrush(brush)
-            }
-            override fun onColorClicked() = showHandwritingColorDialog()
-            override fun onWidthClicked() = cycleHandwritingWidth()
-            override fun onEraserClicked() {
-                handwritingOverlay.isErasing = !handwritingOverlay.isErasing
-                if (handwritingOverlay.isErasing) {
-                    handwritingToolbar.highlightEraser(true)
-                } else {
-                    handwritingToolbar.highlightBrush(handwritingOverlay.currentBrush)
-                }
-            }
             override fun onUndoClicked() {
                 handwritingOverlay.undo()
                 refreshUndoRedoEnabled()
@@ -158,6 +143,19 @@ class NoteEditorActivity : AppCompatActivity() {
                     }
                     .setNegativeButton(R.string.action_cancel, null)
                     .show()
+            }
+            override fun onEraserClicked() {
+                handwritingOverlay.isErasing = !handwritingOverlay.isErasing
+                handwritingToolbar.highlightEraser(handwritingOverlay.isErasing)
+            }
+            override fun onStyleClicked() {
+                com.fan.hwnote.app.view.toolbar.HandwritingStylePickerBottomSheet(
+                    this@NoteEditorActivity, handwritingOverlay,
+                ).apply {
+                    setOnDismissListener {
+                        handwritingToolbar.highlightEraser(handwritingOverlay.isErasing)
+                    }
+                }.show()
             }
         }
 
@@ -323,10 +321,13 @@ class NoteEditorActivity : AppCompatActivity() {
         handwritingOverlay.visibility = android.view.View.VISIBLE
         blocksContainer.alpha = 0.5f
         titleInput.alpha = 0.5f
+        // 撑大内容层，让画布向下扩展一整屏高，避免只能在已有文字行处手写
+        blocksContainer.setPadding(
+            blocksContainer.paddingLeft, blocksContainer.paddingTop,
+            blocksContainer.paddingRight, resources.displayMetrics.heightPixels,
+        )
         textToolbar.visibility = android.view.View.GONE
         handwritingToolbar.visibility = android.view.View.VISIBLE
-        handwritingToolbar.highlightBrush(handwritingOverlay.currentBrush)
-        handwritingToolbar.setColor(handwritingOverlay.currentColor)
         refreshUndoRedoEnabled()
         val imm = getSystemService(INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
         imm.hideSoftInputFromWindow(blocksContainer.windowToken, 0)
@@ -337,35 +338,12 @@ class NoteEditorActivity : AppCompatActivity() {
         handwritingOverlay.visibility = android.view.View.INVISIBLE
         blocksContainer.alpha = 1f
         titleInput.alpha = 1f
+        blocksContainer.setPadding(
+            blocksContainer.paddingLeft, blocksContainer.paddingTop,
+            blocksContainer.paddingRight, 0,
+        )
         textToolbar.visibility = android.view.View.VISIBLE
         handwritingToolbar.visibility = android.view.View.GONE
-    }
-
-    private fun showHandwritingColorDialog() {
-        val labels = arrayOf("黑", "红", "橙", "黄", "绿", "青", "蓝", "紫")
-        val hexes = arrayOf(
-            "#212121", "#E53935", "#FB8C00", "#FDD835",
-            "#43A047", "#00897B", "#1E88E5", "#8E24AA",
-        )
-        androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle(R.string.tb_hw_color_cd)
-            .setItems(labels) { _, which ->
-                handwritingOverlay.currentColor = hexes[which]
-                handwritingToolbar.setColor(hexes[which])
-            }
-            .show()
-    }
-
-    private fun cycleHandwritingWidth() {
-        val next = when (handwritingOverlay.currentWidth) {
-            1 -> 3
-            3 -> 6
-            else -> 1
-        }
-        handwritingOverlay.currentWidth = next
-        android.widget.Toast.makeText(this,
-            "粗细：${if (next == 1) "细" else if (next == 3) "中" else "粗"}",
-            android.widget.Toast.LENGTH_SHORT).show()
     }
 
     private fun refreshUndoRedoEnabled() {

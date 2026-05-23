@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingVertical="@dimen/spacing_m">
+
+    <!-- 行 1：4 笔种 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:id="@+id/btn_hwstyle_pen"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:contentDescription="@string/tb_pen_cd"
+            android:focusable="true"
+            android:padding="12dp"
+            android:src="@drawable/ic_pen" />
+
+        <ImageView
+            android:id="@+id/btn_hwstyle_brush"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:contentDescription="@string/tb_brush_cd"
+            android:focusable="true"
+            android:padding="12dp"
+            android:src="@drawable/ic_brush" />
+
+        <ImageView
+            android:id="@+id/btn_hwstyle_marker"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:contentDescription="@string/tb_marker_cd"
+            android:focusable="true"
+            android:padding="12dp"
+            android:src="@drawable/ic_marker" />
+
+        <ImageView
+            android:id="@+id/btn_hwstyle_pencil"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:contentDescription="@string/tb_pencil_cd"
+            android:focusable="true"
+            android:padding="12dp"
+            android:src="@drawable/ic_pencil" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/divider" />
+
+    <!-- 行 2：8 色圆点 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:id="@+id/btn_hwstyle_color_black"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:contentDescription="@string/color_black"
+            android:focusable="true"
+            android:padding="12dp"
+            android:src="@drawable/ic_color_dot"
+            app:tint="@color/hw_color_black" />
+
+        <ImageView
+            android:id="@+id/btn_hwstyle_color_red"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:contentDescription="@string/color_red"
+            android:focusable="true"
+            android:padding="12dp"
+            android:src="@drawable/ic_color_dot"
+            app:tint="@color/hw_color_red" />
+
+        <ImageView
+            android:id="@+id/btn_hwstyle_color_orange"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:contentDescription="@string/color_yellow"
+            android:focusable="true"
+            android:padding="12dp"
+            android:src="@drawable/ic_color_dot"
+            app:tint="@color/hw_color_orange" />
+
+        <ImageView
+            android:id="@+id/btn_hwstyle_color_yellow"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:contentDescription="@string/color_yellow"
+            android:focusable="true"
+            android:padding="12dp"
+            android:src="@drawable/ic_color_dot"
+            app:tint="@color/hw_color_yellow" />
+
+        <ImageView
+            android:id="@+id/btn_hwstyle_color_green"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:contentDescription="@string/color_green"
+            android:focusable="true"
+            android:padding="12dp"
+            android:src="@drawable/ic_color_dot"
+            app:tint="@color/hw_color_green" />
+
+        <ImageView
+            android:id="@+id/btn_hwstyle_color_teal"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:contentDescription="@string/color_green"
+            android:focusable="true"
+            android:padding="12dp"
+            android:src="@drawable/ic_color_dot"
+            app:tint="@color/hw_color_teal" />
+
+        <ImageView
+            android:id="@+id/btn_hwstyle_color_blue"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:contentDescription="@string/color_blue"
+            android:focusable="true"
+            android:padding="12dp"
+            android:src="@drawable/ic_color_dot"
+            app:tint="@color/hw_color_blue" />
+
+        <ImageView
+            android:id="@+id/btn_hwstyle_color_purple"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:contentDescription="@string/color_blue"
+            android:focusable="true"
+            android:padding="12dp"
+            android:src="@drawable/ic_color_dot"
+            app:tint="@color/hw_color_purple" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/divider" />
+
+    <!-- 行 3：3 档粗细 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/btn_hwstyle_width_thin"
+            style="@style/EditorToolbarBtn"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:text="@string/hw_width_thin" />
+
+        <TextView
+            android:id="@+id/btn_hwstyle_width_medium"
+            style="@style/EditorToolbarBtn"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:text="@string/hw_width_medium" />
+
+        <TextView
+            android:id="@+id/btn_hwstyle_width_thick"
+            style="@style/EditorToolbarBtn"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:text="@string/hw_width_thick" />
+    </LinearLayout>
+
+</LinearLayout>
