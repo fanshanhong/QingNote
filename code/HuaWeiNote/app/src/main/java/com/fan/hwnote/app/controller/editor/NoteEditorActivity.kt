@@ -13,6 +13,7 @@ import com.fan.hwnote.app.model.NoteRepository
 import com.fan.hwnote.app.model.entity.Note
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class NoteEditorActivity : AppCompatActivity() {
 
@@ -23,6 +24,48 @@ class NoteEditorActivity : AppCompatActivity() {
 
     private var noteId: Long = -1L
     private var loadedNote: Note? = null
+
+    private val galleryLauncher = registerForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode != RESULT_OK) return@registerForActivityResult
+        val data = result.data ?: return@registerForActivityResult
+        val uris = mutableListOf<android.net.Uri>()
+        val clip = data.clipData
+        if (clip != null) {
+            for (i in 0 until clip.itemCount) uris += clip.getItemAt(i).uri
+        } else {
+            data.data?.let { uris += it }
+        }
+        if (uris.isNotEmpty()) compressAndInsertImages(uris)
+    }
+
+    private var pendingCameraOutputUri: android.net.Uri? = null
+    private var pendingCameraOutputFile: java.io.File? = null
+
+    private val cameraLauncher = registerForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.TakePicture()
+    ) { success ->
+        val uri = pendingCameraOutputUri
+        val file = pendingCameraOutputFile
+        pendingCameraOutputUri = null
+        pendingCameraOutputFile = null
+        if (success && uri != null) {
+            compressAndInsertImages(listOf(uri))
+            // 等 compressAndInsertImages 完成后删 cache（它已经把内容复制走了；用 post 避免争用）
+            blocksContainer.post { runCatching { file?.delete() } }
+        } else {
+            runCatching { file?.delete() }
+        }
+    }
+
+    private val cameraPermissionLauncher = registerForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) launchCamera()
+        else android.widget.Toast.makeText(this,
+            R.string.camera_permission_denied, android.widget.Toast.LENGTH_SHORT).show()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -58,8 +101,7 @@ class NoteEditorActivity : AppCompatActivity() {
                 presenter.toggleHeading(target)
             }
             override fun onImageClicked() {
-                android.widget.Toast.makeText(this@NoteEditorActivity,
-                    R.string.toast_image_placeholder, android.widget.Toast.LENGTH_SHORT).show()
+                ensureNoteSavedAndThen { showImageSourceDialog() }
             }
             override fun onChecklistClicked() {
                 presenter.insertChecklistBlockAtFocus()
@@ -110,6 +152,123 @@ class NoteEditorActivity : AppCompatActivity() {
             }
             .setNegativeButton(R.string.action_cancel, null)
             .show()
+    }
+
+    private fun showImageSourceDialog() {
+        val labels = arrayOf(
+            getString(R.string.image_source_gallery),
+            getString(R.string.image_source_camera),
+        )
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle(R.string.image_source_title)
+            .setItems(labels) { _, which ->
+                when (which) {
+                    0 -> launchGalleryPicker()
+                    1 -> launchCameraWithPermission()
+                }
+            }
+            .setNegativeButton(R.string.action_cancel, null)
+            .show()
+    }
+
+    private fun launchGalleryPicker() {
+        val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
+            type = "image/*"
+            addCategory(Intent.CATEGORY_OPENABLE)
+            putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+        }
+        galleryLauncher.launch(Intent.createChooser(intent, getString(R.string.image_source_gallery)))
+    }
+
+    private fun compressAndInsertImages(uris: List<android.net.Uri>) {
+        val curNoteId = loadedNote?.id ?: return
+        if (curNoteId <= 0L) return
+        val storage = com.fan.hwnote.app.model.storage.NoteFileStorage(this)
+        lifecycleScope.launch {
+            val results = mutableListOf<com.fan.hwnote.app.model.entity.Block.ImageBlock>()
+            withContext(Dispatchers.IO) {
+                for (u in uris) {
+                    val fileName = "${java.util.UUID.randomUUID()}.jpg"
+                    val target = storage.imageFile(curNoteId, fileName)
+                    val r = com.fan.hwnote.app.util.ImageCompressor
+                        .compressToFile(this@NoteEditorActivity, u, target) ?: continue
+                    results += com.fan.hwnote.app.model.entity.Block.ImageBlock(
+                        id = "i-${java.util.UUID.randomUUID().toString().take(8)}",
+                        fileName = fileName,
+                        width = r.width,
+                        height = r.height,
+                    )
+                }
+            }
+            if (results.isEmpty()) {
+                android.widget.Toast.makeText(this@NoteEditorActivity,
+                    R.string.image_save_failed, android.widget.Toast.LENGTH_SHORT).show()
+            } else {
+                presenter.insertImageBlocksAtFocus(results)
+            }
+        }
+    }
+
+    private fun launchCameraWithPermission() {
+        val granted = androidx.core.content.ContextCompat.checkSelfPermission(
+            this, android.Manifest.permission.CAMERA
+        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        if (granted) launchCamera()
+        else cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
+    }
+
+    private fun launchCamera() {
+        val curNoteId = loadedNote?.id ?: return
+        if (curNoteId <= 0L) return
+        val cameraDir = java.io.File(cacheDir, "camera").apply { mkdirs() }
+        val temp = java.io.File(cameraDir, "${java.util.UUID.randomUUID()}.jpg")
+        val uri = try {
+            androidx.core.content.FileProvider.getUriForFile(
+                this, "com.fan.hwnote.app.fileprovider", temp,
+            )
+        } catch (e: IllegalArgumentException) {
+            android.widget.Toast.makeText(this,
+                R.string.image_save_failed, android.widget.Toast.LENGTH_SHORT).show()
+            return
+        }
+        pendingCameraOutputFile = temp
+        pendingCameraOutputUri = uri
+        runCatching { cameraLauncher.launch(uri) }
+            .onFailure {
+                pendingCameraOutputFile = null
+                pendingCameraOutputUri = null
+                runCatching { temp.delete() }
+                android.widget.Toast.makeText(this,
+                    R.string.camera_unavailable, android.widget.Toast.LENGTH_SHORT).show()
+            }
+    }
+
+    /**
+     * 图片插入前置：若笔记尚未落库（noteId<=0），先保存一次拿到 id；落库成功后再执行回调。
+     * 已落库（noteId>0）直接执行。在主线程上回调。
+     */
+    private fun ensureNoteSavedAndThen(block: () -> Unit) {
+        val loaded = loadedNote
+        if (loaded != null && loaded.id > 0L) {
+            block(); return
+        }
+        // 这里复用 saveNote 路径，但要等 IO 完成后再回主线程跑 block
+        val title = titleInput.text.toString()
+        val toSave = presenter.collectCurrentNote(title)
+        lifecycleScope.launch(Dispatchers.IO) {
+            val newId = NoteRepository.save(toSave)
+            withContext(Dispatchers.Main) {
+                if (newId > 0L) {
+                    noteId = newId
+                    loadedNote = toSave.copy(id = newId)
+                    presenter.noteId = newId
+                    block()
+                } else {
+                    android.widget.Toast.makeText(this@NoteEditorActivity,
+                        R.string.image_save_failed, android.widget.Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
     }
 
     private fun saveNote() {
