@@ -2,7 +2,6 @@ package com.fan.hwnote.app.view.block
 
 import android.content.Context
 import android.util.AttributeSet
-import android.widget.LinearLayout
 import com.fan.hwnote.app.model.entity.Block
 import com.fan.hwnote.app.model.entity.ChecklistItem
 import java.util.UUID
