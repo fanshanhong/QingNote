@@ -303,7 +303,7 @@ class NoteEditorActivity : AppCompatActivity() {
                     block()
                 } else {
                     android.widget.Toast.makeText(this@NoteEditorActivity,
-                        R.string.image_save_failed, android.widget.Toast.LENGTH_SHORT).show()
+                        R.string.note_save_failed, android.widget.Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -319,11 +319,16 @@ class NoteEditorActivity : AppCompatActivity() {
         if (loaded.id == 0L && saveInFlight) return  // ensureNoteSavedAndThen 正在跑同一条 INSERT
         lifecycleScope.launch(Dispatchers.IO) {
             val newId = NoteRepository.save(toSave)
-            // 更新 noteId / loadedNote，避免下次 onPause 再 insert 一条
-            if (loaded.id == 0L && newId > 0) {
-                noteId = newId
-                loadedNote = toSave.copy(id = newId)
-                presenter.noteId = newId
+            withContext(Dispatchers.Main) {
+                // 更新 noteId / loadedNote，避免下次 onPause 再 insert 一条
+                if (loaded.id == 0L && newId > 0) {
+                    noteId = newId
+                    loadedNote = toSave.copy(id = newId)
+                    presenter.noteId = newId
+                } else if (newId <= 0L) {
+                    android.widget.Toast.makeText(this@NoteEditorActivity,
+                        R.string.note_save_failed, android.widget.Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }

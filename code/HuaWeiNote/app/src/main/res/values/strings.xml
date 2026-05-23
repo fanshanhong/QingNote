@@ -25,6 +25,7 @@
     <!-- 通用 -->
     <string name="action_ok">确定</string>
     <string name="action_cancel">取消</string>
+    <string name="note_save_failed">笔记保存失败</string>
 
     <!-- 占位 toast -->
     <string name="toast_open_editor_placeholder">打开编辑器（M4 实现）</string>
