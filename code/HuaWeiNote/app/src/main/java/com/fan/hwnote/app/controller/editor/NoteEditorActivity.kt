@@ -92,8 +92,13 @@ class NoteEditorActivity : AppCompatActivity() {
         handwritingOverlay = findViewById(R.id.handwriting_overlay)
         presenter = EditorPresenter(this, blocksContainer, handwritingOverlay)
 
-        val editorContent = findViewById<android.view.View>(R.id.editor_content)
-        editorContent.setOnClickListener {
+        // 把"空白点击聚焦末尾文本块"挂在 FrameLayout 上而非 editor_content：
+        // editor_content 高度是 wrap_content，只覆盖"标题+已输入文本"那一小块；
+        // 而 FrameLayout 在 NestedScrollView(fillViewport=true) 下会被撑到一屏，
+        // 下方空白才能拿到点击事件。Overlay 在非手写态 onTouchEvent return false 不消费，
+        // EditText 自己消费则不冒泡，恰好只有"真空白处点击"会进这条回调。
+        val editorScrollInner = findViewById<android.view.View>(R.id.editor_scroll_inner)
+        editorScrollInner.setOnClickListener {
             if (!handwritingOverlay.isHandwritingMode) presenter.focusLastTextBlock()
         }
 
