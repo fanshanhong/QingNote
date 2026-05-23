@@ -58,6 +58,9 @@ class HandwritingOverlayView @JvmOverloads constructor(
     /** Task 5 橡皮收集：本次按下到抬起命中的所有 strokes（聚合一个 Erase action）。 */
     internal val erasedThisGesture = mutableListOf<Stroke>()
 
+    /** Task 5 橡皮：ACTION_DOWN 抓拍 strokes 列表，ACTION_UP 用它解析 IndexedValue 还原 Z-order。 */
+    private val gestureSnapshot = mutableListOf<Stroke>()
+
     fun setStrokes(list: List<Stroke>) {
         strokes.clear()
         strokes.addAll(list)
@@ -127,10 +130,94 @@ class HandwritingOverlayView @JvmOverloads constructor(
     internal fun strokesRef(): List<Stroke> = strokes
 
     // Task 5 接管
-    override fun onTouchEvent(event: MotionEvent): Boolean = false
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        if (!isHandwritingMode) return false
+        val x = event.x.toInt()
+        val y = event.y.toInt()
+        when (event.actionMasked) {
+            MotionEvent.ACTION_DOWN -> {
+                gestureStartElapsedMs = android.os.SystemClock.uptimeMillis()
+                if (isErasing) {
+                    erasedThisGesture.clear()
+                    gestureSnapshot.clear()
+                    gestureSnapshot.addAll(strokesRef())
+                    eraseAt(event.x, event.y)
+                } else {
+                    inProgressPoints.clear()
+                    inProgressPoints.add(Triple(x, y, 0))
+                }
+                invalidate()
+                return true
+            }
+            MotionEvent.ACTION_MOVE -> {
+                if (isErasing) {
+                    eraseAt(event.x, event.y)
+                } else {
+                    val t = (android.os.SystemClock.uptimeMillis() - gestureStartElapsedMs).toInt()
+                    inProgressPoints.add(Triple(x, y, t))
+                }
+                invalidate()
+                return true
+            }
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                if (isErasing) {
+                    if (erasedThisGesture.isNotEmpty()) {
+                        val erasedSet = erasedThisGesture.toHashSet()
+                        val items = gestureSnapshot.withIndex().filter { it.value in erasedSet }.toList()
+                        pushErase(items)
+                    }
+                    erasedThisGesture.clear()
+                    gestureSnapshot.clear()
+                } else if (inProgressPoints.isNotEmpty()) {
+                    val pts = inProgressPoints.map {
+                        com.fan.hwnote.app.model.entity.StrokePoint(it.first, it.second, it.third)
+                    }
+                    val s = Stroke(currentBrush, currentColor, currentWidth, pts)
+                    pushAdd(s)
+                    inProgressPoints.clear()
+                }
+                invalidate()
+                return true
+            }
+        }
+        return true
+    }
+
+    private fun eraseAt(ex: Float, ey: Float) {
+        val hit = StrokeEraser.hitTest(ex, ey, eraserRadiusPx, strokesRef())
+        if (hit.isEmpty()) return
+        val mut = strokesRef() as MutableList<Stroke>
+        for (s in hit) {
+            if (mut.remove(s)) erasedThisGesture.add(s)
+        }
+    }
 
     // Task 5 接管
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
+        for (s in strokesRef()) drawStroke(canvas, s)
+        if (!isErasing && inProgressPoints.size >= 1) {
+            val pts = inProgressPoints.map {
+                com.fan.hwnote.app.model.entity.StrokePoint(it.first, it.second, it.third)
+            }
+            val tmp = Stroke(currentBrush, currentColor, currentWidth, pts)
+            drawStroke(canvas, tmp)
+        }
+    }
+
+    private fun drawStroke(canvas: Canvas, s: Stroke) {
+        if (s.points.isEmpty()) return
+        val paint = brushPainter().paintFor(s)
+        if (s.points.size == 1) {
+            val p = s.points[0]
+            canvas.drawPoint(p.x.toFloat(), p.y.toFloat(), paint)
+            return
+        }
+        val path = android.graphics.Path()
+        path.moveTo(s.points[0].x.toFloat(), s.points[0].y.toFloat())
+        for (i in 1 until s.points.size) {
+            path.lineTo(s.points[i].x.toFloat(), s.points[i].y.toFloat())
+        }
+        canvas.drawPath(path, paint)
     }
 }
