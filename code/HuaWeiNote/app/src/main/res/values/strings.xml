@@ -71,6 +71,9 @@
     <string name="image_save_failed">图片保存失败</string>
     <string name="camera_permission_denied">相机权限被拒绝，无法拍照</string>
     <string name="camera_unavailable">未找到相机应用</string>
+    <string name="camera_permission_dialog_title">需要相机权限</string>
+    <string name="camera_permission_dialog_message">无法拍照。请在系统设置中授予相机权限。</string>
+    <string name="action_open_settings">去设置</string>
 
     <!-- M5 清单块 -->
     <string name="checklist_item_hint">清单项</string>

@@ -65,8 +65,7 @@ class NoteEditorActivity : AppCompatActivity() {
         androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
     ) { granted ->
         if (granted) launchCamera()
-        else android.widget.Toast.makeText(this,
-            R.string.camera_permission_denied, android.widget.Toast.LENGTH_SHORT).show()
+        else showCameraPermissionDialog()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -250,6 +249,20 @@ class NoteEditorActivity : AppCompatActivity() {
         ) == android.content.pm.PackageManager.PERMISSION_GRANTED
         if (granted) launchCamera()
         else cameraPermissionLauncher.launch(android.Manifest.permission.CAMERA)
+    }
+
+    private fun showCameraPermissionDialog() {
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle(R.string.camera_permission_dialog_title)
+            .setMessage(R.string.camera_permission_dialog_message)
+            .setPositiveButton(R.string.action_open_settings) { _, _ ->
+                val intent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                    data = android.net.Uri.fromParts("package", packageName, null)
+                }
+                runCatching { startActivity(intent) }
+            }
+            .setNegativeButton(R.string.action_cancel, null)
+            .show()
     }
 
     private fun launchCamera() {
