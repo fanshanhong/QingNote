@@ -59,7 +59,23 @@
     <string name="color_green">绿</string>
     <string name="color_blue">蓝</string>
 
-    <!-- M5/M6 占位 -->
+    <!-- M5/M6 占位（T8/T9 接通真实逻辑后会移除） -->
     <string name="toast_image_placeholder">插入图片（M5 实现）</string>
     <string name="toast_checklist_placeholder">插入清单（M6 实现）</string>
+
+    <!-- M5 图片块 -->
+    <string name="image_source_title">插入图片</string>
+    <string name="image_source_gallery">从相册选择</string>
+    <string name="image_source_camera">拍照</string>
+    <string name="image_block_cd">图片</string>
+    <string name="image_delete_title">删除图片</string>
+    <string name="image_delete_message">确定删除这张图片？</string>
+    <string name="image_load_failed">图片加载失败</string>
+    <string name="image_save_failed">图片保存失败</string>
+    <string name="camera_permission_denied">相机权限被拒绝，无法拍照</string>
+    <string name="camera_unavailable">未找到相机应用</string>
+
+    <!-- M5 清单块 -->
+    <string name="checklist_item_hint">清单项</string>
+    <string name="checklist_item_checkbox_cd">完成标记</string>
 </resources>

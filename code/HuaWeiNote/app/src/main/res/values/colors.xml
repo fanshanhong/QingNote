@@ -33,4 +33,7 @@
     <!-- 编辑器工具栏 -->
     <color name="toolbar_bg">#F5F5F5</color>
     <color name="toolbar_btn_selected">#B2DFDB</color>
+
+    <color name="text_checked">#9E9E9E</color>
+    <color name="image_block_border">#E0E0E0</color>
 </resources>
