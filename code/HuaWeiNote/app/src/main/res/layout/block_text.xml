@@ -7,7 +7,6 @@
         android:layout_height="wrap_content"
         android:background="@null"
         android:gravity="top|start"
-        android:hint="@string/editor_content_hint"
         android:inputType="textMultiLine|textCapSentences"
         android:minHeight="40dp"
         android:paddingVertical="@dimen/spacing_xs"
