@@ -23,7 +23,7 @@ class HandwritingOverlayView @JvmOverloads constructor(
 
     sealed class Action {
         data class Add(val stroke: Stroke) : Action()
-        data class Erase(val strokes: List<Stroke>) : Action()
+        data class Erase(val items: List<IndexedValue<Stroke>>) : Action()
     }
 
     private val brushPainter = BrushPainter(context)
@@ -34,13 +34,12 @@ class HandwritingOverlayView @JvmOverloads constructor(
 
     var isHandwritingMode: Boolean = false
         set(value) {
+            if (field == value) return
             field = value
-            // 切回文本模式时丢掉正在收集的中间 stroke（如果有）
-            if (!value) {
-                inProgressPoints.clear()
-                erasedThisGesture.clear()
-                invalidate()
-            }
+            // 切换模式时丢掉正在收集的中间 stroke（双向都清，防残留）
+            inProgressPoints.clear()
+            erasedThisGesture.clear()
+            invalidate()
         }
 
     var currentBrush: BrushType = BrushType.PEN
@@ -71,10 +70,10 @@ class HandwritingOverlayView @JvmOverloads constructor(
 
     fun clear() {
         if (strokes.isEmpty()) return
-        val snapshot = strokes.toList()
-        strokes.clear()
+        val snapshot = strokes.withIndex().toList()
         undoStack.addLast(Action.Erase(snapshot))
         redoStack.clear()
+        strokes.clear()
         invalidate()
     }
 
@@ -85,7 +84,12 @@ class HandwritingOverlayView @JvmOverloads constructor(
         val a = undoStack.removeLastOrNull() ?: return
         when (a) {
             is Action.Add -> { strokes.remove(a.stroke) }
-            is Action.Erase -> { strokes.addAll(a.strokes) }
+            is Action.Erase -> {
+                a.items.sortedBy { it.index }.forEach { (idx, stroke) ->
+                    val safeIdx = idx.coerceAtMost(strokes.size)
+                    strokes.add(safeIdx, stroke)
+                }
+            }
         }
         redoStack.addLast(a)
         invalidate()
@@ -95,24 +99,26 @@ class HandwritingOverlayView @JvmOverloads constructor(
         val a = redoStack.removeLastOrNull() ?: return
         when (a) {
             is Action.Add -> { strokes.add(a.stroke) }
-            is Action.Erase -> { strokes.removeAll(a.strokes.toSet()) }
+            is Action.Erase -> {
+                val toRemove = a.items.map { it.value }.toHashSet()
+                strokes.removeAll(toRemove)
+            }
         }
         undoStack.addLast(a)
         invalidate()
     }
 
-    /** Task 5 在 push 落笔结果时用。 */
+    /** T5 mutator: append stroke and push Add to undo. Caller must invalidate(). */
     internal fun pushAdd(stroke: Stroke) {
         strokes.add(stroke)
         undoStack.addLast(Action.Add(stroke))
         redoStack.clear()
     }
 
-    /** Task 5 在橡皮抬起时聚合一次 Erase。 */
-    internal fun pushErase(list: List<Stroke>) {
-        if (list.isEmpty()) return
-        strokes.removeAll(list.toSet())
-        undoStack.addLast(Action.Erase(list.toList()))
+    /** T5 mutator: clear redo and push Erase to undo. Caller must remove strokes from strokesRef AND invalidate(). */
+    internal fun pushErase(items: List<IndexedValue<Stroke>>) {
+        if (items.isEmpty()) return
+        undoStack.addLast(Action.Erase(items))
         redoStack.clear()
     }
 
