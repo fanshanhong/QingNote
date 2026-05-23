@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <ImageView
+        android:id="@+id/btn_hw_done"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:clickable="true"
+        android:contentDescription="@string/tb_done_cd"
+        android:focusable="true"
+        android:padding="12dp"
+        android:src="@drawable/ic_check" />
+
+    <ImageView
+        android:id="@+id/btn_hw_pen"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:clickable="true"
+        android:contentDescription="@string/tb_pen_cd"
+        android:focusable="true"
+        android:padding="12dp"
+        android:src="@drawable/ic_pen" />
+
+    <ImageView
+        android:id="@+id/btn_hw_brush"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:clickable="true"
+        android:contentDescription="@string/tb_brush_cd"
+        android:focusable="true"
+        android:padding="12dp"
+        android:src="@drawable/ic_brush" />
+
+    <ImageView
+        android:id="@+id/btn_hw_marker"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:clickable="true"
+        android:contentDescription="@string/tb_marker_cd"
+        android:focusable="true"
+        android:padding="12dp"
+        android:src="@drawable/ic_marker" />
+
+    <ImageView
+        android:id="@+id/btn_hw_pencil"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:clickable="true"
+        android:contentDescription="@string/tb_pencil_cd"
+        android:focusable="true"
+        android:padding="12dp"
+        android:src="@drawable/ic_pencil" />
+
+    <ImageView
+        android:id="@+id/btn_hw_color"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:clickable="true"
+        android:contentDescription="@string/tb_hw_color_cd"
+        android:focusable="true"
+        android:padding="12dp"
+        android:src="@drawable/ic_color_dot"
+        app:tint="@color/hw_color_black" />
+
+    <ImageView
+        android:id="@+id/btn_hw_width"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:clickable="true"
+        android:contentDescription="@string/tb_hw_width_cd"
+        android:focusable="true"
+        android:padding="12dp"
+        android:src="@drawable/ic_color_dot"
+        app:tint="@color/text_secondary" />
+
+    <ImageView
+        android:id="@+id/btn_hw_eraser"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:clickable="true"
+        android:contentDescription="@string/tb_eraser_cd"
+        android:focusable="true"
+        android:padding="12dp"
+        android:src="@drawable/ic_eraser" />
+
+    <ImageView
+        android:id="@+id/btn_hw_undo"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:clickable="true"
+        android:contentDescription="@string/tb_undo_cd"
+        android:focusable="true"
+        android:padding="12dp"
+        android:src="@drawable/ic_undo" />
+
+    <ImageView
+        android:id="@+id/btn_hw_redo"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:clickable="true"
+        android:contentDescription="@string/tb_redo_cd"
+        android:focusable="true"
+        android:padding="12dp"
+        android:src="@drawable/ic_redo" />
+
+    <ImageView
+        android:id="@+id/btn_hw_clear"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:clickable="true"
+        android:contentDescription="@string/tb_clear_cd"
+        android:focusable="true"
+        android:padding="12dp"
+        android:src="@drawable/ic_clear_all" />
+</merge>

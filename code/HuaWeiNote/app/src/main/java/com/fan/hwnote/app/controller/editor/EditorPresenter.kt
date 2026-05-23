@@ -36,6 +36,7 @@ import java.util.UUID
 class EditorPresenter(
     private val context: Context,
     private val container: LinearLayout,
+    private val overlay: com.fan.hwnote.app.view.handwriting.HandwritingOverlayView,
 ) : BlockView.Callback {
 
     private val currentBlocks = mutableListOf<BlockView>()
@@ -168,6 +169,7 @@ class EditorPresenter(
         }
         // 默认让第一个 TextBlock 拿到焦点（找不到就让第一块的可聚焦子 view 自己来）
         (currentBlocks.firstOrNull { it is TextBlockView } as? TextBlockView)?.focusEditEnd()
+        overlay.setStrokes(note.content.handwriting)
     }
 
     fun currentFocusedTextBlock(): TextBlockView? = focusedTextBlock
@@ -191,7 +193,7 @@ class EditorPresenter(
      */
     fun collectCurrentNote(title: String): Note {
         val newBlocks = currentBlocks.map { it.toBlock() }
-        val content = NoteContent(blocks = newBlocks, handwriting = emptyList())
+        val content = NoteContent(blocks = newBlocks, handwriting = overlay.getStrokes())
         return currentNote.copy(
             title = title,
             plainText = content.toPlainText(),

@@ -86,4 +86,11 @@
         android:layout_height="48dp"
         android:background="@color/toolbar_bg" />
 
+    <com.fan.hwnote.app.view.toolbar.HandwritingToolbarView
+        android:id="@+id/handwriting_toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:background="@color/toolbar_bg"
+        android:visibility="gone" />
+
 </LinearLayout>
