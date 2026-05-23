@@ -96,14 +96,6 @@ class NoteEditorActivity : AppCompatActivity() {
         editorContent.setOnClickListener {
             if (!handwritingOverlay.isHandwritingMode) presenter.focusLastTextBlock()
         }
-        editorContent.addOnLayoutChangeListener { _, _, top, _, bottom, _, _, _, _ ->
-            val h = bottom - top
-            val lp = handwritingOverlay.layoutParams
-            if (lp.height != h) {
-                lp.height = h
-                handwritingOverlay.layoutParams = lp
-            }
-        }
 
         textToolbar = findViewById(R.id.text_toolbar)
         handwritingToolbar = findViewById(R.id.handwriting_toolbar)
@@ -321,11 +313,6 @@ class NoteEditorActivity : AppCompatActivity() {
         handwritingOverlay.visibility = android.view.View.VISIBLE
         blocksContainer.alpha = 0.5f
         titleInput.alpha = 0.5f
-        // 撑大内容层，让画布向下扩展一整屏高，避免只能在已有文字行处手写
-        blocksContainer.setPadding(
-            blocksContainer.paddingLeft, blocksContainer.paddingTop,
-            blocksContainer.paddingRight, resources.displayMetrics.heightPixels,
-        )
         textToolbar.visibility = android.view.View.GONE
         handwritingToolbar.visibility = android.view.View.VISIBLE
         refreshUndoRedoEnabled()
@@ -335,13 +322,10 @@ class NoteEditorActivity : AppCompatActivity() {
 
     private fun exitHandwritingMode() {
         handwritingOverlay.isHandwritingMode = false
-        handwritingOverlay.visibility = android.view.View.INVISIBLE
+        // 不再 INVISIBLE：保持 VISIBLE 让笔画立即叠加显示在内容之上；
+        // onTouchEvent 在 !isHandwritingMode 时 return false 让 touch 穿透到下层 EditText/Block。
         blocksContainer.alpha = 1f
         titleInput.alpha = 1f
-        blocksContainer.setPadding(
-            blocksContainer.paddingLeft, blocksContainer.paddingTop,
-            blocksContainer.paddingRight, 0,
-        )
         textToolbar.visibility = android.view.View.VISIBLE
         handwritingToolbar.visibility = android.view.View.GONE
     }
