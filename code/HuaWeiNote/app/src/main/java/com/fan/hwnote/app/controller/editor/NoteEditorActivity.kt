@@ -62,8 +62,7 @@ class NoteEditorActivity : AppCompatActivity() {
                     R.string.toast_image_placeholder, android.widget.Toast.LENGTH_SHORT).show()
             }
             override fun onChecklistClicked() {
-                android.widget.Toast.makeText(this@NoteEditorActivity,
-                    R.string.toast_checklist_placeholder, android.widget.Toast.LENGTH_SHORT).show()
+                presenter.insertChecklistBlockAtFocus()
             }
         }
 
@@ -81,6 +80,7 @@ class NoteEditorActivity : AppCompatActivity() {
         lifecycleScope.launch {
             val note = if (noteId == -1L) Note.new() else (NoteRepository.get(noteId) ?: Note.new())
             loadedNote = note
+            presenter.noteId = note.id // 0L for 新笔记，正数 for 已落库
             titleInput.setText(note.title)
             presenter.bind(note)
         }
@@ -125,6 +125,7 @@ class NoteEditorActivity : AppCompatActivity() {
             if (loaded.id == 0L && newId > 0) {
                 noteId = newId
                 loadedNote = toSave.copy(id = newId)
+                presenter.noteId = newId
             }
         }
     }
