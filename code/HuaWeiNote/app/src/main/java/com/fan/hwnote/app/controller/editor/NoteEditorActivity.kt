@@ -260,6 +260,10 @@ class NoteEditorActivity : AppCompatActivity() {
                     data = android.net.Uri.fromParts("package", packageName, null)
                 }
                 runCatching { startActivity(intent) }
+                    .onFailure {
+                        android.widget.Toast.makeText(this,
+                            R.string.camera_unavailable, android.widget.Toast.LENGTH_SHORT).show()
+                    }
             }
             .setNegativeButton(R.string.action_cancel, null)
             .show()

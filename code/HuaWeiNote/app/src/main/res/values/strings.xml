@@ -69,7 +69,6 @@
     <string name="image_delete_message">确定删除这张图片？</string>
     <string name="image_load_failed">图片加载失败</string>
     <string name="image_save_failed">图片保存失败</string>
-    <string name="camera_permission_denied">相机权限被拒绝，无法拍照</string>
     <string name="camera_unavailable">未找到相机应用</string>
     <string name="camera_permission_dialog_title">需要相机权限</string>
     <string name="camera_permission_dialog_message">无法拍照。请在系统设置中授予相机权限。</string>
