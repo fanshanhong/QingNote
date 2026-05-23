@@ -24,7 +24,7 @@
         android:contentDescription="@string/tb_style_cd"
         android:focusable="true"
         android:padding="12dp"
-        android:src="@drawable/ic_color_dot" />
+        android:src="@drawable/ic_format_style" />
 
     <ImageView android:id="@+id/btn_image"
         android:layout_width="0dp" android:layout_height="match_parent"
