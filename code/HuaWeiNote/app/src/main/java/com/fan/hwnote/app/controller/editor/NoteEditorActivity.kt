@@ -78,6 +78,14 @@ class NoteEditorActivity : AppCompatActivity() {
         supportActionBar?.setDisplayShowTitleEnabled(false)
         toolbar.setNavigationOnClickListener { finish() }
 
+        val editorRoot = findViewById<android.view.View>(R.id.editor_root)
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(editorRoot) { v, insets ->
+            val ime = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.ime())
+            val bars = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+            v.setPadding(v.paddingLeft, v.paddingTop, v.paddingRight, kotlin.math.max(ime.bottom, bars.bottom))
+            insets
+        }
+
         presenter = EditorPresenter(this, blocksContainer)
 
         val toolbarView = findViewById<com.fan.hwnote.app.view.toolbar.TextToolbarView>(R.id.text_toolbar)
