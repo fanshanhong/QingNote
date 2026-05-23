@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:parentTag="com.fan.hwnote.app.view.block.ImageBlockView">
+
+    <ImageView
+        android:id="@+id/block_image"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginVertical="@dimen/spacing_s"
+        android:adjustViewBounds="true"
+        android:background="@drawable/bg_image_block"
+        android:contentDescription="@string/image_block_cd"
+        android:maxHeight="320dp"
+        android:scaleType="fitCenter" />
+</merge>
