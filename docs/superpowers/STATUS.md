@@ -1,6 +1,6 @@
 # HwNote · 项目进度
 
-最后更新：2026-05-23（编辑器 UX 打磨完成）
+最后更新：2026-05-23（M7 打磨完成 — 所有 7 个里程碑均已完成）
 
 ## 阶段地图
 
@@ -12,8 +12,8 @@
 | 4. 规格自审 | ✅ 完成 | 修复 7 处一致性问题（heading 块属性归位、Span 6 种、笔效/橡皮算法详写、ACTION_GET_CONTENT 替换、Glide compiler 去除、plain_text 规则补、行内/块级样式分离） |
 | 5. 用户审阅 PRD | ✅ 完成 | 用户确认无修改，进入下一步 |
 | 6. **实施计划编写** | ✅ 完成 | `docs/superpowers/plans/2026-05-22-hwnote-implementation.md`（高层版，7 个里程碑各一节，685 行） |
-| 7. 代码实施 | 🔵 **进行中（M5 完成）** | M1 + M2 + M3 + M4 + M5 详细计划 + 代码；M6-M7 未开始 |
-| 8. 手测验收 | 🔵 进行中（M3 列表页通过；M4 自动化通过、真机 9 条留用户走查；M5 自动化通过、真机 7 条留用户走查） | M3 五条高层验收逐条手测通过；M4 SpanConverter 15 项单测 PASSED + 双轨 review 全过；M5 ImageCompressor 3 项单测 PASSED + 12 任务双轨 review 全过 |
+| 7. 代码实施 | ✅ **全部完成** | M1 + M2 + M3 + M4 + M5 + M6 + M7 详细计划 + 代码全部落地，68 单测全绿 |
+| 8. 手测验收 | ✅ M3 / M5 / M6 / M7 用户真机走查全部通过 | M3 五条 + M5 七条 + M6 十三条 + M7 十六条（含 T12/T13 四条回归）逐条手测通过；M4 SpanConverter 15 项 + M2 数据层 42 项 + M5 ImageCompressor 3 项 + M6 StrokeEraser 5 项 + M7 BrushPainter 3 项单测 PASSED |
 
 ## 里程碑进度
 
@@ -24,8 +24,8 @@
 | M3 列表页 | ✅ 完成（2026-05-22） | RecyclerView + 搜索 + 排序 + 长按菜单 + 删除二次确认 |
 | M4 编辑器骨架 | ✅ 完成（2026-05-23） | NoteEditorActivity + EditorPresenter + 块容器 + 12 键工具栏 + B/I/U/S + 字号 + 5 色 + H1/H2；SpanConverter 15 单测 |
 | M5 图片块/清单块 | ✅ 完成（2026-05-23） | ImageBlockView + ChecklistBlockView + ImageCompressor（长边 1920/JPEG 85）+ 多选相册 / 拍照 + CAMERA 运行时权限；passthroughBlocks 已删 |
-| M6 手写 Overlay | ⏳ 未开始 | — |
-| M7 打磨 | ⏳ 未开始 | — |
+| M6 手写 Overlay | ✅ 完成（2026-05-23） | HandwritingOverlayView 透明层 + 4 笔种 BrushPainter + 笔画级 StrokeEraser + 撤销/重做/清空 + 6 键工具栏 + 8 色 + 3 粗细；StrokeEraser 5 单测 |
+| M7 打磨 | ✅ 完成（2026-05-23） | 13 任务全部落地：手写性能（Paint 三键缓存 / Path 复用）+ 鲁棒（save-in-flight / Camera SavedInstanceState / 图片失败 Toast）+ UX（状态栏 inset / 清单 toggle / Camera 引导跳设置 / 文案规范）；68 单测 + 16 项真机走查全过 |
 
 ## M1 完成详情（2026-05-22）
 
@@ -316,16 +316,76 @@ M1 ✅ → M2 数据层 → M3 列表页
 9. （M6 新增）颜色 8 色 hex 在 `showHandwritingColorDialog` 硬编码，与 `colors.xml` 的 hw_color_* 重复；M7 改为从 resources 读取。
 10. （M6 新增）`cycleHandwritingWidth` Toast 文案"细/中/粗"硬编码 Chinese 字面量，未走 strings.xml；M7 抽取。
 
-**PRD §M6 验收（13 条）：** 留 T13 真机走查时核对，本里程碑代码就绪。
+**PRD §M6 验收（13 条）：** M7 真机走查时一并通过。
 
-## 下一步建议
+## M7 完成详情（2026-05-23）
 
-M5 已完成，建议进入 **M6 手写 Overlay**：实现 `HandwritingOverlayView`（透明层覆盖在内容层之上）：
-- **笔种**：4 种（pen / brush / marker / pencil）+ 笔粗细 3 档 + 8 色调色板 + 橡皮 + 撤销/重做 + 清空 — 来自 PRD §8.5
-- **架构**：在 `activity_note_editor.xml` 的 FrameLayout 内已经预留 overlay 位置（M4 骨架时拉的层），M6 把它换成 `HandwritingOverlayView`；Stroke 数据沿用 M2 已序列化的 `Stroke` 实体（4 笔种 + 颜色 + 粗细 + 点序列）
-- **存储复用**：M2 已完整支持 Stroke 的 JSON round-trip；笔迹文件目录 `filesDir/notes/<id>/handwriting/` 也已建好（M2 `NoteFileStorage`）；M6 仅做 UI 渲染层 + 工具栏切换
-- **工具栏切换**：编辑器底部 Tab 已经有"文本/手写"两挡占位（M4 骨架时拉的），M6 把"手写"挡换成手写工具条（笔种/颜色/粗细 + 橡皮 + 撤销/重做 + 清空 7 个按钮）
+**起因：** M6 完成后立项打磨 — 把前序里程碑评审中累计下来的 Important / Critical 跟进项一次性收拢，覆盖性能（手写热路径）、鲁棒（进程死亡 / 重复 INSERT / 静默失败）、UX（状态栏遮挡 / 清单交互 / 权限引导 / 文案规范）三个维度。**计划 13 任务串行 subagent 执行；T11 真机手测 16 条全过。**
 
-执行节奏沿用 M2/M3/M4/M5 的 "writing-plans → 用户审阅 → Subagent-Driven 串行执行 → 双轨 review → STATUS 收尾" 模式。预估 8-12 小时（手写 path 算法 / 4 种笔效真实着色 / 撤销重做栈较繁琐）。
+**改动维度：**
 
-资源：浏览器 visual companion 仍在运行：http://localhost:61835
+1. **手写性能优化（T3-T5）：**
+   - `HandwritingOverlayView.strokesMut()`（T3，commit `f5e1da2`）：把 `as MutableList` 硬转换成内部专属可变引用，setter 同步清 `gestureSnapshot`，杜绝外部传不可变列表时静默失效。
+   - `BrushPainter` 三键 Paint 缓存（T4，TDD，commit `be3caf7`）：按 `(brush, color, widthDp)` 复用 Paint 实例，避免 onDraw 热路径 50 strokes × 60fps = 3000 Paint/秒分配；BrushPainterTest 3 单测。
+   - `onDraw` Path / 点 buffer 复用（T5，commit `1598c7e`）：类成员 `reusablePath.reset()` + `inProgressBuffer` 仅在 size 变化时 rebuild，去掉每帧两次大对象分配。
+
+2. **鲁棒性修复（T6-T9）：**
+   - Camera SavedInstanceState 持久化（T6，commit `cd127fa`）：`pendingCameraOutputUri/File` 进 `onSaveInstanceState`，进程死亡重启后回填，避免丢拍照结果 + 缓存泄漏。
+   - 新笔记 save-in-flight 互斥（T7，commit `f3e2feb`）：`@Volatile var saveInFlight` 让 `ensureNoteSavedAndThen` 与 `onPause.saveNote` 在 id==0L 路径上不双 INSERT。
+   - NoteRepository.save 失败 Toast（T8，commit `2a9fba7`）：`save()` 返回 -1 时 Main 线程弹 Toast，不再静默丢失。
+   - 图片加载失败 Toast + 自动移除坏块（T9，commits `9594b31` + `9ad6ad6`）：`ImageBlockView` 加 Glide RequestListener；失败走 `BlockView.Callback.onImageLoadFailed(view)` 默认方法（默认退到 `onRequestDelete`，Presenter 覆写实现"第一块退化为空 TextBlock"），磁盘 jpg 同步清；抽 `EditorPresenter.purgeImageOnDisk(block)` 在删除/失败两路径复用。
+
+3. **UX 对齐（T1-T2 + T10 + T12-T13）：**
+   - 删 `toast_handwriting_placeholder` 死资源（T1，commit `b778914`）：M6 已替换为 `enterHandwritingMode()`，资源不再被引用。
+   - 手写清空对话框专属文案（T2，commit `30ce6ba`）：从复用 `dialog_delete_message`（"确定删除？此操作不可恢复"）换成 `dialog_clear_handwriting_message`，语义对齐"清空手写"。
+   - Camera 被拒后弹引导对话框跳系统设置（T10，commits `c0d4efa` + `0b7c1ec`）：替代静默拒绝；`runCatching` 跳系统设置失败兜底 Toast；删 `camera_permission_denied` 死资源。
+   - 状态栏 inset top padding 修复（T12，commits `72b7a5c` + `623cdff`）：Android 15 + targetSdk 36 强制 edge-to-edge 下 Toolbar 压住系统时间。最终方案：给 `AppBarLayout` 加 `fitsSystemWindows="true"`，Material 自动处理 statusBar inset 并把绿色背景延伸进系统栏；根布局 inset listener 仅管 bottom（IME + 导航栏）。
+   - 清单交互对齐华为 Note（T13，commits `f2c1611` + `52a1eeb` + `a0f6148`）：①「点击工具栏清单按钮 + 当前焦点已在某清单项」 → 仅 toggle 当前项（取出文字插成 TextBlock，原项移除）；②「清单最后空项按回车」 → 退出清单（清空则整块替换 TextBlock，否则块后追加 TextBlock）；③「清单中间空项按回车」按用户选择"保持原"仍新增下一项；④「唯一项空且按退格」改走新 Callback `onChecklistConvertBlockToText` 实现 in-place 替换为空 TextBlock（修复光标跳标题 bug）。`BlockView.Callback` 接口加 2 个 default 方法保持基类对清单不可知；`EditorPresenter.toggleChecklistAtFocus()` 走 `container.findFocus()` 父链识别清单项。
+
+**M7 commit 列表（git log `c1eea55..HEAD`，共 17 个 commit）：**
+- `b778914` chore(m7): 删 toast_handwriting_placeholder 死资源
+- `30ce6ba` fix(m7): 手写清空对话框换专属文案，不再复用删除笔记文案
+- `f5e1da2` refactor(m7): Overlay 用 strokesMut() 显式可变引用 + setter 清 gestureSnapshot
+- `be3caf7` perf(m7): BrushPainter 按 (brush,color,width) 三键缓存 Paint 实例
+- `1598c7e` perf(m7): onDraw 复用 Path + in-progress 点 buffer，去掉每帧分配
+- `cd127fa` fix(m7): Camera 待回填 Uri/File 走 SavedInstanceState，避免进程死亡丢照片
+- `f3e2feb` fix(m7): 新笔记 save-in-flight 标志互斥，避免 ensureNoteSavedAndThen × onPause 双 INSERT
+- `2a9fba7` fix(m7): 笔记保存失败弹 Toast 提示，避免静默丢失
+- `9594b31` fix(m7): 图片加载失败弹 Toast 并自动移除坏块（含磁盘 jpg 清理）
+- `9ad6ad6` refactor(m7): 图片加载失败走 Callback.onImageLoadFailed + 抽 purgeImageOnDisk 复用
+- `c0d4efa` fix(m7): 相机被拒后弹引导对话框跳系统设置授权
+- `0b7c1ec` chore(m7): 删 camera_permission_denied 死资源 + 设置跳转失败兜底 Toast
+- `72b7a5c` fix(m7): 编辑器根布局 inset 顶部 padding 取 statusBar 高度，避免压住系统时间
+- `623cdff` fix(m7): AppBarLayout fitsSystemWindows 自处理 statusBar，绿色延伸进系统栏
+- `f2c1611` feat(m7): 清单 toggle 化 + 空项退格/回车自动退出清单
+- `52a1eeb` fix(m7): 清单中间空项回车保持原行为，仅末尾空项退出清单
+- `a0f6148` chore(m7): EditorPresenter 内 ChecklistItemView 三处 FQN 改 import
+
+**测试统计：** `:app:test` 共 **68 项 PASSED**（M2 42 + M4 SpanConverter 15 + M5 ImageCompressor 3 + M6 StrokeEraser 5 + M7 BrushPainter 3），0 failures / 0 errors / 0 skipped。`:app:assembleDebug` 全绿。
+
+**验收：**
+- ✅ `./gradlew :app:test` 全部 68 项 PASSED（debug + release 两轮）
+- ✅ `./gradlew :app:assembleDebug` 通过
+- ✅ 每个 M7 任务双轨 review 通过；多次触发 Important fix：T9 抽象泄漏（`cb is EditorPresenter` → Callback 默认方法）、T10 orphaned string + 跳设置静默失败、T12 状态栏绿色延伸方案、T13 spec compliance Q2 漏 `idx == items.size - 1` 守卫 + nice-to-have FQN 清理
+- ✅ 真机手测 16 条全过（用户 2026-05-23 完成走查），含 4 条 T12 / T13 回归：①状态栏不再压住系统时间；②清单空项退格转 TextBlock 不再跳标题；③清单作为最后块，末尾空项回车成功退出到 TextBlock；④焦点在清单项时点工具栏清单按钮仅取消当前项
+
+**执行模式：** Subagent-Driven Development，严格串行 13 任务（T1→T13）。每任务的 implementer DONE → spec reviewer → code quality reviewer → fix（如有）→ re-review → 标完成；T11 仅做真机手测 + STATUS 收尾，无 commit；多个 fix commit 由 reviewer 反馈触发。
+
+## 项目完成总览
+
+7 个里程碑全部完成（2026-05-22 ~ 2026-05-23）：
+
+| # | 里程碑 | commit 数 | 单测增量 | 关键产出 |
+|---|---|---|---|---|
+| M1 | 基础工程 | — | 1 | 工程改造去 Compose + Application + 入口 Activity |
+| M2 | 数据层 | 12 | 41 | sealed Block + NoteJson + SQLiteOpenHelper + NoteFileStorage + Repository |
+| M3 | 列表页 | 11 | 0（UI 层） | RecyclerView + 搜索 + 排序持久化 + 长按 PopupMenu + 删除二确认 |
+| M4 | 编辑器骨架 | 16 | 15 | SpanConverter + BlockView + TextBlockView + EditorPresenter + 12 键工具栏 |
+| M5 | 图片块/清单块 | 16 | 3 | ImageCompressor + ImageBlockView + ChecklistBlockView + 多选相册/拍照 |
+| 编辑器 UX 打磨 | UI 表现层 | 10 | 0 | 空白点焦 + IME 顶栏 + 4 键工具栏 + StylePickerBottomSheet |
+| M6 | 手写 Overlay | 10 | 5 | HandwritingOverlayView + 4 笔种 BrushPainter + 笔画级 StrokeEraser + 6 键工具栏 + 8 色 + 3 粗细 |
+| M7 | 打磨 | 17 | 3 | 手写性能（Paint 缓存 / Path 复用）+ 鲁棒（save-in-flight / SavedInstanceState / 图片 Toast）+ UX（状态栏 / 清单 toggle / Camera 引导） |
+
+**累计：** 92 个 commit（不含 docs/计划 commit），68 项自动化单测全绿，PRD MVP 范围 100% 覆盖。架构守住"Block 块组合 + 手写 Overlay 透明层"原始决策，未引入 Compose / ViewModel / LiveData / Room / Hilt / Navigation。
+
+**后续可选方向（均超出当前 PRD 范围，需用户重新决策）：** 分类 / 置顶 / 回收站 / 提醒 / 加锁 / 导出 / 分享 / 录音 / 备份 / 深色模式。
