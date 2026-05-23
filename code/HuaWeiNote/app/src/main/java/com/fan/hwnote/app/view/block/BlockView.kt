@@ -34,5 +34,9 @@ abstract class BlockView @JvmOverloads constructor(
         fun onRequestDelete(view: BlockView)
         /** 用户聚焦到这块（用于 Presenter 记录 currentFocus）。 */
         fun onFocusGained(view: BlockView)
+        /** 图片块加载失败的回调。默认行为：等同请求删除；Presenter 可覆写以做"第一块退化为空 TextBlock"等特殊处理。 */
+        fun onImageLoadFailed(view: BlockView) {
+            onRequestDelete(view)
+        }
     }
 }

@@ -1,11 +1,17 @@
 package com.fan.hwnote.app.view.block
 
 import android.content.Context
+import android.graphics.drawable.Drawable
 import android.util.AttributeSet
 import android.view.LayoutInflater
 import android.widget.ImageView
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.DataSource
+import com.bumptech.glide.load.engine.GlideException
+import com.bumptech.glide.request.RequestListener
+import com.bumptech.glide.request.target.Target
 import com.fan.hwnote.app.R
 import com.fan.hwnote.app.model.entity.Block
 import com.fan.hwnote.app.model.storage.NoteFileStorage
@@ -42,30 +48,25 @@ class ImageBlockView @JvmOverloads constructor(
             .load(file)
             .error(R.drawable.bg_image_block)
             .dontAnimate()
-            .listener(object : com.bumptech.glide.request.RequestListener<android.graphics.drawable.Drawable> {
+            .listener(object : RequestListener<Drawable> {
                 override fun onLoadFailed(
-                    e: com.bumptech.glide.load.engine.GlideException?,
+                    e: GlideException?,
                     model: Any?,
-                    target: com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable>,
+                    target: Target<Drawable>,
                     isFirstResource: Boolean,
                 ): Boolean {
-                    android.widget.Toast.makeText(
-                        context, R.string.image_load_failed, android.widget.Toast.LENGTH_SHORT,
+                    Toast.makeText(
+                        context, R.string.image_load_failed, Toast.LENGTH_SHORT,
                     ).show()
-                    val cb = callback
-                    if (cb is com.fan.hwnote.app.controller.editor.EditorPresenter) {
-                        cb.removeImageBlockOnLoadFailure(this@ImageBlockView)
-                    } else {
-                        cb?.onRequestDelete(this@ImageBlockView)
-                    }
+                    callback?.onImageLoadFailed(this@ImageBlockView)
                     return false // 不拦截 error drawable 渲染
                 }
 
                 override fun onResourceReady(
-                    resource: android.graphics.drawable.Drawable,
+                    resource: Drawable,
                     model: Any,
-                    target: com.bumptech.glide.request.target.Target<android.graphics.drawable.Drawable>?,
-                    dataSource: com.bumptech.glide.load.DataSource,
+                    target: Target<Drawable>?,
+                    dataSource: DataSource,
                     isFirstResource: Boolean,
                 ): Boolean = false
             })

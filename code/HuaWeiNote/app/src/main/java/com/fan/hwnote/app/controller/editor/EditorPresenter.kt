@@ -17,6 +17,7 @@ import com.fan.hwnote.app.model.entity.Note
 import com.fan.hwnote.app.model.entity.NoteContent
 import com.fan.hwnote.app.model.entity.SpanType
 import com.fan.hwnote.app.model.entity.TextSpan
+import com.fan.hwnote.app.model.storage.NoteFileStorage
 import com.fan.hwnote.app.util.applyTo
 import com.fan.hwnote.app.util.toTextSpans
 import com.fan.hwnote.app.view.block.BlockView
@@ -216,13 +217,7 @@ class EditorPresenter(
         if (idx <= 0) return // 第一块不可删
         // 图片块顺手清掉本地 jpg；ChecklistBlock 没有文件需要清
         if (view is ImageBlockView) {
-            val block = view.toBlock() as? Block.ImageBlock
-            if (block != null && noteId > 0L) {
-                runCatching {
-                    com.fan.hwnote.app.model.storage.NoteFileStorage(context)
-                        .imageFile(noteId, block.fileName).delete()
-                }
-            }
+            (view.toBlock() as? Block.ImageBlock)?.let { purgeImageOnDisk(it) }
         }
         container.removeView(view)
         currentBlocks.removeAt(idx)
@@ -235,21 +230,24 @@ class EditorPresenter(
     }
 
     /** 图片加载失败的安全移除：第一块时退化为换成空 TextBlock，避免列表为空崩溃。同时清磁盘 jpg。 */
-    fun removeImageBlockOnLoadFailure(view: ImageBlockView) {
+    override fun onImageLoadFailed(view: BlockView) {
+        if (view !is ImageBlockView) { onRequestDelete(view); return }
         val idx = currentBlocks.indexOf(view)
         if (idx < 0) return
-        val block = view.toBlock() as? Block.ImageBlock
-        if (block != null && noteId > 0L) {
-            runCatching {
-                com.fan.hwnote.app.model.storage.NoteFileStorage(context)
-                    .imageFile(noteId, block.fileName).delete()
-            }
-        }
+        (view.toBlock() as? Block.ImageBlock)?.let { purgeImageOnDisk(it) }
         container.removeView(view)
         currentBlocks.removeAt(idx)
         if (idx == 0 && currentBlocks.isEmpty()) {
             addTextBlockView(emptyTextBlock())
             (currentBlocks[0] as? TextBlockView)?.focusEditEnd()
+        }
+    }
+
+    /** 删除某图片块对应的本地 jpg。noteId<=0 视为未落库，no-op。失败吞掉（无关键路径）。 */
+    private fun purgeImageOnDisk(block: Block.ImageBlock) {
+        if (noteId <= 0L) return
+        runCatching {
+            NoteFileStorage(context).imageFile(noteId, block.fileName).delete()
         }
     }
 
