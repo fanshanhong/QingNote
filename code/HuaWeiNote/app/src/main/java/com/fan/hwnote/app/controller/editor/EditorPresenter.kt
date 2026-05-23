@@ -20,6 +20,8 @@ import com.fan.hwnote.app.model.entity.TextSpan
 import com.fan.hwnote.app.util.applyTo
 import com.fan.hwnote.app.util.toTextSpans
 import com.fan.hwnote.app.view.block.BlockView
+import com.fan.hwnote.app.view.block.ChecklistBlockView
+import com.fan.hwnote.app.view.block.ImageBlockView
 import com.fan.hwnote.app.view.block.TextBlockView
 import java.util.UUID
 
@@ -37,9 +39,11 @@ class EditorPresenter(
 ) : BlockView.Callback {
 
     private val currentBlocks = mutableListOf<BlockView>()
-    private val passthroughBlocks = mutableListOf<Block>()
     private lateinit var currentNote: Note
     private var focusedTextBlock: TextBlockView? = null
+
+    /** 当前正在编辑的 noteId（>0 表示已落库）；ImageBlockView 用它定位本地文件目录。 */
+    var noteId: Long = 0L
 
     /** 无选区时，下次输入应套用的 span 类型集合。同 type 第二次点表示取消。 */
     private val pendingInline = mutableSetOf<SpanType>()
@@ -152,19 +156,18 @@ class EditorPresenter(
         currentNote = note
         container.removeAllViews()
         currentBlocks.clear()
-        passthroughBlocks.clear()
         focusedTextBlock = null
 
         val blocks = note.content.blocks.ifEmpty { listOf(emptyTextBlock()) }
         for (b in blocks) {
             when (b) {
                 is Block.TextBlock -> addTextBlockView(b)
-                is Block.ImageBlock,
-                is Block.ChecklistBlock -> passthroughBlocks += b // M5/M6 渲染前先缓存，避免重保存丢数据
+                is Block.ImageBlock -> addImageBlockView(b)
+                is Block.ChecklistBlock -> addChecklistBlockView(b)
             }
         }
-        // 默认让第一块拿到焦点
-        (currentBlocks.firstOrNull() as? TextBlockView)?.focusEditEnd()
+        // 默认让第一个 TextBlock 拿到焦点（找不到就让第一块的可聚焦子 view 自己来）
+        (currentBlocks.firstOrNull { it is TextBlockView } as? TextBlockView)?.focusEditEnd()
     }
 
     fun currentFocusedTextBlock(): TextBlockView? = focusedTextBlock
@@ -174,8 +177,7 @@ class EditorPresenter(
      * 调用方负责 save 到 Repository。
      */
     fun collectCurrentNote(title: String): Note {
-        val newBlocks = currentBlocks.map { it.toBlock() } + passthroughBlocks
-        // ImageBlock/ChecklistBlock 当前在 M4 不渲染，bind 时缓存、collect 时尾部拼回，避免数据丢失
+        val newBlocks = currentBlocks.map { it.toBlock() }
         val content = NoteContent(blocks = newBlocks, handwriting = emptyList())
         return currentNote.copy(
             title = title,
@@ -197,6 +199,16 @@ class EditorPresenter(
     override fun onRequestDelete(view: BlockView) {
         val idx = currentBlocks.indexOf(view)
         if (idx <= 0) return // 第一块不可删
+        // 图片块顺手清掉本地 jpg；ChecklistBlock 没有文件需要清
+        if (view is ImageBlockView) {
+            val block = view.toBlock() as? Block.ImageBlock
+            if (block != null && noteId > 0L) {
+                runCatching {
+                    com.fan.hwnote.app.model.storage.NoteFileStorage(context)
+                        .imageFile(noteId, block.fileName).delete()
+                }
+            }
+        }
         container.removeView(view)
         currentBlocks.removeAt(idx)
         if (focusedTextBlock === view) focusedTextBlock = null
@@ -231,9 +243,77 @@ class EditorPresenter(
         }
     }
 
+    private fun addImageBlockView(block: Block.ImageBlock, insertAt: Int = -1) {
+        val v = ImageBlockView(context).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            )
+            callback = this@EditorPresenter
+            noteId = this@EditorPresenter.noteId
+            bind(block)
+        }
+        if (insertAt < 0 || insertAt >= currentBlocks.size) {
+            container.addView(v); currentBlocks.add(v)
+        } else {
+            container.addView(v, insertAt); currentBlocks.add(insertAt, v)
+        }
+    }
+
+    private fun addChecklistBlockView(block: Block.ChecklistBlock, insertAt: Int = -1) {
+        val v = ChecklistBlockView(context).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            )
+            callback = this@EditorPresenter
+            bind(block)
+        }
+        if (insertAt < 0 || insertAt >= currentBlocks.size) {
+            container.addView(v); currentBlocks.add(v)
+        } else {
+            container.addView(v, insertAt); currentBlocks.add(insertAt, v)
+        }
+    }
+
     /** Task 10 H1/H2 用：对当前焦点 TextBlock 切 heading。 */
     fun toggleHeading(target: Heading) {
         val v = focusedTextBlock ?: return
         v.setHeading(if (v.currentHeading() == target) null else target)
+    }
+
+    /**
+     * Task 10 入口：把若干 ImageBlock 插到当前焦点 TextBlock 之后，并在最后追加一个空 TextBlock 接管焦点。
+     * 焦点未知（如刚进图片块）→ 追加到列表末尾。
+     */
+    fun insertImageBlocksAtFocus(blocks: List<Block.ImageBlock>) {
+        if (blocks.isEmpty()) return
+        val anchor = focusedTextBlock
+        val baseIdx = if (anchor != null) currentBlocks.indexOf(anchor) + 1
+                      else currentBlocks.size
+        var insertAt = baseIdx
+        for (b in blocks) {
+            addImageBlockView(b, insertAt = insertAt)
+            insertAt += 1
+        }
+        // 末尾补一个空 TextBlock，让用户可继续输入
+        val tail = emptyTextBlock()
+        addTextBlockView(tail, insertAt = insertAt)
+        (currentBlocks[insertAt] as TextBlockView).focusEditEnd()
+    }
+
+    /**
+     * Task 8 入口：在焦点 TextBlock 之后插一个新清单块（含 1 个空项）；焦点交给该空项。
+     */
+    fun insertChecklistBlockAtFocus() {
+        val anchor = focusedTextBlock
+        val insertAt = if (anchor != null) currentBlocks.indexOf(anchor) + 1
+                       else currentBlocks.size
+        val block = Block.ChecklistBlock(
+            id = "c-${UUID.randomUUID().toString().take(8)}",
+            items = mutableListOf(com.fan.hwnote.app.model.entity.ChecklistItem(false, "")),
+        )
+        addChecklistBlockView(block, insertAt = insertAt)
+        (currentBlocks[insertAt] as ChecklistBlockView).focusLastItemEnd()
     }
 }
