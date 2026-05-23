@@ -319,6 +319,7 @@ class NoteEditorActivity : AppCompatActivity() {
 
     private fun enterHandwritingMode() {
         handwritingOverlay.isHandwritingMode = true
+        handwritingOverlay.isErasing = false
         handwritingOverlay.visibility = android.view.View.VISIBLE
         blocksContainer.alpha = 0.5f
         titleInput.alpha = 0.5f
