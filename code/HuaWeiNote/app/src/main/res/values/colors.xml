@@ -35,4 +35,14 @@
 
     <color name="text_checked">#9E9E9E</color>
     <color name="image_block_border">#E0E0E0</color>
+
+    <!-- 手写 8 色调色板（M6） -->
+    <color name="hw_color_black">#212121</color>
+    <color name="hw_color_red">#E53935</color>
+    <color name="hw_color_orange">#FB8C00</color>
+    <color name="hw_color_yellow">#FDD835</color>
+    <color name="hw_color_green">#43A047</color>
+    <color name="hw_color_teal">#00897B</color>
+    <color name="hw_color_blue">#1E88E5</color>
+    <color name="hw_color_purple">#8E24AA</color>
 </resources>

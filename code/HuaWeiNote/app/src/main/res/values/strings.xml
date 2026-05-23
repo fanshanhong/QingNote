@@ -75,4 +75,17 @@
     <!-- M5 清单块 -->
     <string name="checklist_item_hint">清单项</string>
     <string name="checklist_item_checkbox_cd">完成标记</string>
+
+    <!-- M6 手写工具栏 -->
+    <string name="tb_pen_cd">钢笔</string>
+    <string name="tb_brush_cd">画笔</string>
+    <string name="tb_marker_cd">马克笔</string>
+    <string name="tb_pencil_cd">铅笔</string>
+    <string name="tb_eraser_cd">橡皮</string>
+    <string name="tb_undo_cd">撤销</string>
+    <string name="tb_redo_cd">重做</string>
+    <string name="tb_clear_cd">清空</string>
+    <string name="tb_done_cd">完成</string>
+    <string name="tb_hw_color_cd">画笔颜色</string>
+    <string name="tb_hw_width_cd">画笔粗细</string>
 </resources>
