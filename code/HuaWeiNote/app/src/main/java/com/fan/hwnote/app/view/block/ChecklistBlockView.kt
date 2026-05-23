@@ -34,8 +34,9 @@ class ChecklistBlockView @JvmOverloads constructor(
     override fun onEnterAtEnd(view: ChecklistItemView) {
         val idx = items.indexOf(view)
         if (idx < 0) return
-        // 末尾空项 → 退出清单（删该空项 + 通知 Presenter 在清单后插 TextBlock；清单空了则整块替换）
-        if (view.edit.text.isEmpty()) {
+        // 仅"末尾位置 + 空项"才退出清单：删该空项 + 通知 Presenter 在清单后插 TextBlock；清单空了则整块替换。
+        // 中间空项保持原行为（仍新增下一项），以匹配用户选择"保持原"。
+        if (view.edit.text.isEmpty() && idx == items.size - 1) {
             removeView(view)
             items.removeAt(idx)
             if (items.isEmpty()) {
@@ -45,7 +46,7 @@ class ChecklistBlockView @JvmOverloads constructor(
             }
             return
         }
-        // 末尾非空项 → 原行为（新增空项 + 焦点到新项）
+        // 其余 → 原行为（新增空项 + 焦点到新项）
         val newItem = ChecklistItem(false, "")
         addItemView(newItem, insertAt = idx + 1)
         items[idx + 1].focusEditEnd()
