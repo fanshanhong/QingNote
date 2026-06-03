@@ -13,5 +13,5 @@
         android:contentDescription="@string/image_block_cd"
         android:maxHeight="320dp"
         android:scaleType="fitCenter"
-        app:shapeAppearanceOverlay="@style/ShapeAppearance.Hwnote.ImageBlock12dp" />
+        app:shapeAppearanceOverlay="@style/ShapeAppearance.HwNote.ImageBlock" />
 </merge>

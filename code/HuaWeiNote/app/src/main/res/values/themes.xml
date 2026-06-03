@@ -32,4 +32,9 @@
         <item name="android:background">@color/divider</item>
     </style>
 
+    <style name="ShapeAppearance.HwNote.ImageBlock" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">@dimen/radius_image</item>
+    </style>
+
 </resources>

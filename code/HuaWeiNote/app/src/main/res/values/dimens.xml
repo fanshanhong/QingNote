@@ -9,6 +9,7 @@
 
     <!-- 圆角 -->
     <dimen name="radius_card">10dp</dimen>
+    <dimen name="radius_image">12dp</dimen>
 
     <!-- 字号 -->
     <dimen name="text_title">16sp</dimen>
