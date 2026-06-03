@@ -9,6 +9,7 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.widget.EditText
+import android.widget.RadioGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
@@ -20,6 +21,7 @@ import com.fan.hwnote.app.R
 import com.fan.hwnote.app.controller.editor.NoteEditorActivity
 import com.fan.hwnote.app.model.NoteRepository
 import com.fan.hwnote.app.model.entity.Note
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.launch
 
@@ -149,9 +151,9 @@ class NoteListActivity : AppCompatActivity() {
     }
 
     private fun showSortDialog() {
-        val sheet = com.google.android.material.bottomsheet.BottomSheetDialog(this)
+        val sheet = BottomSheetDialog(this)
         val view = layoutInflater.inflate(R.layout.dialog_sort_picker, null)
-        val group = view.findViewById<android.widget.RadioGroup>(R.id.sort_radio_group)
+        val group = view.findViewById<RadioGroup>(R.id.sort_radio_group)
         val checkedId = when (sortBy) {
             NoteRepository.SortBy.UPDATED_DESC -> R.id.sort_updated
             NoteRepository.SortBy.CREATED_DESC -> R.id.sort_created
