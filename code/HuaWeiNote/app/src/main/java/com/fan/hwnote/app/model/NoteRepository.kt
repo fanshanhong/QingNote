@@ -35,7 +35,6 @@ object NoteRepository {
         val orderBy = when (sortBy) {
             SortBy.UPDATED_DESC -> "updated_at DESC"
             SortBy.CREATED_DESC -> "created_at DESC"
-            SortBy.TITLE_ASC -> "title COLLATE NOCASE ASC"
         }
         val (selection, args) = if (!query.isNullOrEmpty()) {
             val like = "%$query%"
@@ -99,7 +98,7 @@ object NoteRepository {
         Unit
     }
 
-    enum class SortBy { UPDATED_DESC, CREATED_DESC, TITLE_ASC }
+    enum class SortBy { UPDATED_DESC, CREATED_DESC }
 
     // ----- private -----
 

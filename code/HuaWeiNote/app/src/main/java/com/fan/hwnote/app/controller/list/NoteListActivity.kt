@@ -149,27 +149,25 @@ class NoteListActivity : AppCompatActivity() {
     }
 
     private fun showSortDialog() {
-        val labels = arrayOf(
-            getString(R.string.sort_updated_desc),
-            getString(R.string.sort_created_desc),
-            getString(R.string.sort_title_asc),
-        )
-        val values = arrayOf(
-            NoteRepository.SortBy.UPDATED_DESC,
-            NoteRepository.SortBy.CREATED_DESC,
-            NoteRepository.SortBy.TITLE_ASC,
-        )
-        val checked = values.indexOf(sortBy)
-        AlertDialog.Builder(this)
-            .setTitle(R.string.action_sort)
-            .setSingleChoiceItems(labels, checked) { d, which ->
-                sortBy = values[which]
-                saveSort(sortBy)
-                reload()
-                d.dismiss()
+        val sheet = com.google.android.material.bottomsheet.BottomSheetDialog(this)
+        val view = layoutInflater.inflate(R.layout.dialog_sort_picker, null)
+        val group = view.findViewById<android.widget.RadioGroup>(R.id.sort_radio_group)
+        val checkedId = when (sortBy) {
+            NoteRepository.SortBy.UPDATED_DESC -> R.id.sort_updated
+            NoteRepository.SortBy.CREATED_DESC -> R.id.sort_created
+        }
+        group.check(checkedId)
+        group.setOnCheckedChangeListener { _, id ->
+            sortBy = when (id) {
+                R.id.sort_created -> NoteRepository.SortBy.CREATED_DESC
+                else -> NoteRepository.SortBy.UPDATED_DESC
             }
-            .setNegativeButton(R.string.action_cancel, null)
-            .show()
+            saveSort(sortBy)
+            reload()
+            sheet.dismiss()
+        }
+        sheet.setContentView(view)
+        sheet.show()
     }
 
     private fun loadSort(): NoteRepository.SortBy {

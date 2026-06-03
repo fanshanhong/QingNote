@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingHorizontal="@dimen/spacing_l"
+    android:paddingTop="@dimen/spacing_l"
+    android:paddingBottom="@dimen/spacing_m">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingBottom="@dimen/spacing_m"
+        android:text="@string/sort_picker_title"
+        android:textColor="@color/text_primary"
+        android:textSize="@dimen/text_title"
+        android:textStyle="bold" />
+
+    <RadioGroup
+        android:id="@+id/sort_radio_group"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <RadioButton
+            android:id="@+id/sort_updated"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:paddingHorizontal="@dimen/spacing_s"
+            android:text="@string/sort_updated_desc"
+            android:textColor="@color/text_primary"
+            android:textSize="@dimen/text_body" />
+
+        <RadioButton
+            android:id="@+id/sort_created"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:paddingHorizontal="@dimen/spacing_s"
+            android:text="@string/sort_created_desc"
+            android:textColor="@color/text_primary"
+            android:textSize="@dimen/text_body" />
+    </RadioGroup>
+</LinearLayout>

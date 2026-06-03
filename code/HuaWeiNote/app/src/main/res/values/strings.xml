@@ -10,9 +10,9 @@
 
     <!-- 排序选项 -->
     <string name="action_sort">排序</string>
+    <string name="sort_picker_title">排序方式</string>
     <string name="sort_updated_desc">按修改时间</string>
     <string name="sort_created_desc">按创建时间</string>
-    <string name="sort_title_asc">按标题 A-Z</string>
 
     <!-- 长按菜单 -->
     <string name="action_toggle_favorite">收藏 / 取消收藏</string>

@@ -70,13 +70,6 @@ class NoteRepositoryListTest {
     }
 
     @Test
-    fun `sort by title ascending uses title order`() = runBlocking {
-        val (idA, idB, idC) = seed()
-        val list = NoteRepository.list(sortBy = NoteRepository.SortBy.TITLE_ASC)
-        assertEquals(listOf(idA, idB, idC), list.map { it.id })  // Alpha / Beta / Charlie
-    }
-
-    @Test
     fun `search matches title`() = runBlocking {
         seed()
         val list = NoteRepository.list(query = "Alpha")
