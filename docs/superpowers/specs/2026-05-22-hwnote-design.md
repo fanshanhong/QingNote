@@ -433,16 +433,73 @@ dependencies {
 
 ## 12. 附录：开放的 v2 待办
 
-- 分类 / 文件夹
+- 分类 / 文件夹 ← **2026-06-04 已晋升 MVP，见 §13**
 - 置顶 pin
-- 回收站（30 天保留）
+- 回收站（30 天保留）← **2026-06-04 已晋升 MVP，见 §13**
 - 提醒 / 闹钟
 - 笔记加锁（PIN）
 - 导出 PDF / 长图 / .txt
 - 系统分享面板
-- 录音 / 语音笔记
+- 录音 / 语音笔记 ← **2026-06-04 已晋升 MVP，见 §13**
 - 整库备份恢复（zip）
 - 深色模式
 - 多端同步（如做服务端）
+
+---
+
+## 13. Scope Expansion（2026-06-04）
+
+PRD 2026-05-22 冻结版交付完成（M1..M7）并真机走查通过后，用户基于参考华为 Note 实机使用反馈，决定把以下原 §12 v2 待办晋升 MVP，作为新 baseline：
+
+### 13.1 新增范围
+
+| 项 | 范围 | 原因 |
+|---|---|---|
+| **分类 / 文件夹** | 顶部下拉切换（全部 / 未分类 / 我的收藏 / 最近删除 + 用户文件夹）；文件夹 CRUD + 颜色 + 排序 | 笔记数量增长后必备的组织维度 |
+| **最近删除（软删除）** | 删除 → 进最近删除（30 天保留）；支持恢复 / 彻底删；过期自动清理 | 防误删 |
+| **语音录入** | 编辑器内 `Block.AudioBlock`，录制 / 播放 / 删除；m4a + AAC 编码 | 提升录入效率 |
+| **撤销 / 重做** | 编辑器内全操作可撤销（文本输入 / 样式 / 块增删 / 图片清单语音操作）；跨保存边界清栈 | 高频编辑场景必备 |
+| **首页排序对话框** | 由 `AlertDialog` 改 `BottomSheetDialog`，2 选项（编辑时间 / 创建时间） | 视觉对齐华为 Note；收藏访问改走顶部入口 |
+| **图片块视觉** | 去边框 + 12dp 圆角 `ShapeableImageView` | 对齐华为 Note 自然样式 |
+| **清单 toggle 反向** | 焦点在 TextBlock 时点清单按钮 → 把本块整块原地转 ChecklistBlock（首项 = 原文字） | 修正既有"另起一行"反直觉行为 |
+| **列表页状态栏 inset** | AppBarLayout 加 `fitsSystemWindows="true"` | bug fix，复用 M7 T12 pattern |
+| **编辑器 metadata strip** | 标题下方一行："2 分钟前 · 未分类"，点分类可切换 | 时间反馈 + 分类入口 |
+
+### 13.2 数据模型增量
+
+**Note 增列**（DB v2 迁移）：
+- `category_id INTEGER REFERENCES categories(id) ON DELETE SET NULL` — null = 未分类
+- `deleted_at INTEGER DEFAULT 0` — 0 = 未删除；正数 = 删除时间戳
+
+**新表 categories（DB v2 新建）**：
+- `id INTEGER PRIMARY KEY AUTOINCREMENT`
+- `name TEXT NOT NULL`
+- `color TEXT NOT NULL` —— hex（参考 4 色：黄 / 青 / 绿 / 红，可扩展）
+- `order_index INTEGER NOT NULL DEFAULT 0` —— 排序权重
+
+**Block sealed 新成员**：
+- `AudioBlock(id, fileName, durationMs)` —— fileName 指向 `filesDir/notes/<noteId>/audio/<uuid>.m4a`
+
+**Edit history（运行时，不入库）**：
+- `EditHistoryManager` 维护 undo / redo 栈；操作模型按 command pattern；保存时清栈
+
+### 13.3 不在本轮范围
+
+仍保留 §12 v2 待办的：置顶 pin / 提醒 / 加锁 / 导出 / 分享 / 备份 / 深色模式 / 多端同步。
+
+### 13.4 新里程碑列表
+
+| 里程碑 | 范围 | 预估 |
+|---|---|---|
+| **M8 体验小修** | 13.1 中的：列表状态栏 / 图片圆角 / 清单 toggle 反向 / 排序 2 选项 BottomSheet | 半天 |
+| **M9 分类 + 软删除 + metadata strip** | 13.1 中的：分类系统 / 文件夹管理 / 软删除 + 最近删除页 / 编辑器 metadata strip；伴随 DB v2 迁移 | 1-2 天 |
+| **M10 语音录入** | 13.1 中的：AudioBlock + 录制 / 播放 / 删除 + 权限 + 文件存储 | 1 天 |
+| **M11 撤销 / 重做** | 13.1 中的：EditHistoryManager + 工具栏按钮 + 跨保存清栈 | 1-2 天 |
+
+### 13.5 兼容性约定
+
+- DB 升级：`NoteDbHelper` 版本 1 → 2，`onUpgrade` 加 `ALTER TABLE notes ADD COLUMN ...` + `CREATE TABLE categories`；旧笔记 `category_id` 默认 NULL（=未分类），`deleted_at` 默认 0（=未删除）。
+- JSON 序列化：旧 JSON 不含 `AudioBlock` 类型 → `NoteJson.fromJson` 已有未知类型容错（M2 测过），无需特殊处理。
+- 测试基线：68 单测继续全绿；新加 M8-M11 范围对应单测（DB migration / Category CRUD / AudioBlock JSON round-trip / undo-redo command 模型）。
 
 —— 文档结束 ——
