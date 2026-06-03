@@ -371,10 +371,10 @@ class EditorPresenter(
     }
 
     /**
-     * "清单"按钮入口：
-     * - 焦点在 TextBlock → 在其后插新清单块（同 [insertChecklistBlockAtFocus]）
+     * "清单"按钮入口（M8 反向 toggle）：
      * - 焦点在某清单项 → 取消该项：把该项文字搬出来作 TextBlock 插到清单块之后；删该项；
      *   清单空了则整块替换 TextBlock；焦点交新 TextBlock
+     * - 焦点在 TextBlock → 原地把该 TextBlock 转 ChecklistBlock（首项 = 该块当前文字）
      * - 无焦点 → 走 [insertChecklistBlockAtFocus] 兜底（追加到末尾）
      */
     fun toggleChecklistAtFocus() {
@@ -389,9 +389,32 @@ class EditorPresenter(
         }
         if (itemView != null && blockView != null) {
             convertChecklistItemToText(blockView, itemView)
-        } else {
-            insertChecklistBlockAtFocus()
+            return
         }
+        // 焦点在 TextBlock → 原地转 ChecklistBlock（heading/spans 丢失，仅保文字）
+        val tb = focusedTextBlock
+        if (tb != null) {
+            convertTextBlockToChecklist(tb)
+            return
+        }
+        // 兜底：无焦点 → 末尾追加新清单块
+        insertChecklistBlockAtFocus()
+    }
+
+    /** 原地把 TextBlock 转 ChecklistBlock：取该块当前文字（toString，丢 heading/spans）作首项；焦点交首项。 */
+    private fun convertTextBlockToChecklist(tb: TextBlockView) {
+        val idx = currentBlocks.indexOf(tb)
+        if (idx < 0) return
+        val text = tb.edit.text.toString()
+        container.removeView(tb)
+        currentBlocks.removeAt(idx)
+        if (focusedTextBlock === tb) focusedTextBlock = null
+        val newBlock = Block.ChecklistBlock(
+            id = "c-${UUID.randomUUID().toString().take(8)}",
+            items = mutableListOf(com.fan.hwnote.app.model.entity.ChecklistItem(false, text)),
+        )
+        addChecklistBlockView(newBlock, insertAt = idx)
+        (currentBlocks[idx] as ChecklistBlockView).focusLastItemEnd()
     }
 
     /** 把某个清单项变成 TextBlock：取文字 → 在清单块后插 TextBlock → 从清单删该项；清单空了连块一起删（替换为 TextBlock 在原位）。 */
