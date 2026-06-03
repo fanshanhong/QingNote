@@ -1,6 +1,6 @@
 # HwNote · 项目进度
 
-最后更新：2026-05-23（M7 打磨完成 — 所有 7 个里程碑均已完成）
+最后更新：2026-06-04（M8 体验小修完成 — PRD §13 启动，M9/M10/M11 待执行）
 
 ## 阶段地图
 
@@ -12,8 +12,8 @@
 | 4. 规格自审 | ✅ 完成 | 修复 7 处一致性问题（heading 块属性归位、Span 6 种、笔效/橡皮算法详写、ACTION_GET_CONTENT 替换、Glide compiler 去除、plain_text 规则补、行内/块级样式分离） |
 | 5. 用户审阅 PRD | ✅ 完成 | 用户确认无修改，进入下一步 |
 | 6. **实施计划编写** | ✅ 完成 | `docs/superpowers/plans/2026-05-22-hwnote-implementation.md`（高层版，7 个里程碑各一节，685 行） |
-| 7. 代码实施 | ✅ **全部完成** | M1 + M2 + M3 + M4 + M5 + M6 + M7 详细计划 + 代码全部落地，68 单测全绿 |
-| 8. 手测验收 | ✅ M3 / M5 / M6 / M7 用户真机走查全部通过 | M3 五条 + M5 七条 + M6 十三条 + M7 十六条（含 T12/T13 四条回归）逐条手测通过；M4 SpanConverter 15 项 + M2 数据层 42 项 + M5 ImageCompressor 3 项 + M6 StrokeEraser 5 项 + M7 BrushPainter 3 项单测 PASSED |
+| 7. 代码实施 | ✅ M1-M7 完成 + M8 完成 | M1+M2+M3+M4+M5+M6+M7 代码全部落地，**M8 (PRD §13 启动)** 4 改动全部落地；67 单测全绿（M7 基线 68 → M8 删 TITLE_ASC 同时连带删测试） |
+| 8. 手测验收 | ✅ M3 / M5 / M6 / M7 / **M8** 用户真机走查全部通过 | M3 五条 + M5 七条 + M6 十三条 + M7 十六条 + **M8 六条**逐条手测通过；M4 SpanConverter 15 项 + M2 数据层 42 项 + M5 ImageCompressor 3 项 + M6 StrokeEraser 5 项 + M7 BrushPainter 3 项单测 PASSED |
 
 ## 里程碑进度
 
@@ -26,6 +26,10 @@
 | M5 图片块/清单块 | ✅ 完成（2026-05-23） | ImageBlockView + ChecklistBlockView + ImageCompressor（长边 1920/JPEG 85）+ 多选相册 / 拍照 + CAMERA 运行时权限；passthroughBlocks 已删 |
 | M6 手写 Overlay | ✅ 完成（2026-05-23） | HandwritingOverlayView 透明层 + 4 笔种 BrushPainter + 笔画级 StrokeEraser + 撤销/重做/清空 + 6 键工具栏 + 8 色 + 3 粗细；StrokeEraser 5 单测 |
 | M7 打磨 | ✅ 完成（2026-05-23） | 13 任务全部落地：手写性能（Paint 三键缓存 / Path 复用）+ 鲁棒（save-in-flight / Camera SavedInstanceState / 图片失败 Toast）+ UX（状态栏 inset / 清单 toggle / Camera 引导跳设置 / 文案规范）；68 单测 + 16 项真机走查全过 |
+| M8 体验小修 | ✅ 完成（2026-06-04） | PRD §13 启动；4 改动：列表页 AppBarLayout fitsSystemWindows / 图片块 ShapeableImageView 12dp 圆角 / 清单按钮反向 toggle / 排序 BottomSheet 2 选项 + 删 TITLE_ASC；67 单测 + 6 项真机走查全过 |
+| M9 分类 + 软删除 + metadata strip | ⏳ 待执行 | PRD §13 范围；DB v2 迁移；分类系统 + 最近删除 + 编辑器 metadata strip |
+| M10 语音录入 | ⏳ 待执行 | PRD §13 范围；AudioBlock + 录制 / 播放 / 删除 + RECORD_AUDIO 权限 |
+| M11 撤销 / 重做 | ⏳ 待执行 | PRD §13 范围；EditHistoryManager 命令模式 + 工具栏按钮 + 跨保存清栈 |
 
 ## M1 完成详情（2026-05-22）
 
@@ -371,9 +375,43 @@ M1 ✅ → M2 数据层 → M3 列表页
 
 **执行模式：** Subagent-Driven Development，严格串行 13 任务（T1→T13）。每任务的 implementer DONE → spec reviewer → code quality reviewer → fix（如有）→ re-review → 标完成；T11 仅做真机手测 + STATUS 收尾，无 commit；多个 fix commit 由 reviewer 反馈触发。
 
+## M8 完成详情（2026-06-04）
+
+**起因：** M7 完成 + 全 7 里程碑真机走查通过后，用户参考华为 Note 实机使用反馈，发起 9 项体验改动需求。先做 PRD §13 scope expansion 把 9 项收入新 baseline 并拆 M8-M11 四个里程碑，再启动 M8 — **4 项轻量 UI 表现层改动**，不动数据模型也不引入 DB 迁移。
+
+**4 改动点：**
+
+1. **列表页状态栏 inset（T1，commit `57e7306`）** — `activity_note_list.xml` 的 AppBarLayout 加 `android:fitsSystemWindows="true"`，与 M7 T12 编辑器侧同 pattern；Material 自动消化 statusBar inset 并把 `@color/primary` 背景延伸进系统栏，修"备忘录"标题压住系统时间的 bug。
+2. **图片块 ShapeableImageView 12dp 圆角（T2，commits `1679cf6` + `7802169`）** — `block_image.xml` 把 `ImageView` 换成 `com.google.android.material.imageview.ShapeableImageView`，删 `android:background`（黑边来源），加 `app:shapeAppearanceOverlay`；`themes.xml` 新增 `ShapeAppearance.HwNote.ImageBlock`（`parent=""` + `cornerFamily=rounded` + `cornerSize=@dimen/radius_image`）；`dimens.xml` 新增 `radius_image=12dp`。`bg_image_block.xml` 因仍被 Glide `.error()` 作占位图引用未删（非阻塞 note，可后续单独处理）。视觉对齐华为 Note 自然样式。
+3. **清单按钮反向 toggle（T3，commit `62649dc`）** — `EditorPresenter.toggleChecklistAtFocus()` 加新分支：焦点在 TextBlock 时 → 原地把该 TextBlock 转 ChecklistBlock（首项 = 该块当前文字，heading/spans 丢失仅保文字，符合数据模型简化语义）；保留既有"焦点在清单项 → 取消该项"和"无焦点 → 末尾追加新清单块"两分支。修用户抱怨的"清单按钮总是从下一行开始"反直觉行为。
+4. **排序 BottomSheet 2 选项 + 删 TITLE_ASC（T4，commits `b9d08fb` + `bb6ff76` + `0096a0b`）** — `NoteRepository.SortBy` 删 `TITLE_ASC` 枚举值 + `list()` 同分支删；`NoteListActivity.showSortDialog()` 由 `AlertDialog.setSingleChoiceItems` 改 `BottomSheetDialog` + `RadioGroup`；新增 `dialog_sort_picker.xml`；`strings.xml` 文案改"编辑时间"/"创建时间"对齐用户原话，新增 `sort_picker_title="排序方式"`，删 `sort_title_asc`。旧装机 SharedPreferences 存的 "TITLE_ASC" 由 `loadSort()` 既有 `runCatching.getOrDefault(UPDATED_DESC)` 自动降级，无需 migration 代码。视觉对齐华为 Note 截图样式。
+
+**涉及文件：**
+- 修改：`activity_note_list.xml`、`block_image.xml`、`themes.xml`、`dimens.xml`、`EditorPresenter.kt`、`NoteRepository.kt`、`NoteListActivity.kt`、`strings.xml`
+- 新增：`dialog_sort_picker.xml`
+- 删除：`styles.xml`（短暂存在 1 commit 后并入 themes.xml）、`NoteRepositoryListTest.sort by title ascending uses title order`（TITLE_ASC 连带删除）
+
+**M8 commit 列表（git log `dc149cb..HEAD`，共 7 个 commit）：**
+- `57e7306` fix(m8): 列表页 AppBarLayout fitsSystemWindows，避免标题压系统时间
+- `1679cf6` fix(m8): 图片块换 ShapeableImageView 12dp 圆角，删黑边白底
+- `7802169` refactor(m8): 图片块 ShapeAppearance 合入 themes + 抽 dimen + 重命名
+- `62649dc` feat(m8): 清单按钮反向 toggle —— 当前 TextBlock 原地转清单首项
+- `b9d08fb` feat(m8): 排序改 BottomSheet 2 选项（编辑时间/创建时间），删 TITLE_ASC
+- `bb6ff76` fix(m8): 排序文案对齐用户原话（编辑时间 / 创建时间）
+- `0096a0b` chore(m8): NoteListActivity 2 处 FQN 改 import
+
+**测试统计：** `:app:clean :app:assembleDebug :app:test` 全绿，**67 项 PASSED**（M7 基线 68 → M8 删 TITLE_ASC 枚举强制连带删除 `NoteRepositoryListTest.sort by title ascending uses title order`，新基线 67），0 failures / 0 errors / 0 skipped。UPDATED_DESC + CREATED_DESC 两枚举值原有单测保留，覆盖未失守。
+
+**验收：**
+- ✅ `./gradlew :app:clean :app:assembleDebug :app:test` 全绿，67/67 PASSED（debug + release 两轮）
+- ✅ 每个 M8 任务双轨 review 通过；多次触发 fix：T2 nice-to-have（合入 themes + 抽 dimen + 重命名）、T4 spec violation（文案"按修改时间"未对齐"编辑时间"）+ nice-to-have（FQN 改 import）
+- ✅ 真机手测 6 条全过（用户 2026-06-04 完成走查）：①列表页 statusBar 不压系统时间，绿色延伸进系统栏；②图片块圆角自然，无黑边；③焦点在带文字 TextBlock，点清单按钮 → 该块原地变清单首项，文字保留；④焦点在空 TextBlock 同样原位转空清单项；⑤排序 BottomSheet 弹起，2 选项切换生效，杀进程保留；⑥M7 既有功能回归（清单内退格 / 末尾空项回车退出 / 图片插入 / 拍照 / 手写 / 标题 / 收藏切换）
+
+**执行模式：** Subagent-Driven Development，严格串行 4 任务（T1→T2→T3→T4）+ T5 全量验证 + STATUS。每任务 implementer DONE → spec reviewer → code quality reviewer → fix（如有）→ 标完成；T2/T4 各引入 1 个 fix commit + 1 个 chore/refactor commit。
+
 ## 项目完成总览
 
-7 个里程碑全部完成（2026-05-22 ~ 2026-05-23）：
+8 个里程碑（M1-M8）完成（2026-05-22 ~ 2026-06-04）；M9-M11 待执行：
 
 | # | 里程碑 | commit 数 | 单测增量 | 关键产出 |
 |---|---|---|---|---|
@@ -385,7 +423,13 @@ M1 ✅ → M2 数据层 → M3 列表页
 | 编辑器 UX 打磨 | UI 表现层 | 10 | 0 | 空白点焦 + IME 顶栏 + 4 键工具栏 + StylePickerBottomSheet |
 | M6 | 手写 Overlay | 10 | 5 | HandwritingOverlayView + 4 笔种 BrushPainter + 笔画级 StrokeEraser + 6 键工具栏 + 8 色 + 3 粗细 |
 | M7 | 打磨 | 17 | 3 | 手写性能（Paint 缓存 / Path 复用）+ 鲁棒（save-in-flight / SavedInstanceState / 图片 Toast）+ UX（状态栏 / 清单 toggle / Camera 引导） |
+| M8 | 体验小修 | 7 | −1（删 TITLE_ASC 测试） | 列表 statusBar / 图片圆角 / 清单 toggle 反向 / 排序 BottomSheet 2 选项 |
 
-**累计：** 92 个 commit（不含 docs/计划 commit），68 项自动化单测全绿，PRD MVP 范围 100% 覆盖。架构守住"Block 块组合 + 手写 Overlay 透明层"原始决策，未引入 Compose / ViewModel / LiveData / Room / Hilt / Navigation。
+**累计：** 99 个 commit（不含 docs/计划 commit），67 项自动化单测全绿，PRD MVP + §13 已晋升的"分类 + 录音 + 撤销重做"中 M8 部分（图片圆角 / 排序 / 清单反向 / 状态栏 4 项轻量 UI）100% 覆盖。架构守住"Block 块组合 + 手写 Overlay 透明层"原始决策，未引入 Compose / ViewModel / LiveData / Room / Hilt / Navigation。
 
-**后续可选方向（均超出当前 PRD 范围，需用户重新决策）：** 分类 / 置顶 / 回收站 / 提醒 / 加锁 / 导出 / 分享 / 录音 / 备份 / 深色模式。
+**M9-M11 待执行（PRD §13 范围）：**
+- **M9 分类 + 软删除 + metadata strip** — DB v2 迁移（ALTER TABLE notes ADD COLUMN category_id + deleted_at；CREATE TABLE categories）+ 顶部下拉切换 + 最近删除页（30 天保留）+ 编辑器 metadata strip
+- **M10 语音录入** — `Block.AudioBlock` sealed 新成员 + 编辑器内录制/播放/删除 + m4a/AAC 编码 + RECORD_AUDIO 权限
+- **M11 撤销 / 重做** — `EditHistoryManager` 命令模式 + 工具栏按钮 + 跨保存清栈
+
+**后续可选方向（仍超出 PRD §13 范围，需用户重新决策）：** 置顶 pin / 提醒 / 加锁 / 导出 / 分享 / 备份 / 深色模式 / 多端同步。
