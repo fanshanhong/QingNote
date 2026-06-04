@@ -72,6 +72,8 @@ object NoteRepository {
             put("content_json", NoteJson.toJson(note.content))
             put("is_favorite", if (note.isFavorite) 1 else 0)
             put("updated_at", now)
+            if (note.categoryId == null) putNull("category_id") else put("category_id", note.categoryId)
+            put("deleted_at", note.deletedAt)
         }
         val db = dbHelper.writableDatabase
         if (note.id == 0L) {
@@ -104,6 +106,7 @@ object NoteRepository {
 
     private fun cursorToNote(c: Cursor): Note {
         val contentJson = c.getString(c.getColumnIndexOrThrow("content_json")) ?: ""
+        val catIdx = c.getColumnIndexOrThrow("category_id")
         return Note(
             id = c.getLong(c.getColumnIndexOrThrow("id")),
             title = c.getString(c.getColumnIndexOrThrow("title")) ?: "",
@@ -112,6 +115,8 @@ object NoteRepository {
             createdAt = c.getLong(c.getColumnIndexOrThrow("created_at")),
             updatedAt = c.getLong(c.getColumnIndexOrThrow("updated_at")),
             content = NoteJson.fromJson(contentJson),
+            categoryId = if (c.isNull(catIdx)) null else c.getLong(catIdx),
+            deletedAt = c.getLong(c.getColumnIndexOrThrow("deleted_at")),
         )
     }
 }

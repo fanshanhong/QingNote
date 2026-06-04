@@ -85,4 +85,22 @@ class NoteRepositorySaveGetTest {
         assertNotEquals(firstLoad.updatedAt, secondLoad.updatedAt)  // 变
         assertTrue(secondLoad.updatedAt > firstLoad.updatedAt)
     }
+
+    @Test
+    fun `save and get round-trip preserves categoryId and deletedAt`() = runBlocking {
+        val id = NoteRepository.save(
+            Note.new().copy(title = "X", categoryId = 7L, deletedAt = 123456L)
+        )
+        val n = NoteRepository.get(id)!!
+        assertEquals(7L, n.categoryId)
+        assertEquals(123456L, n.deletedAt)
+    }
+
+    @Test
+    fun `save with null categoryId persists as NULL`() = runBlocking {
+        val id = NoteRepository.save(Note.new().copy(title = "Y", categoryId = null))
+        val n = NoteRepository.get(id)!!
+        assertNull(n.categoryId)
+        assertEquals(0L, n.deletedAt)  // 默认值
+    }
 }

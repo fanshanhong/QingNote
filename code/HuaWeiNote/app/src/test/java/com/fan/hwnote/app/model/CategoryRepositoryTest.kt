@@ -5,7 +5,6 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Before
-import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -59,17 +58,14 @@ class CategoryRepositoryTest {
         assertNull(CategoryRepository.get(id))
     }
 
-    @Ignore("Depends on T3: Note.categoryId field + NoteRepository read/write of category_id")
     @Test
     fun `delete sets associated notes category_id to NULL`() = runBlocking {
         val catId = CategoryRepository.insert("Temp", "#000000")
-        // T3 will add Note.categoryId; once that lands, this test can be enabled.
-        // val noteId = NoteRepository.save(
-        //     com.fan.hwnote.app.model.entity.Note.new().copy(title = "N1", categoryId = catId)
-        // )
+        val noteId = NoteRepository.save(
+            com.fan.hwnote.app.model.entity.Note.new().copy(title = "N1", categoryId = catId)
+        )
         CategoryRepository.delete(catId)
-        // val n = NoteRepository.get(noteId)
-        // assertNull(n?.categoryId)
-        assertEquals(0, CategoryRepository.list().size)  // verify category itself is gone, the only assertion possible in T2
+        val n = NoteRepository.get(noteId)
+        assertNull(n?.categoryId)
     }
 }
