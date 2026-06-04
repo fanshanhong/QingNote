@@ -18,6 +18,8 @@ import com.fan.hwnote.app.model.entity.Note
 import com.fan.hwnote.app.model.entity.NoteContent
 import com.fan.hwnote.app.model.entity.SpanType
 import com.fan.hwnote.app.model.entity.TextSpan
+import com.fan.hwnote.app.model.history.Command
+import com.fan.hwnote.app.model.history.CompositeCommand
 import com.fan.hwnote.app.model.history.EditHistoryManager
 import com.fan.hwnote.app.model.history.commands.AddBlockCommand
 import com.fan.hwnote.app.model.history.commands.ApplyHeadingCommand
@@ -277,9 +279,12 @@ class EditorPresenter(
             val tail = emptyTextBlock()
             addTextBlockView(tail)
             (currentBlocks[0] as? TextBlockView)?.focusEditEnd()
-            history.push(RemoveBlockCommand(this, snapshot.id,
-                presnapshot = snapshot, presavedIndex = idx))
-            history.push(AddBlockCommand(this, 0, tail))
+            val removeCmd = RemoveBlockCommand(this, snapshot.id,
+                presnapshot = snapshot, presavedIndex = idx)
+            val addTailCmd = AddBlockCommand(this, 0, tail)
+            // 1 个 ↶ 同时撤回"删坏图 + 占位空块"，恢复回坏图状态（用户可继续选择删 / 替换）
+            history.push(CompositeCommand("ImageLoadFailedReplaceWithEmpty",
+                listOf(removeCmd, addTailCmd)))
         } else {
             history.push(RemoveBlockCommand(this, snapshot.id,
                 presnapshot = snapshot, presavedIndex = idx))
@@ -406,15 +411,19 @@ class EditorPresenter(
         val baseIdx = if (anchor != null) currentBlocks.indexOf(anchor) + 1
                       else currentBlocks.size
         var insertAt = baseIdx
+        // 收集所有底层 Command 打包为 1 个 CompositeCommand，确保用户按 1 下 ↶ 整体撤销
+        // （否则尾 TextBlock 会先被撤回，图片还在，违反 spec §5.3 真机走查 #4 期望）。
+        val cmds = mutableListOf<Command>()
         for (b in blocks) {
             addImageBlockView(b, insertAt = insertAt)
-            history.push(AddBlockCommand(this, insertAt, b))
+            cmds.add(AddBlockCommand(this, insertAt, b))
             insertAt += 1
         }
         // 末尾补一个空 TextBlock，让用户可继续输入
         val tail = emptyTextBlock()
         addTextBlockView(tail, insertAt = insertAt)
-        history.push(AddBlockCommand(this, insertAt, tail))
+        cmds.add(AddBlockCommand(this, insertAt, tail))
+        history.push(CompositeCommand("InsertImages(${blocks.size})", cmds))
         (currentBlocks[insertAt] as TextBlockView).focusEditEnd()
     }
 
@@ -513,9 +522,11 @@ class EditorPresenter(
             // 用 ReplaceBlockCommand 表达整个 ChecklistBlock 前后差异（细粒度"删 item"由整块快照对承载），
             // 再用 AddBlockCommand 表达新 TextBlock 的插入。两条共同回退即可。
             val newChecklistSnapshot = block.toBlock()
-            history.push(ReplaceBlockCommand(this, oldChecklistSnapshot.id, newChecklistSnapshot,
-                preOldBlock = oldChecklistSnapshot))
-            history.push(AddBlockCommand(this, blockIdx + 1, newTextBlock))
+            val replaceCmd = ReplaceBlockCommand(this, oldChecklistSnapshot.id, newChecklistSnapshot,
+                preOldBlock = oldChecklistSnapshot)
+            val addCmd = AddBlockCommand(this, blockIdx + 1, newTextBlock)
+            // 1 个 ↶ 同时复原清单项 + 撤回新 TextBlock，避免"按 1 下只撤回 TextBlock 留下半残清单"
+            history.push(CompositeCommand("ChecklistItem→Text", listOf(replaceCmd, addCmd)))
         }
     }
 
@@ -528,10 +539,12 @@ class EditorPresenter(
         val baseIdx = if (anchor != null) currentBlocks.indexOf(anchor) + 1
                       else currentBlocks.size
         addAudioBlockView(block, insertAt = baseIdx)
-        history.push(AddBlockCommand(this, baseIdx, block))
+        val audioCmd = AddBlockCommand(this, baseIdx, block)
         val tail = emptyTextBlock()
         addTextBlockView(tail, insertAt = baseIdx + 1)
-        history.push(AddBlockCommand(this, baseIdx + 1, tail))
+        val tailCmd = AddBlockCommand(this, baseIdx + 1, tail)
+        // 1 个 ↶ 撤回整次插入（语音块 + 尾 TextBlock），与 spec §5.3 走查 #5 期望一致
+        history.push(CompositeCommand("InsertAudio", listOf(audioCmd, tailCmd)))
         (currentBlocks[baseIdx + 1] as TextBlockView).focusEditEnd()
     }
 
