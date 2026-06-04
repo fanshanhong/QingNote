@@ -88,7 +88,12 @@ class EditorPresenter(
         val start = edit.selectionStart
         val end = edit.selectionEnd
         if (start in 0 until end) {
+            val blockId = v.toBlock().id
+            val before = v.toBlock().spans
             applyInlineToRange(edit.text as Spannable, type, start, end, null)
+            val after = v.toBlock().spans
+            // TODO(T8): wrap applyInlineToRange in suppressDebounceWhile to avoid TextWatcher feedback loop.
+            history.push(ApplySpanCommand(this, blockId, before, after, focusCursor = end, typeForLabel = type))
             return false
         }
         if (pendingInline.contains(type)) pendingInline.remove(type) else pendingInline.add(type)
@@ -153,7 +158,12 @@ class EditorPresenter(
         val edit = v.edit
         val start = edit.selectionStart; val end = edit.selectionEnd
         if (start in 0 until end) {
+            val blockId = v.toBlock().id
+            val before = v.toBlock().spans
             applyInlineToRange(edit.text as Spannable, SpanType.FONT_SIZE, start, end, value)
+            val after = v.toBlock().spans
+            // TODO(T8): wrap applyInlineToRange in suppressDebounceWhile to avoid TextWatcher feedback loop.
+            history.push(ApplySpanCommand(this, blockId, before, after, focusCursor = end, typeForLabel = SpanType.FONT_SIZE))
             return null
         }
         pendingSize = if (pendingSize == value) null else value
@@ -166,7 +176,12 @@ class EditorPresenter(
         val edit = v.edit
         val start = edit.selectionStart; val end = edit.selectionEnd
         if (start in 0 until end) {
+            val blockId = v.toBlock().id
+            val before = v.toBlock().spans
             applyInlineToRange(edit.text as Spannable, SpanType.COLOR, start, end, hex)
+            val after = v.toBlock().spans
+            // TODO(T8): wrap applyInlineToRange in suppressDebounceWhile to avoid TextWatcher feedback loop.
+            history.push(ApplySpanCommand(this, blockId, before, after, focusCursor = end, typeForLabel = SpanType.COLOR))
             return null
         }
         pendingColor = if (pendingColor == hex) null else hex
@@ -379,7 +394,12 @@ class EditorPresenter(
     /** Task 10 H1/H2 用：对当前焦点 TextBlock 切 heading。 */
     fun toggleHeading(target: Heading) {
         val v = focusedTextBlock ?: return
-        v.setHeading(if (v.currentHeading() == target) null else target)
+        val blockId = v.toBlock().id
+        val before = v.currentHeading()
+        val after = if (before == target) null else target
+        v.setHeading(after)
+        // TODO(T8): wrap v.setHeading in suppressDebounceWhile if setHeading triggers TextWatcher.
+        history.push(ApplyHeadingCommand(this, blockId, before, after))
     }
 
     /**
