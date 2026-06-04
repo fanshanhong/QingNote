@@ -25,11 +25,25 @@ class DeleteConfirmBottomSheet(
         view.findViewById<TextView>(R.id.confirm_title).text = title
         view.findViewById<TextView>(R.id.confirm_message).text = message
         val btnConfirm = view.findViewById<TextView>(R.id.btn_confirm)
+        val btnCancel = view.findViewById<TextView>(R.id.btn_cancel)
         btnConfirm.text = confirmLabel
         if (confirmIsDanger) {
             btnConfirm.setTextColor(ContextCompat.getColor(context, R.color.error))
+        } else {
+            btnConfirm.setTextColor(ContextCompat.getColor(context, R.color.text_primary))
         }
-        btnConfirm.setOnClickListener { dismiss(); onConfirm() }
-        view.findViewById<TextView>(R.id.btn_cancel).setOnClickListener { dismiss() }
+        // 双击守卫：消失动画期间按钮仍可点 → 防止 onConfirm/dismiss 双触发
+        var fired = false
+        btnConfirm.setOnClickListener {
+            if (fired) return@setOnClickListener
+            fired = true
+            dismiss()
+            onConfirm()
+        }
+        btnCancel.setOnClickListener {
+            if (fired) return@setOnClickListener
+            fired = true
+            dismiss()
+        }
     }
 }
