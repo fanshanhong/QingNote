@@ -29,7 +29,6 @@ import com.fan.hwnote.app.model.history.commands.ReplaceBlockCommand
 import com.fan.hwnote.app.model.history.commands.ReplaceTextCommand
 import com.fan.hwnote.app.model.history.commands.StyleMutator
 import com.fan.hwnote.app.model.history.commands.TextMutator
-import com.fan.hwnote.app.model.storage.NoteFileStorage
 import com.fan.hwnote.app.util.applyTo
 import com.fan.hwnote.app.util.toTextSpans
 import com.fan.hwnote.app.view.block.BlockView
@@ -245,38 +244,45 @@ class EditorPresenter(
         val newBlock = emptyTextBlock()
         addTextBlockView(newBlock, insertAt = idx + 1)
         (currentBlocks[idx + 1] as TextBlockView).focusEditEnd()
+        history.push(AddBlockCommand(this, index = idx + 1, block = newBlock))
     }
 
     override fun onRequestDelete(view: BlockView) {
         val idx = currentBlocks.indexOf(view)
         if (idx <= 0) return // 第一块不可删
-        // 图片块顺手清掉本地 jpg；ChecklistBlock 没有文件需要清
-        if (view is ImageBlockView) {
-            (view.toBlock() as? Block.ImageBlock)?.let { purgeImageOnDisk(it) }
-        } else if (view is com.fan.hwnote.app.view.block.AudioBlockView) {
-            (view.toBlock() as? Block.AudioBlock)?.let { purgeAudioOnDisk(it) }
-        }
+        // M11: 不再 purge 本地文件 — undo 需要文件还在，遗孤由 Task 10 saveNote 后
+        // NoteRepository.cleanOrphanFiles 异步收口。
+        val blockSnapshot = view.toBlock()
         container.removeView(view)
         currentBlocks.removeAt(idx)
         if (focusedTextBlock === view) focusedTextBlock = null
         (currentBlocks[idx - 1] as? TextBlockView)?.focusEditEnd()
+        history.push(RemoveBlockCommand(this, blockSnapshot.id,
+            presnapshot = blockSnapshot, presavedIndex = idx))
     }
 
     override fun onFocusGained(view: BlockView) {
         if (view is TextBlockView) focusedTextBlock = view
     }
 
-    /** 图片加载失败的安全移除：第一块时退化为换成空 TextBlock，避免列表为空崩溃。同时清磁盘 jpg。 */
+    /** 图片加载失败的安全移除：第一块时退化为换成空 TextBlock，避免列表为空崩溃。M11 不再清磁盘 jpg，由 cleanOrphanFiles 收口。 */
     override fun onImageLoadFailed(view: BlockView) {
         if (view !is ImageBlockView) { onRequestDelete(view); return }
         val idx = currentBlocks.indexOf(view)
         if (idx < 0) return
-        (view.toBlock() as? Block.ImageBlock)?.let { purgeImageOnDisk(it) }
+        val snapshot = view.toBlock()
         container.removeView(view)
         currentBlocks.removeAt(idx)
         if (idx == 0 && currentBlocks.isEmpty()) {
-            addTextBlockView(emptyTextBlock())
+            val tail = emptyTextBlock()
+            addTextBlockView(tail)
             (currentBlocks[0] as? TextBlockView)?.focusEditEnd()
+            history.push(RemoveBlockCommand(this, snapshot.id,
+                presnapshot = snapshot, presavedIndex = idx))
+            history.push(AddBlockCommand(this, 0, tail))
+        } else {
+            history.push(RemoveBlockCommand(this, snapshot.id,
+                presnapshot = snapshot, presavedIndex = idx))
         }
     }
 
@@ -284,11 +290,14 @@ class EditorPresenter(
     override fun onChecklistConvertBlockToText(view: BlockView) {
         val idx = currentBlocks.indexOf(view)
         if (idx < 0) return
+        val oldSnapshot = view.toBlock()
         container.removeView(view)
         currentBlocks.removeAt(idx)
         val newBlock = emptyTextBlock()
         addTextBlockView(newBlock, insertAt = idx)
         (currentBlocks[idx] as TextBlockView).focusEditEnd()
+        history.push(ReplaceBlockCommand(this, oldSnapshot.id, newBlock,
+            preOldBlock = oldSnapshot))
     }
 
     /** 在清单块之后追加空 TextBlock，焦点交给它。供清单末尾空项回车时调用（清单还剩其他项的情况）。 */
@@ -298,22 +307,7 @@ class EditorPresenter(
         val newBlock = emptyTextBlock()
         addTextBlockView(newBlock, insertAt = idx + 1)
         (currentBlocks[idx + 1] as TextBlockView).focusEditEnd()
-    }
-
-    /** 删除某图片块对应的本地 jpg。noteId<=0 视为未落库，no-op。失败吞掉（无关键路径）。 */
-    private fun purgeImageOnDisk(block: Block.ImageBlock) {
-        if (noteId <= 0L) return
-        runCatching {
-            NoteFileStorage(context).imageFile(noteId, block.fileName).delete()
-        }
-    }
-
-    /** 删除某 audio 块对应的本地 m4a。noteId<=0 视为未落库，no-op。失败吞掉。 */
-    private fun purgeAudioOnDisk(block: Block.AudioBlock) {
-        if (noteId <= 0L) return
-        runCatching {
-            NoteFileStorage(context).audioFile(noteId, block.fileName).delete()
-        }
+        history.push(AddBlockCommand(this, idx + 1, newBlock))
     }
 
     // ----- private -----
@@ -414,11 +408,13 @@ class EditorPresenter(
         var insertAt = baseIdx
         for (b in blocks) {
             addImageBlockView(b, insertAt = insertAt)
+            history.push(AddBlockCommand(this, insertAt, b))
             insertAt += 1
         }
         // 末尾补一个空 TextBlock，让用户可继续输入
         val tail = emptyTextBlock()
         addTextBlockView(tail, insertAt = insertAt)
+        history.push(AddBlockCommand(this, insertAt, tail))
         (currentBlocks[insertAt] as TextBlockView).focusEditEnd()
     }
 
@@ -435,6 +431,7 @@ class EditorPresenter(
         )
         addChecklistBlockView(block, insertAt = insertAt)
         (currentBlocks[insertAt] as ChecklistBlockView).focusLastItemEnd()
+        history.push(AddBlockCommand(this, insertAt, block))
     }
 
     /**
@@ -472,6 +469,7 @@ class EditorPresenter(
     private fun convertTextBlockToChecklist(tb: TextBlockView) {
         val idx = currentBlocks.indexOf(tb)
         if (idx < 0) return
+        val oldSnapshot = tb.toBlock()
         val text = tb.edit.text.toString()
         container.removeView(tb)
         currentBlocks.removeAt(idx)
@@ -482,6 +480,8 @@ class EditorPresenter(
         )
         addChecklistBlockView(newBlock, insertAt = idx)
         (currentBlocks[idx] as ChecklistBlockView).focusLastItemEnd()
+        history.push(ReplaceBlockCommand(this, oldSnapshot.id, newBlock,
+            preOldBlock = oldSnapshot))
     }
 
     /** 把某个清单项变成 TextBlock：取文字 → 在清单块后插 TextBlock → 从清单删该项；清单空了连块一起删（替换为 TextBlock 在原位）。 */
@@ -491,9 +491,10 @@ class EditorPresenter(
     ) {
         val blockIdx = currentBlocks.indexOf(block)
         if (blockIdx < 0) return
+        val oldChecklistSnapshot = block.toBlock()
         val text = item.edit.text.toString()
         val becameEmpty = block.removeItemAndReturnEmpty(item)
-        val newBlock = Block.TextBlock(
+        val newTextBlock = Block.TextBlock(
             id = "b-${UUID.randomUUID().toString().take(8)}",
             text = text,
         )
@@ -501,12 +502,20 @@ class EditorPresenter(
             // 清单空了：原位替换为 TextBlock
             container.removeView(block)
             currentBlocks.removeAt(blockIdx)
-            addTextBlockView(newBlock, insertAt = blockIdx)
+            addTextBlockView(newTextBlock, insertAt = blockIdx)
             (currentBlocks[blockIdx] as TextBlockView).focusEditEnd()
+            history.push(ReplaceBlockCommand(this, oldChecklistSnapshot.id, newTextBlock,
+                preOldBlock = oldChecklistSnapshot))
         } else {
             // 清单还剩项：TextBlock 插在清单块后
-            addTextBlockView(newBlock, insertAt = blockIdx + 1)
+            addTextBlockView(newTextBlock, insertAt = blockIdx + 1)
             (currentBlocks[blockIdx + 1] as TextBlockView).focusEditEnd()
+            // 用 ReplaceBlockCommand 表达整个 ChecklistBlock 前后差异（细粒度"删 item"由整块快照对承载），
+            // 再用 AddBlockCommand 表达新 TextBlock 的插入。两条共同回退即可。
+            val newChecklistSnapshot = block.toBlock()
+            history.push(ReplaceBlockCommand(this, oldChecklistSnapshot.id, newChecklistSnapshot,
+                preOldBlock = oldChecklistSnapshot))
+            history.push(AddBlockCommand(this, blockIdx + 1, newTextBlock))
         }
     }
 
@@ -519,8 +528,10 @@ class EditorPresenter(
         val baseIdx = if (anchor != null) currentBlocks.indexOf(anchor) + 1
                       else currentBlocks.size
         addAudioBlockView(block, insertAt = baseIdx)
+        history.push(AddBlockCommand(this, baseIdx, block))
         val tail = emptyTextBlock()
         addTextBlockView(tail, insertAt = baseIdx + 1)
+        history.push(AddBlockCommand(this, baseIdx + 1, tail))
         (currentBlocks[baseIdx + 1] as TextBlockView).focusEditEnd()
     }
 

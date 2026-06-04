@@ -54,17 +54,25 @@ class AddBlockCommand(
 
 /**
  * 移除某 block。需要在 apply 前抓快照（Block 数据 + 当前 index）以便 revert 还原。
+ *
+ * 调用方若已手工 remove（如 onRequestDelete 路径），可通过 [presnapshot] / [presavedIndex]
+ * 预填快照；此时 apply 不再二次抓取（push 不调 apply，预填仅服务 revert 路径）。
  */
 class RemoveBlockCommand(
     private val mutator: BlockMutator,
     private val blockId: String,
+    /** 可选预填 — 调用方已 remove 时传入。null 时 apply 路径会自己抓。 */
+    presnapshot: Block? = null,
+    presavedIndex: Int = -1,
 ) : Command {
     override val label = "RemoveBlock($blockId)"
-    private var snapshot: Block? = null
-    private var savedIndex: Int = -1
+    private var snapshot: Block? = presnapshot
+    private var savedIndex: Int = presavedIndex
     override fun apply() {
-        snapshot = mutator.snapshotBlock(blockId)
-        savedIndex = mutator.indexOfBlock(blockId)
+        if (snapshot == null) {
+            snapshot = mutator.snapshotBlock(blockId)
+            savedIndex = mutator.indexOfBlock(blockId)
+        }
         mutator.silentRemoveBlock(blockId)
     }
     override fun revert() {
@@ -95,16 +103,20 @@ class MoveBlockCommand(
 /**
  * 把某 blockId 的整块替换为 newBlock（用于清单↔文本转换 / 改变 block 类型场景）。
  * 需要在 apply 前抓 oldBlock 快照以便 revert。
+ *
+ * 调用方若已手工 replace（如 onChecklistConvertBlockToText），可通过 [preOldBlock] 预填
+ * 旧块快照；此时 apply 不再二次抓取（push 不调 apply，预填仅服务 revert 路径）。
  */
 class ReplaceBlockCommand(
     private val mutator: BlockMutator,
     private val blockId: String,
     private val newBlock: Block,
+    preOldBlock: Block? = null,
 ) : Command {
     override val label = "ReplaceBlock($blockId -> ${newBlock.id})"
-    private var oldBlock: Block? = null
+    private var oldBlock: Block? = preOldBlock
     override fun apply() {
-        oldBlock = mutator.snapshotBlock(blockId)
+        if (oldBlock == null) oldBlock = mutator.snapshotBlock(blockId)
         mutator.silentReplaceBlock(blockId, newBlock)
         mutator.silentRequestFocus(newBlock.id)
     }
