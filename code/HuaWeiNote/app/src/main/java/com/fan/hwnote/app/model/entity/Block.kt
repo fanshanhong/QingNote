@@ -28,6 +28,12 @@ sealed class Block {
         override val id: String,
         var items: MutableList<ChecklistItem> = mutableListOf(),
     ) : Block()
+
+    data class AudioBlock(
+        override val id: String,
+        var fileName: String,
+        var durationMs: Long,
+    ) : Block()
 }
 
 /** 清单内单项。 */

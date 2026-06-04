@@ -13,6 +13,7 @@ data class NoteContent(
      * - TextBlock：取 text，非空才计入
      * - ChecklistBlock：每项 text，非空才计入
      * - ImageBlock：忽略
+     * - AudioBlock：忽略
      * - handwriting：忽略
      * 多段用 '\n' 拼接。
      */
@@ -23,6 +24,7 @@ data class NoteContent(
                 is Block.TextBlock -> appendIfNotEmpty(sb, b.text)
                 is Block.ChecklistBlock -> b.items.forEach { appendIfNotEmpty(sb, it.text) }
                 is Block.ImageBlock -> Unit // 图片不进搜索
+                is Block.AudioBlock -> Unit // 音频不进搜索
             }
         }
         return sb.toString()

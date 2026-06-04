@@ -167,6 +167,7 @@ class EditorPresenter(
                 is Block.TextBlock -> addTextBlockView(b)
                 is Block.ImageBlock -> addImageBlockView(b)
                 is Block.ChecklistBlock -> addChecklistBlockView(b)
+                is Block.AudioBlock -> Unit // T8 接通
             }
         }
         // 默认让第一个 TextBlock 拿到焦点（找不到就让第一块的可聚焦子 view 自己来）

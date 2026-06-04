@@ -91,6 +91,12 @@ object NoteJson {
             }
             put("items", items)
         }
+        is Block.AudioBlock -> JSONObject().apply {
+            put("type", "audio")
+            put("id", b.id)
+            put("fileName", b.fileName)
+            put("durationMs", b.durationMs)
+        }
     }
 
     private fun blockFromJson(o: JSONObject): Block? = when (o.optString("type")) {
@@ -120,6 +126,11 @@ object NoteJson {
             }
             Block.ChecklistBlock(id = o.optString("id"), items = items)
         }
+        "audio" -> Block.AudioBlock(
+            id = o.optString("id"),
+            fileName = o.optString("fileName"),
+            durationMs = o.optLong("durationMs"),
+        )
         else -> null
     }
 
