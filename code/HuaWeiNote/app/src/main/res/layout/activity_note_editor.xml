@@ -24,6 +24,40 @@
             app:navigationIcon="@drawable/ic_arrow_back"
             app:navigationContentDescription="@string/editor_back_cd"
             app:titleTextColor="@color/white" />
+
+        <LinearLayout
+            android:id="@+id/notebook_indicator"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp"
+            android:layout_marginStart="8dp"
+            android:background="?attr/selectableItemBackground">
+
+            <View
+                android:id="@+id/indicator_dot"
+                android:layout_width="12dp"
+                android:layout_height="12dp"
+                android:layout_marginEnd="8dp"/>
+
+            <TextView
+                android:id="@+id/indicator_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="?attr/textAppearanceLabelMedium"
+                android:textColor="@color/white"/>
+
+            <ImageView
+                android:layout_width="14dp"
+                android:layout_height="14dp"
+                android:layout_marginStart="4dp"
+                android:src="@drawable/ic_chevron_down"
+                android:tint="@color/white"/>
+        </LinearLayout>
     </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.core.widget.NestedScrollView
@@ -86,7 +120,8 @@
                         android:paddingHorizontal="@dimen/spacing_xs"
                         android:text=" · "
                         android:textColor="@color/text_hint"
-                        android:textSize="@dimen/text_hint" />
+                        android:textSize="@dimen/text_hint"
+                        android:visibility="gone" />
 
                     <LinearLayout
                         android:id="@+id/meta_category_chip"
@@ -96,7 +131,8 @@
                         android:gravity="center_vertical"
                         android:orientation="horizontal"
                         android:paddingHorizontal="@dimen/spacing_xs"
-                        android:paddingVertical="2dp">
+                        android:paddingVertical="2dp"
+                        android:visibility="gone">
 
                         <ImageView
                             android:id="@+id/meta_category_dot"

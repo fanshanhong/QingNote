@@ -12,7 +12,9 @@ import androidx.appcompat.widget.Toolbar
 import androidx.lifecycle.lifecycleScope
 import com.fan.hwnote.app.R
 import com.fan.hwnote.app.model.NoteRepository
+import com.fan.hwnote.app.model.NotebookRepository
 import com.fan.hwnote.app.model.entity.Note
+import com.fan.hwnote.app.view.folder.NotebookPickerPopupWindow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -33,8 +35,13 @@ class NoteEditorActivity : AppCompatActivity() {
     private lateinit var metaCategoryName: android.widget.TextView
     private lateinit var metaCategoryChip: android.view.View
 
+    private lateinit var notebookIndicator: android.view.View
+    private lateinit var indicatorDot: android.view.View
+    private lateinit var indicatorText: android.widget.TextView
+
     private var noteId: Long = -1L
     private var loadedNote: Note? = null
+    private var pendingNotebookId: Long? = null
     @Volatile private var saveInFlight: Boolean = false
 
     private val galleryLauncher = registerForActivityResult(
@@ -182,6 +189,21 @@ class NoteEditorActivity : AppCompatActivity() {
         metaCategoryChip = findViewById(R.id.meta_category_chip)
         metaCategoryChip.setOnClickListener { showCategoryPicker() }
 
+        notebookIndicator = findViewById(R.id.notebook_indicator)
+        indicatorDot = findViewById(R.id.indicator_dot)
+        indicatorText = findViewById(R.id.indicator_text)
+        notebookIndicator.setOnClickListener {
+            val current = pendingNotebookId ?: loadedNote?.notebookId
+            NotebookPickerPopupWindow(
+                context = this,
+                currentNotebookId = current,
+                onPicked = { picked ->
+                    pendingNotebookId = picked
+                    lifecycleScope.launch { refreshIndicator(picked) }
+                },
+            ).show(notebookIndicator)
+        }
+
         if (savedInstanceState != null) {
             pendingCameraOutputUri =
                 @Suppress("DEPRECATION") savedInstanceState.getParcelable(STATE_CAMERA_URI)
@@ -245,6 +267,28 @@ class NoteEditorActivity : AppCompatActivity() {
             titleInput.setText(note.title)
             presenter.bind(note)
             refreshMetadataStrip()
+            refreshIndicator(note.notebookId)
+        }
+    }
+
+    private suspend fun refreshIndicator(notebookId: Long?) {
+        val nb = if (notebookId != null) NotebookRepository.get(notebookId) else null
+        if (nb != null) {
+            indicatorText.text = nb.name
+            val gd = indicatorDot.background as? android.graphics.drawable.GradientDrawable
+                ?: android.graphics.drawable.GradientDrawable().also {
+                    it.shape = android.graphics.drawable.GradientDrawable.OVAL
+                    indicatorDot.background = it
+                }
+            gd.setColor(android.graphics.Color.parseColor(nb.color))
+        } else {
+            indicatorText.setText(R.string.indicator_no_notebook)
+            val gd = indicatorDot.background as? android.graphics.drawable.GradientDrawable
+                ?: android.graphics.drawable.GradientDrawable().also {
+                    it.shape = android.graphics.drawable.GradientDrawable.OVAL
+                    indicatorDot.background = it
+                }
+            gd.setColor(android.graphics.Color.parseColor("#CCCCCC"))
         }
     }
 
@@ -479,7 +523,10 @@ class NoteEditorActivity : AppCompatActivity() {
         val title = titleInput.text.toString()
         // 同 saveNote：编辑期内通过 CategoryPickerBottomSheet 改的 categoryId 不在 presenter 快照里
         val toSave = presenter.collectCurrentNote(title)
-            .copy(categoryId = loadedNote?.categoryId)
+            .copy(
+                categoryId = loadedNote?.categoryId,
+                notebookId = pendingNotebookId ?: loadedNote?.notebookId,
+            )
         lifecycleScope.launch(Dispatchers.IO) {
             val newId = NoteRepository.save(toSave)
             withContext(Dispatchers.Main) {
@@ -503,7 +550,11 @@ class NoteEditorActivity : AppCompatActivity() {
         // 注意：presenter.collectCurrentNote 基于 bind 时的快照，不含编辑期内通过
         // CategoryPickerBottomSheet 改写过的 categoryId，必须从 loadedNote 重新合并。
         val toSave = presenter.collectCurrentNote(title)
-            .copy(id = loaded.id, categoryId = loaded.categoryId)
+            .copy(
+                id = loaded.id,
+                categoryId = loaded.categoryId,
+                notebookId = pendingNotebookId ?: loaded.notebookId,
+            )
         // 全空且是新笔记则不存
         val isAllEmpty = title.isEmpty() && toSave.plainText.isEmpty()
         if (loaded.id == 0L && isAllEmpty) return
