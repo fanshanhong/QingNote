@@ -94,14 +94,6 @@ class NoteRepositoryListTest {
     }
 
     @Test
-    fun `filter Uncategorized excludes notes with categoryId`() = runBlocking {
-        val a = NoteRepository.save(Note.new().copy(title = "A", categoryId = null))
-        val b = NoteRepository.save(Note.new().copy(title = "B", categoryId = 1L))
-        val list = NoteRepository.list(filter = NoteRepository.ListFilter.Uncategorized)
-        assertEquals(listOf(a), list.map { it.id })
-    }
-
-    @Test
     fun `filter Favorite includes only is_favorite notes`() = runBlocking {
         val a = NoteRepository.save(Note.new().copy(title = "A", isFavorite = false))
         val b = NoteRepository.save(Note.new().copy(title = "B", isFavorite = true))
@@ -118,11 +110,4 @@ class NoteRepositoryListTest {
         assertEquals(listOf(a), list.map { it.id })
     }
 
-    @Test
-    fun `filter Category matches categoryId`() = runBlocking {
-        val a = NoteRepository.save(Note.new().copy(title = "A", categoryId = 1L))
-        val b = NoteRepository.save(Note.new().copy(title = "B", categoryId = 2L))
-        val list = NoteRepository.list(filter = NoteRepository.ListFilter.Category(1L))
-        assertEquals(listOf(a), list.map { it.id })
-    }
 }

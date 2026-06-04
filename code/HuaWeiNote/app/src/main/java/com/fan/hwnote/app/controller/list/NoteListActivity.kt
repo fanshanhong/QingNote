@@ -20,12 +20,11 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.fan.hwnote.app.R
 import com.fan.hwnote.app.controller.editor.NoteEditorActivity
-import com.fan.hwnote.app.model.CategoryRepository
+import com.fan.hwnote.app.model.FolderRepository
 import com.fan.hwnote.app.model.NoteRepository
+import com.fan.hwnote.app.model.NotebookRepository
 import com.fan.hwnote.app.model.entity.Note
-import com.fan.hwnote.app.view.list.CategoryManagerBottomSheet
 import com.fan.hwnote.app.view.list.DeleteConfirmBottomSheet
-import com.fan.hwnote.app.view.list.FilterPickerBottomSheet
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.launch
@@ -214,21 +213,7 @@ class NoteListActivity : AppCompatActivity() {
     }
 
     private fun showFilterPicker() {
-        FilterPickerBottomSheet(
-            activity = this,
-            currentFilter = currentFilter,
-            onPick = { picked ->
-                currentFilter = picked
-                saveFilter(picked)
-                lifecycleScope.launch { updateFilterChipLabel() }
-                reload()
-            },
-            onManage = {
-                CategoryManagerBottomSheet(this) {
-                    lifecycleScope.launch { updateFilterChipLabel(); reload() }
-                }.show()
-            },
-        ).show()
+        android.widget.Toast.makeText(this, "filter (M12 T8 接通)", android.widget.Toast.LENGTH_SHORT).show()
     }
 
     private fun loadFilter(): NoteRepository.ListFilter {
@@ -236,56 +221,61 @@ class NoteListActivity : AppCompatActivity() {
         val type = prefs.getString(KEY_FILTER_TYPE, "ALL") ?: "ALL"
         return when (type) {
             "ALL" -> NoteRepository.ListFilter.All
-            "UNCATEGORIZED" -> NoteRepository.ListFilter.Uncategorized
             "FAVORITE" -> NoteRepository.ListFilter.Favorite
             "DELETED" -> NoteRepository.ListFilter.Deleted
-            "CATEGORY" -> {
-                val id = prefs.getLong(KEY_FILTER_CATEGORY_ID, -1L)
-                if (id > 0) NoteRepository.ListFilter.Category(id)
-                else NoteRepository.ListFilter.All
+            "FOLDER" -> {
+                val id = prefs.getLong(KEY_FILTER_FOLDER_ID, -1L)
+                if (id > 0) NoteRepository.ListFilter.Folder(id) else NoteRepository.ListFilter.All
             }
+            "NOTEBOOK" -> {
+                val id = prefs.getLong(KEY_FILTER_NOTEBOOK_ID, -1L)
+                if (id > 0) NoteRepository.ListFilter.Notebook(id) else NoteRepository.ListFilter.All
+            }
+            "CATEGORY", "UNCATEGORIZED" -> NoteRepository.ListFilter.All
             else -> NoteRepository.ListFilter.All
         }
     }
 
     private fun saveFilter(filter: NoteRepository.ListFilter) {
         val editor = getSharedPreferences(PREFS, MODE_PRIVATE).edit()
+            .remove(KEY_FILTER_FOLDER_ID).remove(KEY_FILTER_NOTEBOOK_ID)
         when (filter) {
-            NoteRepository.ListFilter.All -> {
-                editor.putString(KEY_FILTER_TYPE, "ALL").remove(KEY_FILTER_CATEGORY_ID)
-            }
-            NoteRepository.ListFilter.Uncategorized -> {
-                editor.putString(KEY_FILTER_TYPE, "UNCATEGORIZED").remove(KEY_FILTER_CATEGORY_ID)
-            }
-            NoteRepository.ListFilter.Favorite -> {
-                editor.putString(KEY_FILTER_TYPE, "FAVORITE").remove(KEY_FILTER_CATEGORY_ID)
-            }
-            NoteRepository.ListFilter.Deleted -> {
-                editor.putString(KEY_FILTER_TYPE, "DELETED").remove(KEY_FILTER_CATEGORY_ID)
-            }
-            is NoteRepository.ListFilter.Category -> {
-                editor.putString(KEY_FILTER_TYPE, "CATEGORY")
-                    .putLong(KEY_FILTER_CATEGORY_ID, filter.id)
-            }
+            NoteRepository.ListFilter.All -> editor.putString(KEY_FILTER_TYPE, "ALL")
+            NoteRepository.ListFilter.Favorite -> editor.putString(KEY_FILTER_TYPE, "FAVORITE")
+            NoteRepository.ListFilter.Deleted -> editor.putString(KEY_FILTER_TYPE, "DELETED")
+            is NoteRepository.ListFilter.Folder ->
+                editor.putString(KEY_FILTER_TYPE, "FOLDER").putLong(KEY_FILTER_FOLDER_ID, filter.folderId)
+            is NoteRepository.ListFilter.Notebook ->
+                editor.putString(KEY_FILTER_TYPE, "NOTEBOOK").putLong(KEY_FILTER_NOTEBOOK_ID, filter.notebookId)
         }
         editor.apply()
     }
 
     private suspend fun updateFilterChipLabel() {
-        // 若当前 filter 指向已被删除的分类，复位到"全部"，避免 chip 文案与列表分离
         val f = currentFilter
-        if (f is NoteRepository.ListFilter.Category && CategoryRepository.get(f.id) == null) {
-            currentFilter = NoteRepository.ListFilter.All
-            saveFilter(NoteRepository.ListFilter.All)
+        when (f) {
+            is NoteRepository.ListFilter.Folder ->
+                if (FolderRepository.get(f.folderId) == null) {
+                    currentFilter = NoteRepository.ListFilter.All
+                    saveFilter(NoteRepository.ListFilter.All)
+                }
+            is NoteRepository.ListFilter.Notebook ->
+                if (NotebookRepository.get(f.notebookId) == null) {
+                    currentFilter = NoteRepository.ListFilter.All
+                    saveFilter(NoteRepository.ListFilter.All)
+                }
+            NoteRepository.ListFilter.All,
+            NoteRepository.ListFilter.Favorite,
+            NoteRepository.ListFilter.Deleted -> Unit
         }
         val label = when (val cur = currentFilter) {
             NoteRepository.ListFilter.All -> getString(R.string.filter_all)
-            NoteRepository.ListFilter.Uncategorized -> getString(R.string.filter_uncategorized)
             NoteRepository.ListFilter.Favorite -> getString(R.string.filter_favorite)
             NoteRepository.ListFilter.Deleted -> getString(R.string.filter_deleted)
-            is NoteRepository.ListFilter.Category -> {
-                CategoryRepository.get(cur.id)?.name ?: getString(R.string.filter_all)
-            }
+            is NoteRepository.ListFilter.Folder ->
+                FolderRepository.get(cur.folderId)?.name ?: getString(R.string.filter_all)
+            is NoteRepository.ListFilter.Notebook ->
+                NotebookRepository.get(cur.notebookId)?.name ?: getString(R.string.filter_all)
         }
         filterChipText.text = label
     }
@@ -294,6 +284,7 @@ class NoteListActivity : AppCompatActivity() {
         private const val PREFS = "hwnote_settings"
         private const val KEY_SORT = "sort_by"
         private const val KEY_FILTER_TYPE = "filter_type"
-        private const val KEY_FILTER_CATEGORY_ID = "filter_category_id"
+        private const val KEY_FILTER_FOLDER_ID = "filter_folder_id"
+        private const val KEY_FILTER_NOTEBOOK_ID = "filter_notebook_id"
     }
 }

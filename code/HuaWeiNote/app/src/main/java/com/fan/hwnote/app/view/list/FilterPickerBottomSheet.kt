@@ -51,13 +51,14 @@ class FilterPickerBottomSheet(
         rowManage = findViewById(R.id.row_manage)!!
         recycler = findViewById(R.id.categories_recycler)!!
 
+        // M12 T5：Uncategorized / Category 已下线，留存仅为兼容旧 layout；Task 8 整体删除本类。
         rowAll.isSelected = currentFilter is NoteRepository.ListFilter.All
-        rowUncat.isSelected = currentFilter is NoteRepository.ListFilter.Uncategorized
+        rowUncat.isSelected = false
         rowFav.isSelected = currentFilter is NoteRepository.ListFilter.Favorite
         rowDeleted.isSelected = currentFilter is NoteRepository.ListFilter.Deleted
 
         rowAll.setOnClickListener { pick(NoteRepository.ListFilter.All) }
-        rowUncat.setOnClickListener { pick(NoteRepository.ListFilter.Uncategorized) }
+        rowUncat.setOnClickListener { pick(NoteRepository.ListFilter.All) }
         rowFav.setOnClickListener { pick(NoteRepository.ListFilter.Favorite) }
         rowDeleted.setOnClickListener { pick(NoteRepository.ListFilter.Deleted) }
         rowManage.setOnClickListener {
@@ -69,9 +70,8 @@ class FilterPickerBottomSheet(
 
         activity.lifecycleScope.launch {
             val categories = CategoryRepository.list()
-            val selectedCategoryId = (currentFilter as? NoteRepository.ListFilter.Category)?.id
-            recycler.adapter = CategoryRowAdapter(categories, selectedCategoryId) { cat ->
-                pick(NoteRepository.ListFilter.Category(cat.id))
+            recycler.adapter = CategoryRowAdapter(categories, null) { _ ->
+                pick(NoteRepository.ListFilter.All)
             }
         }
     }

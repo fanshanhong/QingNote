@@ -42,19 +42,15 @@ object NoteRepository {
         val args = mutableListOf<String>()
         when (filter) {
             ListFilter.All -> where += "deleted_at = 0"
-            ListFilter.Uncategorized -> {
-                where += "deleted_at = 0"
-                where += "category_id IS NULL"
+            ListFilter.Favorite -> where += "deleted_at = 0 AND is_favorite = 1"
+            ListFilter.Deleted -> where += "deleted_at != 0"
+            is ListFilter.Folder -> {
+                where += "deleted_at = 0 AND notebook_id IN (SELECT id FROM notebooks WHERE folder_id = ? AND deleted_at = 0)"
+                args += filter.folderId.toString()
             }
-            ListFilter.Favorite -> {
-                where += "deleted_at = 0"
-                where += "is_favorite = 1"
-            }
-            ListFilter.Deleted -> where += "deleted_at > 0"
-            is ListFilter.Category -> {
-                where += "deleted_at = 0"
-                where += "category_id = ?"
-                args += filter.id.toString()
+            is ListFilter.Notebook -> {
+                where += "deleted_at = 0 AND notebook_id = ?"
+                args += filter.notebookId.toString()
             }
         }
         if (!query.isNullOrEmpty()) {
@@ -193,10 +189,10 @@ object NoteRepository {
 
     sealed class ListFilter {
         object All : ListFilter()
-        object Uncategorized : ListFilter()
         object Favorite : ListFilter()
         object Deleted : ListFilter()
-        data class Category(val id: Long) : ListFilter()
+        data class Folder(val folderId: Long) : ListFilter()
+        data class Notebook(val notebookId: Long) : ListFilter()
     }
 
     // ----- private -----
