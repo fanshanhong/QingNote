@@ -50,6 +50,15 @@ class CategoryRepositoryTest {
         assertEquals("#FFFFFF", c.color)
     }
 
+    @Test
+    fun `delete removes the category row`() = runBlocking {
+        val id = CategoryRepository.insert("Temp", "#000000")
+        assertEquals(1, CategoryRepository.list().size)
+        CategoryRepository.delete(id)
+        assertEquals(0, CategoryRepository.list().size)
+        assertNull(CategoryRepository.get(id))
+    }
+
     @Ignore("Depends on T3: Note.categoryId field + NoteRepository read/write of category_id")
     @Test
     fun `delete sets associated notes category_id to NULL`() = runBlocking {
