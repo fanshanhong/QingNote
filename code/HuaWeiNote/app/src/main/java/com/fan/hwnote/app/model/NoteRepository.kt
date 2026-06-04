@@ -95,6 +95,7 @@ object NoteRepository {
             put("updated_at", now)
             if (note.categoryId == null) putNull("category_id") else put("category_id", note.categoryId)
             put("deleted_at", note.deletedAt)
+            if (note.notebookId == null) putNull("notebook_id") else put("notebook_id", note.notebookId)
         }
         val db = dbHelper.writableDatabase
         if (note.id == 0L) {
@@ -213,6 +214,9 @@ object NoteRepository {
             content = NoteJson.fromJson(contentJson),
             categoryId = if (c.isNull(catIdx)) null else c.getLong(catIdx),
             deletedAt = c.getLong(c.getColumnIndexOrThrow("deleted_at")),
+            notebookId = c.getColumnIndex("notebook_id").let { idx ->
+                if (idx < 0 || c.isNull(idx)) null else c.getLong(idx)
+            },
         )
     }
 }

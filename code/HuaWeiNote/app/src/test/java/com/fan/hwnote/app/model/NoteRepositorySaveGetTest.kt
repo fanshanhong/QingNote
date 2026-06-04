@@ -103,4 +103,22 @@ class NoteRepositorySaveGetTest {
         assertNull(n.categoryId)
         assertEquals(0L, n.deletedAt)  // 默认值
     }
+
+    @Test
+    fun `save and get preserves notebookId`() = runBlocking {
+        val saved = NoteRepository.save(
+            Note.new().copy(title = "T", notebookId = 1L)
+        )
+        val n = NoteRepository.get(saved)!!
+        assertEquals(1L, n.notebookId)
+    }
+
+    @Test
+    fun `save with null notebookId stays null on read back`() = runBlocking {
+        val saved = NoteRepository.save(
+            Note.new().copy(title = "T", notebookId = null)
+        )
+        val n = NoteRepository.get(saved)!!
+        assertNull(n.notebookId)
+    }
 }
