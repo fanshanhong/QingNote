@@ -1,6 +1,6 @@
 # HwNote · 项目进度
 
-最后更新：2026-06-04（M10 语音录入完成 — PRD §13 进度 3/4，仅 M11 撤销重做待执行）
+最后更新：2026-06-04（M11 撤销/重做完成 — PRD §13 全部完成 4/4）
 
 ## 阶段地图
 
@@ -29,7 +29,7 @@
 | M8 体验小修 | ✅ 完成（2026-06-04） | PRD §13 启动；4 改动：列表页 AppBarLayout fitsSystemWindows / 图片块 ShapeableImageView 12dp 圆角 / 清单按钮反向 toggle / 排序 BottomSheet 2 选项 + 删 TITLE_ASC；67 单测 + 6 项真机走查全过 |
 | M9 分类 + 软删除 + metadata strip | ✅ 完成（2026-06-04） | PRD §13 主力；DB v2 迁移（categories 表 + notes 加 category_id/deleted_at）+ 4 内置筛选 / 分类管理（拖动排序）/ 软删除 30 天回收站 / 编辑器 metadata strip + CategoryPicker；83 单测 + 10 项真机走查全过 |
 | M10 语音录入 | ✅ 完成（2026-06-04） | PRD §13 范围；`Block.AudioBlock` + `AudioRecorder`(MPEG_4/AAC/64kbps) + `AudioPlayer`(共享单例) + `AudioRecordingBottomSheet`(走表计时 + 停止/取消) + `AudioBlockView`(播放/暂停/长按删除) + 工具栏扩 5 键 + RECORD_AUDIO 运行时权限 + onPause 兜底停播/取消；85 单测 + 13 项真机走查全过 |
-| M11 撤销 / 重做 | ⏳ 待执行 | PRD §13 范围；EditHistoryManager 命令模式 + 工具栏按钮 + 跨保存清栈 |
+| M11 撤销 / 重做 | ✅ 完成（2026-06-04） | PRD §13 收口；`EditHistoryManager`(双栈+cap50+listener) + 5 Command 子类 (Add/Remove/Move/Replace/ApplySpan/ApplyHeading/ReplaceText) + `CompositeCommand` 多步打包 + Presenter 三 Mutator(silent) + TextBlockView 800ms 防抖 + 顶部 AppBar ↶↷ MenuItem + onPause flush + `NoteRepository.cleanOrphanFiles` 异步清孤 + onSaveSuccess 唯一清栈入口 |
 
 ## M1 完成详情（2026-05-22）
 
@@ -542,9 +542,94 @@ M1 ✅ → M2 数据层 → M3 列表页
 
 **执行模式：** Subagent-Driven Development，严格串行 13 任务（T1→T13）。每任务的 implementer DONE → spec reviewer → code quality reviewer → fix（如有）→ re-review → 标完成；T1 因 sealed `when` exhaustive 触发 NEEDS_CONTEXT，决策为本任务加桩 + T8 替换；T11 静态核查（`deletePermanently` 已走 `deleteNoteDir.deleteRecursively()`）无代码改动跳 commit；T12 全量 gate `:app:clean :app:assembleDebug :app:test --no-daemon` 全绿；T13 真机走查 13 条由用户完成后再写本 STATUS 收尾 commit。
 
+## M11 完成详情（2026-06-04）
+
+**起因：** PRD §13 三阶段执行计划最后一步。M10 语音录入完成后，按规划进入撤销/重做。用户 2026-06-04 二次确认三项设计决策：①撤销粒度对齐"用户感知 1 步 = 1 次 ↶"——文字编辑 800ms 静默期内合并 1 条 `ReplaceTextCommand`；插图/录音/分类等"用户 1 操作触发多 mutator"用 `CompositeCommand` 包成 1 步；②工具栏入口走顶部 AppBar 的 MenuItem（`menu_editor.xml`）而非底栏，沿 Android 标准导航习惯；③栈策略为内存双 ArrayDeque 上限 50 FIFO，跨保存清栈（`onSaveSuccess` 唯一入口）、process death 即丢，不持久化到 DB / JSON。本里程碑首次引入"Inverse Op Command 模式 + silent mutator 边界"架构，model 层新增 `model/history/` 包独立装载 7 个 Command 子类 + Manager + 3 个 Mutator interface；UI 层只接通 1 个 menu xml + 2 个 Activity hook + TextBlockView 防抖；数据层只新增 1 个 `cleanOrphanFiles` 异步方法收口"删块不动文件、保存后扫差集"的遗孤模式。按"骨架 → Command 三组 → Presenter 收口 → View 防抖 → Menu 接通 → 清孤"五维度切 11 任务串行 subagent 执行，外加 T7-fix CompositeCommand 重构补丁、T8-fix bind 屏蔽幻影 push、T9-fix Menu import、T10-fix onSaveSuccess gate + 表达式 when 共 5 个修补 commit。
+
+**5 改动维度：**
+
+1. **`model/history/` 包骨架（T1）：**
+   - **`Command` interface（commit `bf4bcf7`）：** 3 成员 `apply() / revert() / label`，Inverse Op 风格——每个 Command 自带正反操作，调用方不感知子类。`label` 仅用于调试日志，UI 不展示。
+   - **`EditHistoryManager`（commit `bf4bcf7`）：** 双 `ArrayDeque<Command>` (undoStack / redoStack)，cap=50 FIFO 淘汰最老；`push(cmd)` 清空 redoStack（新操作发生 → 旧 redo 路径作废）；`undo()/redo()` 失败（`revert/apply` 抛异常）则丢弃该 cmd 不入对面栈，保持双栈一致；`clear()` 给 onSaveSuccess 调；`listener: ((Boolean, Boolean) -> Unit)?` 任一栈大小变化即回调（含 push / undo / redo / clear），Activity 借此触发 `invalidateOptionsMenu()`。
+   - **`CompositeCommand`（commit `13c745a` + `280779f`）：** T7-fix 引入。包装 `List<Command>` 为"组合单元"——`apply` 顺序执行、`revert` 反序执行，整体作为 1 个 undo step。空 list 构造抛异常防误用；defensive copy via `toList()`、`asReversed()` 习惯写法；KDoc 显式说明"原子性边界"：中途 revert 失败不会自动回滚已 revert 的 sibling，调用方需保证 sibling 间无强耦合。
+   - **测试（`EditHistoryManagerTest` 10 + `CompositeCommandTest` 3，commit `bf1932e` 补异常路径 + `13c745a` 新增 3 项）：** 双栈基础语义 / cap 淘汰 / push 清 redo / undo/redo 异常吞咽 / listener 触发 / CompositeCommand apply 顺序 / revert 反序 / 空 list 抛异常。
+
+2. **三组 Command 子类（T2-T4，共 14 单测）：**
+   - **`BlockMutator` interface + 4 Block Command（T2，commit `47e294f` + `475d5cd`）：** `BlockMutator { silentInsert/silentRemove/silentMove/silentReplace }`——Presenter 实现的"不入栈"块操作钩子。Command：`AddBlockCommand(block, index)` / `RemoveBlockCommand(index, preSnapshot)` / `MoveBlockCommand(from, to)` / `ReplaceBlockCommand(index, newBlock, preOldBlock)`。T2-fix 关键修复：`RemoveBlock.apply` 必须深拷贝 `block.copy()` 存为 snapshot 否则 `revert` 拿到的是后续被 mutate 的引用；`AddBlock.revert` 还原焦点到删除前 block 头。
+   - **`StyleMutator` interface + 2 Style Command（T3，commit `790807c` + `2ed6248`）：** `StyleMutator { silentApplySpan(blockIdx, range, span) / silentSetHeading(blockIdx, heading) }`。Command：`ApplySpanCommand(blockIdx, range, newSpan, oldSpansInRange)`（revert 恢复 oldSpans）/ `ApplyHeadingCommand(blockIdx, newHeading, oldHeading)`（仅 TextBlock 有效）。T3-fix 补 4 项焦点/光标位置断言：apply/revert 后焦点必须回到改动块、光标位于 range.last。
+   - **`TextMutator` interface + 1 Text Command（T4，commit `0ef9c64`）：** `TextMutator { silentReplaceText(blockIdx, newText, newSpans) }`。`ReplaceTextCommand(blockIdx, before, after, beforeSpans, afterSpans)`——配合 TextBlockView 800ms 防抖（T8）实现"暂停期合并 1 条"语义。4 单测覆盖 apply/revert/empty before/empty after。
+
+3. **EditorPresenter 收口三 Mutator + history 字段（T5-T7）：**
+   - **三 Mutator 实现 + history 字段 + undo/redo/flush 入口（T5，commit `bc311df`）：** Presenter 实现 `BlockMutator/StyleMutator/TextMutator` 全部 silent* 方法（不调 history.push 避免无限递归）；新增 `val history = EditHistoryManager()` 字段；公开 `undo() / redo() / flushPendingTextEdits()` 给 Activity；公开 `pendingInlineSet/pendingSize/pendingColor` 给 StylePickerBottomSheet 同步高亮。
+   - **样式入口接 push（T6，commit `e012534`）：** `toggleInline / toggleSize / pickColor / toggleHeading` 内部走 "silentApplySpan/silentSetHeading + history.push(ApplySpanCommand/ApplyHeadingCommand)"。
+   - **块入口接 push + 删 purge*（T7，commit `72a4b24`）：** `insertImageBlocksAtFocus / insertChecklistBlockAtFocus / insertAudioBlockAtFocus / onRequestDelete / onRequestSplitAfter / convertChecklistItemToText / onImageLoadFailed` 全部走 "silent* + history.push"；删除 `purgeImageOnDisk / purgeAudioOnDisk` 方法（文件清理改由 `cleanOrphanFiles` 异步收口，保证 undo 期间文件仍在磁盘可复活）。T7-fix（commit `13c745a` + `280779f`）：4 个多 push 站点（插图 / 录音 / 图片加载失败 idx=0 分支 / 清单转文本非空分支）改为 `history.push(CompositeCommand(listOf(cmd1, cmd2, ...)))`，保证用户 1 操作 = 1 次 ↶ 的体感。
+
+4. **TextBlockView 800ms 防抖 + flush + suppressDebounceWhile（T8）：**
+   - commit `1e1eeae` + `534390f`。新增字段 `textDebounceCallback: ((before, after) -> Unit)?` / `debounceHandler = Handler(Looper.getMainLooper())` / `debounceMs = 800L` / `debounceArmed` / `pendingBeforeText` / `pendingBeforeSpans` / `debounceRunnable` / `suppressDebounce: Boolean`。
+   - `TextWatcher.beforeTextChanged` 在首次变化时抓 before-snapshot；`afterTextChanged` 走 `postDelayed(debounceRunnable, 800)`；`flushPendingTextEdit()` 取消 post 后立即 fire callback；`setOnFocusChangeListener` 焦点丢失也触发 flush；`suppressDebounceWhile { block }` try/finally 守卫——silentReplaceText 调 `view.edit.setText(sp)` 时必须包，否则会触发 TextWatcher 入栈无限循环。
+   - T8-fix：`bind()` 内 `edit.setText(spannable)` 加 `suppressDebounceWhile { ... }`——否则笔记加载 800ms 后会冒一条 `ReplaceText(before="", after=loadedText)` 幻影 push，违反 spec §流 E "空栈、按钮初始 disabled"。同 commit 顺手删 4 处 `TODO(T8): wrap applyInlineToRange in suppressDebounceWhile` stale 注释（setSpan/removeSpan/setTextSize 不触发 TextWatcher.afterTextChanged）。
+
+5. **Activity menu + 异步清孤 + onSaveSuccess 清栈（T9-T10）：**
+   - **menu_editor.xml + presenter.history.listener + onPause flush（T9，commit `86a6fd2` + `9beae52`）：** 新增 `res/menu/menu_editor.xml` 含 action_undo / action_redo 两 MenuItem（icon + title + `showAsAction="always"`）；`NoteEditorActivity.onCreateOptionsMenu / onPrepareOptionsMenu / onOptionsItemSelected / applyMenuIconAlpha` 4 方法接通；`onPrepareOptionsMenu` 根据 `presenter.history.canUndo/canRedo` 控制 setEnabled + `icon?.mutate()?.alpha = if (enabled) 255 else 102`；`presenter.history.listener = { _, _ -> invalidateOptionsMenu() }` 在 loadNote 前注册；`onPause` 在 saveNote 前调 `presenter.flushPendingTextEdits()` 保证未落栈的暂停期编辑能持久化；T9-fix 把 `android.view.Menu`/`MenuItem` FQN 改 import，对齐 M8 commit `0096a0b` 收口约定。strings 增 `action_undo_cd` / `action_redo_cd`。
+   - **`NoteRepository.cleanOrphanFiles` + saveNote 后清栈（T10，commit `d6b67c2` + `837aa7b` + `2348fa0`）：** Repository 新增 `suspend fun cleanOrphanFiles(noteId, note)`——扫 `imageDir(noteId) + audioDir(noteId)` 与 `note.content.blocks` 中的 `ImageBlock.fileName/AudioBlock.fileName` 差集，多余文件 `f.delete()`；外包 `runCatching {}.onFailure { Log.w }` 容错 IO 异常；`noteId <= 0L` 直接 `return@withContext` 防 insert 失败误清。`NoteEditorActivity.saveNote` 走 `lifecycleScope.launch(Dispatchers.IO)` 内 `NoteRepository.save(toSave)` → 仅 `newId > 0L` 才 cleanOrphanFiles + `presenter.history.clear()`——spec §4.5 "onSaveSuccess 是唯一清栈入口"。T10-fix 把 `else -> Unit` 改成 `is Block.TextBlock, is Block.ChecklistBlock -> Unit` 显式列举，sealed when 在编译期穷尽校验；Note / Block FQN 改 import。
+
+**涉及文件清单：**
+- **新增（共 7 个）：** `model/history/Command.kt`、`model/history/EditHistoryManager.kt`、`model/history/CompositeCommand.kt`、`model/history/commands/BlockCommands.kt`、`model/history/commands/StyleCommands.kt`、`model/history/commands/TextCommands.kt`、`res/menu/menu_editor.xml`
+- **新增测试（共 5 个）：** `EditHistoryManagerTest`(10) / `CompositeCommandTest`(3) / `BlockCommandsTest`(8) / `StyleCommandsTest`(4) / `TextCommandsTest`(4) = **29 项**
+- **修改（共 6 个）：** `controller/editor/EditorPresenter.kt`（三 Mutator 实现 + history + 公私方法接 push）、`controller/editor/NoteEditorActivity.kt`（menu 4 方法 + listener + onPause flush + saveNote 异步分支）、`view/block/TextBlockView.kt`（防抖 + flush + suppressDebounceWhile）、`model/NoteRepository.kt`（cleanOrphanFiles）、`res/values/strings.xml`（+2 cd 字串）
+
+**M11 commit 列表（git log `369ca6a..HEAD`，共 21 个 commit）：**
+- `f5f85cb` docs(spec): M11 撤销/重做设计稿落地（PRD §13 收口）
+- `058a230` docs(m11): 落地撤销/重做 11 任务实施计划
+- `bf4bcf7` feat(m11): 落地 Command 接口与 EditHistoryManager（双栈+50 上限+listener）
+- `bf1932e` test(m11): 补 EditHistoryManager 异常路径测试 + 解耦 android.util.Log
+- `47e294f` feat(m11): 实现 BlockMutator 接口与四个块级 Command（Add/Remove/Move/Replace）
+- `475d5cd` refactor(m11): BlockCommand 修复 snapshot 深拷贝与 AddBlock revert 焦点
+- `790807c` feat(m11): 实现 StyleMutator 与 ApplySpan/ApplyHeading Command
+- `2ed6248` test(m11): StyleCommand 补充焦点与光标位置断言
+- `0ef9c64` feat(m11): 实现 TextMutator 与 ReplaceTextCommand（防抖落栈）
+- `bc311df` feat(m11): EditorPresenter 实现 BlockMutator/StyleMutator/TextMutator 与 history 入口
+- `e012534` feat(m11): 样式入口（toggleInline/toggleSize/pickColor/toggleHeading）接 history.push
+- `72a4b24` feat(m11): 块入口接 history.push，删 purge 改由 cleanOrphanFiles 收口
+- `13c745a` feat(m11): 引入 CompositeCommand 统一多步骤为 1 步 undo
+- `280779f` refactor(m11): CompositeCommand KDoc 措辞与防御性拷贝优化
+- `1e1eeae` feat(m11): TextBlockView 加 800ms 文本防抖与 flush 接口，Presenter 接通
+- `534390f` fix(m11): TextBlockView.bind 屏蔽防抖避免幻影 ReplaceText，清理 stale TODO
+- `86a6fd2` feat(m11): 顶部 AppBar 加撤销/重做 MenuItem + 接通 Presenter
+- `9beae52` chore(m11): NoteEditorActivity Menu/MenuItem 改 import（沿 M8 约定）
+- `d6b67c2` feat(m11): NoteRepository.cleanOrphanFiles + saveNote 后异步清孤儿 + 清栈
+- `837aa7b` fix(m11): cleanOrphan 与 history.clear 仅 onSaveSuccess 触发（spec §4.5）
+- `2348fa0` chore(m11): cleanOrphan when 改表达式 + Block/Note 改 import
+- 收尾 commit：docs(m11): 标记 M11 撤销/重做完成 + 归档实施计划（PRD §13 全部交付）
+
+**测试统计：** `:app:clean :app:assembleDebug :app:test` 全绿，**114 项 PASSED**（M10 基线 85 → M11 +29），0 failures / 0 errors / 0 skipped。增量明细：
+- `EditHistoryManagerTest`（10）：双栈基础语义 / cap 50 淘汰 / push 清 redo / undo+redo 异常吞咽不污染对面栈 / listener 在四种入口都触发
+- `CompositeCommandTest`（3）：apply 顺序 / revert 反序 / 空 list 抛异常
+- `BlockCommandsTest`（8）：Add/Remove/Move/Replace 各 apply+revert + Remove snapshot 深拷贝 + AddBlock revert 焦点
+- `StyleCommandsTest`（4）：ApplySpan apply/revert + ApplyHeading apply/revert，含焦点与光标位置断言
+- `TextCommandsTest`（4）：ReplaceText apply/revert + empty before/after 边界
+
+**验收（用户 2026-06-04 真机走查 13 条 + 1 文件遗孤验证全过）：**
+1. ✅ 输入"hello" → ↶ 文字消失为空块；↷ "hello" 回来
+2. ✅ 输入一段文字、暂停 1s 后再输入 → 连按 ↶ 两次分两段回退（800ms 防抖切分）
+3. ✅ 加粗某段 → ↶ 加粗撤销；↷ 加粗回来
+4. ✅ 插入图片 → ↶ 图片消失；↷ 图片回来（CompositeCommand 包 Add+TextSplit 为 1 步）
+5. ✅ 录音生成 AudioBlock → ↶ 消失；↷ 回来
+6. ✅ 删除图片块 → ↶ 图片块复活，图片显示，本地文件未丢（删块不动文件由 cleanOrphanFiles 异步收口）
+7. ✅ 转清单块 ↔ 文本块 → ↶/↷ 切回
+8. ✅ 应用 H1 → ↶ H1 退回普通段
+9. ✅ 切颜色到红色 → ↶ 颜色恢复
+10. ✅ 连续 51 次操作 → 最老条目无法 undo（栈上限 50 FIFO 淘汰）
+11. ✅ 保存后返回再进笔记 → ↶ 按钮灰（onSaveSuccess 清栈 + 重进 Manager = 空栈）
+12. ✅ 切到别笔记再回来 → 撤销栈是新的（每笔记独立 Activity 实例独立 Manager）
+13. ✅ 手写 Overlay 内画 → 退出 → 顶部 ↶ 不影响手写块（M6 Overlay 独立 undo 与 M11 顶栏栈隔离）
+14. ✅ 删一张图后保存 → 重新进笔记 → `adb shell ls /data/user/0/com.fan.hwnote.app/files/notes/<id>/images/` 该 fileName 已被遗孤清理
+
+**执行模式：** Subagent-Driven Development，严格串行 11 任务（T1→T11）+ 5 个 fix/refactor 修补 commit。每任务 implementer DONE → spec reviewer → code quality reviewer → fix（如有）→ re-review → 标完成。T7 spec reviewer 发现多 push 站点导致"1 ↶ 拿不掉用户感知 1 操作"，决策为引入 CompositeCommand 重构（T7-fix 13c745a + 280779f）；T8 code reviewer 发现 bind 加载 800ms 后幻影 push，决策为加 suppressDebounceWhile 守卫（T8-fix 534390f）；T9 reviewer 指出 FQN 违反 M8 约定（T9-fix 9beae52）；T10 spec reviewer 指出 saveNote 失败路径误清栈违反 spec §4.5，决策为 newId>0L gate（T10-fix 837aa7b + 2348fa0）。T11 全量 gate `:app:clean :app:assembleDebug :app:test` 全绿（114 单测）+ 用户 13 条真机走查 + 1 条文件遗孤 adb 验证全过。
+
 ## 项目完成总览
 
-10 个里程碑（M1-M10）完成（2026-05-22 ~ 2026-06-04）；M11 待执行：
+11 个里程碑（M1-M11）全部完成（2026-05-22 ~ 2026-06-04）；PRD §13 已全部交付：
 
 | # | 里程碑 | commit 数 | 单测增量 | 关键产出 |
 |---|---|---|---|---|
@@ -559,10 +644,10 @@ M1 ✅ → M2 数据层 → M3 列表页
 | M8 | 体验小修 | 7 | −1（删 TITLE_ASC 测试） | 列表 statusBar / 图片圆角 / 清单 toggle 反向 / 排序 BottomSheet 2 选项 |
 | M9 | 分类 + 软删除 + metadata strip | 17 | 16 | DB v2 迁移（categories 表 + notes 扩字段）+ 4 内置筛选 + CategoryManagerBottomSheet 拖动排序 + DeleteConfirmBottomSheet 通用二确认 + 最近删除 30 天回收站 + 编辑器 metadata strip + CategoryPickerBottomSheet |
 | M10 | 语音录入 | 9 | 2 | `Block.AudioBlock` sealed 新成员 + `AudioRecorder`(MPEG_4/AAC/64kbps) + `AudioPlayer`(共享单例) + `AudioRecordingBottomSheet`(走表计时 + 停止/取消 + forceCancel) + `AudioBlockView`(播放/暂停/长按删除) + 工具栏扩 5 键 + RECORD_AUDIO 运行时权限 + onPause 兜底停播/取消 |
+| M11 | 撤销 / 重做 | 19 (+2 docs) | 29 | `model/history/` 包（Command interface + EditHistoryManager 双栈 cap50 listener + CompositeCommand 多步打包）+ 7 Command 子类 (Add/Remove/Move/Replace/ApplySpan/ApplyHeading/ReplaceText) + Presenter 三 Mutator(silent) 接口与 push 收口 + TextBlockView 800ms 防抖 + suppressDebounceWhile 守卫 + 顶部 AppBar ↶↷ MenuItem + onPause flush + `NoteRepository.cleanOrphanFiles` 异步清孤 + onSaveSuccess 唯一清栈入口 |
 
-**累计：** 125 个 commit（不含 docs/计划 commit），85 项自动化单测全绿，PRD MVP + §13 已晋升的"分类 + 录音 + 撤销重做"中 **M8 + M9 + M10 部分（图片圆角 / 排序 / 清单反向 / 状态栏 + 分类系统 + 软删除回收站 + metadata strip + 语音录制/播放）** 100% 覆盖。架构守住"Block 块组合 + 手写 Overlay 透明层"原始决策，未引入 Compose / ViewModel / LiveData / Room / Hilt / Navigation；DB 首次迁移（v1→v2）走 SQLiteOpenHelper.onUpgrade 仅 ALTER + CREATE，旧装机数据无损；M10 引入媒体子系统（MediaRecorder + MediaPlayer）严格隔离在 `model/audio/` 包内不渗透 BlockView 体系。
+**累计：** 146 个 commit（不含 docs/计划 commit），114 项自动化单测全绿，**PRD MVP + §13 全部 100% 覆盖**（M8 体验小修 / M9 分类+软删除+metadata strip / M10 语音录入 / M11 撤销重做）。架构守住"Block 块组合 + 手写 Overlay 透明层"原始决策，未引入 Compose / ViewModel / LiveData / Room / Hilt / Navigation；DB 首次迁移（v1→v2）走 SQLiteOpenHelper.onUpgrade 仅 ALTER + CREATE，旧装机数据无损；M10 引入媒体子系统（MediaRecorder + MediaPlayer）严格隔离在 `model/audio/` 包内不渗透 BlockView 体系；M11 引入 Inverse Op Command 模式与"silent mutator 边界"约束（公共方法 = silent + push），新增 `model/history/` 包独立装载所有撤销/重做逻辑，UI 层仅接 1 个 menu xml + 4 个 Activity 方法 + TextBlockView 防抖；撤销栈纯内存（process death 即丢，不持久化 DB/JSON）。
 
-**M11 待执行（PRD §13 范围）：**
-- **M11 撤销 / 重做** — `EditHistoryManager` 命令模式 + 工具栏按钮 + 跨保存清栈
+**Pending：** 无。PRD §13 已全部交付。
 
-**后续可选方向（仍超出 PRD §13 范围，需用户重新决策）：** 置顶 pin / 提醒 / 加锁 / 导出 / 分享 / 备份 / 深色模式 / 多端同步。
+**后续可选方向（超出当前 PRD 范围，需用户重新 brainstorm）：** 置顶 pin / 提醒 / 加锁 / 导出 / 分享 / 备份 / 深色模式 / 多端同步。
