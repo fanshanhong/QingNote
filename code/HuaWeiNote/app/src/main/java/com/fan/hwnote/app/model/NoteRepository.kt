@@ -146,6 +146,38 @@ object NoteRepository {
         ids.size
     }
 
+    /**
+     * 扫描某笔记本地 images/ + audio/ 目录，删除当前 content.blocks 未引用的孤儿文件。
+     *
+     * 用于 M11 撤销 / 重做：编辑器删块时不立即 rm 文件（保证 undo 能复活），
+     * 保存成功后异步清理本次操作产生的真正孤儿。
+     *
+     * - 容错：任何 IOException 仅 log，不抛
+     * - 幂等：多次调用对同一份 note 行为一致
+     */
+    suspend fun cleanOrphanFiles(noteId: Long, note: com.fan.hwnote.app.model.entity.Note) =
+        withContext(Dispatchers.IO) {
+            if (noteId <= 0L) return@withContext
+            val referenced = mutableSetOf<String>()
+            for (b in note.content.blocks) {
+                when (b) {
+                    is com.fan.hwnote.app.model.entity.Block.ImageBlock -> referenced += b.fileName
+                    is com.fan.hwnote.app.model.entity.Block.AudioBlock -> referenced += b.fileName
+                    else -> Unit
+                }
+            }
+            runCatching {
+                fileStorage.imageDir(noteId).listFiles()?.forEach { f ->
+                    if (f.isFile && f.name !in referenced) f.delete()
+                }
+            }.onFailure { android.util.Log.w("NoteRepository", "cleanOrphan image failed", it) }
+            runCatching {
+                fileStorage.audioDir(noteId).listFiles()?.forEach { f ->
+                    if (f.isFile && f.name !in referenced) f.delete()
+                }
+            }.onFailure { android.util.Log.w("NoteRepository", "cleanOrphan audio failed", it) }
+        }
+
     suspend fun setFavorite(id: Long, favorite: Boolean) = withContext(Dispatchers.IO) {
         val cv = ContentValues().apply {
             put("is_favorite", if (favorite) 1 else 0)
