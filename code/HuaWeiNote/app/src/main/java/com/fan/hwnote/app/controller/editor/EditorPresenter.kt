@@ -413,17 +413,17 @@ class EditorPresenter(
         var insertAt = baseIdx
         // 收集所有底层 Command 打包为 1 个 CompositeCommand，确保用户按 1 下 ↶ 整体撤销
         // （否则尾 TextBlock 会先被撤回，图片还在，违反 spec §5.3 真机走查 #4 期望）。
-        val cmds = mutableListOf<Command>()
+        val commands = mutableListOf<Command>()
         for (b in blocks) {
             addImageBlockView(b, insertAt = insertAt)
-            cmds.add(AddBlockCommand(this, insertAt, b))
+            commands.add(AddBlockCommand(this, insertAt, b))
             insertAt += 1
         }
         // 末尾补一个空 TextBlock，让用户可继续输入
         val tail = emptyTextBlock()
         addTextBlockView(tail, insertAt = insertAt)
-        cmds.add(AddBlockCommand(this, insertAt, tail))
-        history.push(CompositeCommand("InsertImages(${blocks.size})", cmds))
+        commands.add(AddBlockCommand(this, insertAt, tail))
+        history.push(CompositeCommand("InsertImages(${blocks.size})", commands))
         (currentBlocks[insertAt] as TextBlockView).focusEditEnd()
     }
 
