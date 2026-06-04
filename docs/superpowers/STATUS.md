@@ -1,6 +1,6 @@
 # HwNote · 项目进度
 
-最后更新：2026-06-04（M9 分类 + 软删除 + metadata strip 完成 — PRD §13 主力项落地，M10/M11 待执行）
+最后更新：2026-06-04（M10 语音录入完成 — PRD §13 进度 3/4，仅 M11 撤销重做待执行）
 
 ## 阶段地图
 
@@ -12,8 +12,8 @@
 | 4. 规格自审 | ✅ 完成 | 修复 7 处一致性问题（heading 块属性归位、Span 6 种、笔效/橡皮算法详写、ACTION_GET_CONTENT 替换、Glide compiler 去除、plain_text 规则补、行内/块级样式分离） |
 | 5. 用户审阅 PRD | ✅ 完成 | 用户确认无修改，进入下一步 |
 | 6. **实施计划编写** | ✅ 完成 | `docs/superpowers/plans/2026-05-22-hwnote-implementation.md`（高层版，7 个里程碑各一节，685 行） |
-| 7. 代码实施 | ✅ M1-M8 完成 + M9 完成 | M1+M2+M3+M4+M5+M6+M7+M8 全部落地，**M9 (PRD §13 主力项)** 10 改动 + DB v2 迁移全部落地；83 单测全绿（M8 基线 67 → M9 +16） |
-| 8. 手测验收 | ✅ M3 / M5 / M6 / M7 / M8 / **M9** 用户真机走查全部通过 | M3 五条 + M5 七条 + M6 十三条 + M7 十六条 + M8 六条 + **M9 十条**逐条手测通过；M4 SpanConverter 15 + M2 数据层 42 + M5 ImageCompressor 3 + M6 StrokeEraser 5 + M7 BrushPainter 3 + **M9 CategoryRepository 5 / NoteDbHelper +2 / SoftDelete +3 / ListFilter +3 / SaveGet +2** 单测 PASSED |
+| 7. 代码实施 | ✅ M1-M9 完成 + **M10 完成** | M1+M2+M3+M4+M5+M6+M7+M8+M9 全部落地，**M10 (PRD §13 语音录入)** AudioBlock + 录制/播放/删除 + RECORD_AUDIO 全部落地；85 单测全绿（M9 基线 83 → M10 +2 NoteJsonAudioTest） |
+| 8. 手测验收 | ✅ M3 / M5 / M6 / M7 / M8 / M9 / **M10** 用户真机走查全部通过 | M3 五条 + M5 七条 + M6 十三条 + M7 十六条 + M8 六条 + M9 十条 + **M10 十三条**逐条手测通过；M4 SpanConverter 15 + M2 数据层 42 + M5 ImageCompressor 3 + M6 StrokeEraser 5 + M7 BrushPainter 3 + M9 CategoryRepository 5 / NoteDbHelper +2 / SoftDelete +3 / ListFilter +3 / SaveGet +2 + **M10 NoteJsonAudio +2** 单测 PASSED |
 
 ## 里程碑进度
 
@@ -28,7 +28,7 @@
 | M7 打磨 | ✅ 完成（2026-05-23） | 13 任务全部落地：手写性能（Paint 三键缓存 / Path 复用）+ 鲁棒（save-in-flight / Camera SavedInstanceState / 图片失败 Toast）+ UX（状态栏 inset / 清单 toggle / Camera 引导跳设置 / 文案规范）；68 单测 + 16 项真机走查全过 |
 | M8 体验小修 | ✅ 完成（2026-06-04） | PRD §13 启动；4 改动：列表页 AppBarLayout fitsSystemWindows / 图片块 ShapeableImageView 12dp 圆角 / 清单按钮反向 toggle / 排序 BottomSheet 2 选项 + 删 TITLE_ASC；67 单测 + 6 项真机走查全过 |
 | M9 分类 + 软删除 + metadata strip | ✅ 完成（2026-06-04） | PRD §13 主力；DB v2 迁移（categories 表 + notes 加 category_id/deleted_at）+ 4 内置筛选 / 分类管理（拖动排序）/ 软删除 30 天回收站 / 编辑器 metadata strip + CategoryPicker；83 单测 + 10 项真机走查全过 |
-| M10 语音录入 | ⏳ 待执行 | PRD §13 范围；AudioBlock + 录制 / 播放 / 删除 + RECORD_AUDIO 权限 |
+| M10 语音录入 | ✅ 完成（2026-06-04） | PRD §13 范围；`Block.AudioBlock` + `AudioRecorder`(MPEG_4/AAC/64kbps) + `AudioPlayer`(共享单例) + `AudioRecordingBottomSheet`(走表计时 + 停止/取消) + `AudioBlockView`(播放/暂停/长按删除) + 工具栏扩 5 键 + RECORD_AUDIO 运行时权限 + onPause 兜底停播/取消；85 单测 + 13 项真机走查全过 |
 | M11 撤销 / 重做 | ⏳ 待执行 | PRD §13 范围；EditHistoryManager 命令模式 + 工具栏按钮 + 跨保存清栈 |
 
 ## M1 完成详情（2026-05-22）
@@ -482,9 +482,69 @@ M1 ✅ → M2 数据层 → M3 列表页
 
 **执行模式：** Subagent-Driven Development，严格串行 11 任务（T1→T11）。每任务的 implementer DONE → spec reviewer → code quality reviewer → fix（如有）→ re-review → 标完成；fix commit 触发点：T6 测试残留 + GlobalScope 连接泄漏（2 commits）、T8 分类删除后 filter 复位、T9 DeleteConfirmBottomSheet 双击 + 默认色、T10 race 守卫。T11 真机走查由用户完成后再写本 STATUS 收尾 commit。
 
+## M10 完成详情（2026-06-04）
+
+**起因：** M9 分类/软删除/metadata strip 落地后，按 PRD §13 三阶段执行计划进入语音录入。用户 2026-06-04 二次确认三项 UX 决策：①录音流程走"工具栏按钮 → BottomSheet 计时 → 停止后插块"，不沿用对话框；②工具栏从 4 键扩 5 键 weight=1 平铺（拒绝二级菜单收纳）；③录音时长无上限，UI 仅展走表计时，退出编辑器/切后台自动停止。本里程碑首次引入媒体子系统（MediaRecorder + MediaPlayer），但严格隔离在 `model/audio/` 包内不渗透到 BlockView 体系；按"块结构 + 录音 + 播放 + UI 入口"四维度切 13 任务串行 subagent 执行。
+
+**4 改动维度：**
+
+1. **实体 / JSON / Storage 扩展（T1-T2）：**
+   - **`Block.AudioBlock`（T1，commit `a56da90`）：** sealed class 新增第 4 个子类 `data class AudioBlock(id, fileName, durationMs)`；`NoteJson.blockToJson/blockFromJson` 增 `type="audio"` 分支，`optLong("durationMs")` 缺失默认 0；`NoteContent` `toPlainText` 加 `is Block.AudioBlock -> Unit // 音频不进搜索`。`NoteJsonAudioTest` 2 项 JUnit 5 单测：round-trip + 缺 durationMs 容错。**计划外修正：** `EditorPresenter.bind()` 内 `when(b)` 是 exhaustive，新增 sealed 子类导致编译失败；implementer 报 NEEDS_CONTEXT，决策为本任务内加 `is Block.AudioBlock -> Unit // T8 接通` 桩分支，T8 替换为真实分发。
+   - **`NoteFileStorage` 加 audio 目录（T2，commit `d9bcec3`）：** 沿 M5 imageDir/imageFile 模式新增 `audioDir(noteId)` / `audioFile(noteId, fileName)`；目录布局 `filesDir/notes/<noteId>/audio/<uuid>.m4a`。`deleteNoteDir` 走 `deleteRecursively()` 自动覆盖 audio 子目录，T11 静态核查确认无需改 `NoteRepository.deletePermanently` / `purgeExpired`。
+
+2. **录音 / 播放底层（T3-T4）：**
+   - **`AudioRecorder`（T3，commit `4d91021`）：** 76 行，封装 MediaRecorder 生命周期；编码配置 `MIC + MPEG_4 + AAC + 64_000bps + 44_100Hz`；Android 12+ 走 `MediaRecorder(context)` 构造，向下用 no-arg + `@Suppress("DEPRECATION")` + 运行时 `Build.VERSION.SDK_INT >= Build.VERSION_CODES.S` 分支；暴露 `start(File) / stop(): Long / cancel() / isRecording: Boolean` + 内部 `StartFailed` / `StopFailed` 异常；`cancel()` 释放 recorder + 删 outputFile，吞所有异常防雪崩。
+   - **`AudioPlayer`（T4，commit `400e065`）：** 69 行，编辑器内共享单实例；`interface Listener { fun onIdle(token) }`；`play(file, token, listener): Boolean` 内部先 stop 旧 token、文件不存在/解码失败返 false；`isPlaying(token)` 用 `===` 身份比对；`MediaPlayer.setOnCompletionListener` + `setOnErrorListener` 都触发 `releaseInternal + Listener.onIdle(token)`，AudioBlockView 拿回调切 UI 回 ic_play。
+
+3. **UI 层（T5-T7、T9-T10）：**
+   - **资源（T5，commit `45a1a9a`）：** AndroidManifest 声明 `<uses-permission android:name="android.permission.RECORD_AUDIO" />`；strings 增 10 条（`tb_record_cd` / `record_audio_permission_dialog_title/message` / `audio_recording_title/stop/cancel` / `audio_record_failed` / `audio_play_failed` / `audio_delete_title/message`）；drawable 增 `ic_mic.xml` / `ic_play.xml` / `ic_pause.xml`（24dp vector，tint `?attr/colorControlNormal`）。
+   - **`AudioRecordingBottomSheet`（T6，commit `639eb26`）：** 继承 `BottomSheetDialog`；ctor `(context, targetFile, onComplete: (Long) -> Unit, onCancel: () -> Unit)`；`setCancelable(false) + setCanceledOnTouchOutside(false)` 强制用户明确决策；`onCreate` 内 try-catch 启动 recorder，失败 Toast + dismiss + onCancel；`tickRunnable` 用 Handler.postDelayed 每 500ms 刷新 `formatMmSs`；btnStop/btnCancel 共用 `var terminated = false` 守卫（沿 M9 DeleteConfirmBottomSheet 双击防护模式）；公开 `forceCancel()` 供 Activity onPause 兜底取消。
+   - **`AudioBlockView`（T7，commit `2b22b37`）：** 继承 BlockView + 实现 `AudioPlayer.Listener`；`bind` 渲染 "录音 · mm:ss"（走 `audio_label_format` string）；`togglePlay` 内 `isPlaying(this) → stop()` 否则 `NoteFileStorage.audioFile() → AudioPlayer.play()`，失败 Toast；`onDetachedFromWindow` 自停在播；`onIdle(token === this)` 切 UI 回 ic_play；长按弹 `DeleteConfirmBottomSheet`（"删除录音"）→ `callback?.onRequestDelete(this)`。
+   - **工具栏扩 5 键（T9，合入 T10 commit）：** `toolbar_text.xml` 在 btn_handwriting 之后追加 btn_record（weight=1）；`TextToolbarView` 增 `btnRecord` lazy + `wireListeners` 行 + `Listener.onRecordClicked()`。
+   - **NoteEditorActivity 接通（T10，合并 T9 三文件 commit `097ca81`）：** 新增 `recordAudioPermissionLauncher`（沿 cameraPermissionLauncher 模式）+ `currentRecordingSheet` 字段；`textToolbar.listener` 加第 5 个 override `onRecordClicked → ensureNoteSavedAndThen { launchRecordAudioWithPermission() }`；新增 audio 三件套 `launchRecordAudioWithPermission / showRecordAudioPermissionDialog / startAudioRecording`（仿 camera 三件套 shape）；`startAudioRecording` 内 UUID 生成 `.m4a` 文件名、构造 BottomSheet，onComplete 内 build `Block.AudioBlock(id="a-<8>", ...)` → `presenter.insertAudioBlockAtFocus()`；`onPause` 改造加 `presenter.stopAllPlayback() + currentRecordingSheet?.forceCancel() + currentRecordingSheet = null` 在 saveNote 之前。
+
+4. **EditorPresenter 收口（T8）：**
+   - commit `cc54a67`。`val audioPlayer = AudioPlayer()` 字段（编辑器内多块共用）；新增 `addAudioBlockView(block, insertAt)` 私有方法（注入 callback + noteId + audioPlayer 后 bind）；`bind(note)` 内 `when(b)` 桩分支替换为 `is Block.AudioBlock -> addAudioBlockView(b)`；`onRequestDelete` 增 AudioBlockView 分支调 `purgeAudioOnDisk(block)`（沿 purgeImageOnDisk pattern，noteId<=0 no-op）；新增 `insertAudioBlockAtFocus(block)`（仿 insertImageBlocksAtFocus 但插 1 块 + 补尾 TextBlock 抓焦点）+ `stopAllPlayback()` 给 Activity onPause 调。
+
+**涉及文件清单：**
+- **新增（共 10 个）：** `model/audio/AudioRecorder.kt`、`model/audio/AudioPlayer.kt`、`view/editor/AudioRecordingBottomSheet.kt`、`view/block/AudioBlockView.kt`、`res/layout/dialog_audio_recording.xml`、`res/layout/block_audio.xml`、`res/drawable/ic_mic.xml`、`res/drawable/ic_play.xml`、`res/drawable/ic_pause.xml`、`test/.../NoteJsonAudioTest.kt`
+- **修改（共 8 个）：** `AndroidManifest.xml`、`model/entity/Block.kt`、`model/entity/NoteContent.kt`、`model/json/NoteJson.kt`、`model/storage/NoteFileStorage.kt`、`controller/editor/EditorPresenter.kt`、`controller/editor/NoteEditorActivity.kt`、`view/toolbar/TextToolbarView.kt`、`res/layout/toolbar_text.xml`、`res/values/strings.xml`（实际改动 ~10 个，含同一 commit 跨文件合并）
+
+**M10 commit 列表（git log `d062ed9..HEAD`，共 9 个 commit）：**
+- `a56da90` feat(m10): 增 Block.AudioBlock 实体与 NoteJson audio 分支
+- `d9bcec3` feat(m10): NoteFileStorage 增 audio 目录与文件解析
+- `4d91021` feat(m10): 新增 AudioRecorder（AAC/m4a 封装）
+- `400e065` feat(m10): 新增 AudioPlayer（编辑器内共享单例）
+- `45a1a9a` feat(m10): 声明 RECORD_AUDIO + 增录音相关 strings 与图标
+- `639eb26` feat(m10): 新增 AudioRecordingBottomSheet（计时 + 停止/取消）
+- `2b22b37` feat(m10): 新增 AudioBlockView（播放/暂停/长按删除）
+- `cc54a67` feat(m10): EditorPresenter 接通 AudioBlock（bind/插入/删除/播放收口）
+- `097ca81` feat(m10): 工具栏扩 5 键并接通录音按钮入口
+- 收尾 commit：docs(m10): 标记 M10 语音录入完成
+
+**测试统计：** `:app:clean :app:assembleDebug :app:test` 全绿，**85 项 PASSED**（M9 基线 83 → M10 +2 NoteJsonAudioTest），0 failures / 0 errors / 0 skipped。增量明细：
+- `NoteJsonAudioTest`（新文件，2）：AudioBlock round-trip / 缺 durationMs 字段降级 0
+
+**验收（用户 2026-06-04 真机走查 13 条全过）：**
+1. ✅ 编辑器底部工具栏可见 5 个按钮（清单 / 样式 / 图片 / 手写 / 录音），无遮挡，间距均匀
+2. ✅ 点录音（首次）→ 弹系统 RECORD_AUDIO 权限弹窗
+3. ✅ 拒绝权限 → 弹自定义说明 dialog 引导跳系统设置；再次点录音不崩
+4. ✅ 允许后 → 弹底部录音 Sheet，标题"正在录音"，时间从 00:00 走表
+5. ✅ 录 ≥3 秒 → 点"停止" → Sheet 关闭，当前位置插录音块「▶ 录音 · 00:03」+ 下方空 TextBlock 拿焦点
+6. ✅ 录音中按系统返回键不关 Sheet（cancelable=false）；点"取消" → Sheet 关闭无块插入，本地 m4a 已删
+7. ✅ 录音中按 Home/切后台 → Sheet 自动 forceCancel；前台后无残留
+8. ✅ 点录音块播放按钮 → 切 ic_pause 听到回放；播完自动回 ic_play
+9. ✅ 播放中再点 → 立即停止，图标复位
+10. ✅ 同笔记两条录音，点第二条播放时第一条自动停（共享 AudioPlayer）
+11. ✅ 退出再进编辑器，录音块仍在仍可播
+12. ✅ 长按录音块 → 弹"删除录音"BottomSheet 二确认；删 → 块消失 + 本地 m4a 已删；再进仍无
+13. ✅ 在图片块/清单块/文本块/手写笔画都存在的笔记追加录音块 → 保存 → 再进所有块类型正确显示（NoteJson 多类型兼容）
+
+**执行模式：** Subagent-Driven Development，严格串行 13 任务（T1→T13）。每任务的 implementer DONE → spec reviewer → code quality reviewer → fix（如有）→ re-review → 标完成；T1 因 sealed `when` exhaustive 触发 NEEDS_CONTEXT，决策为本任务加桩 + T8 替换；T11 静态核查（`deletePermanently` 已走 `deleteNoteDir.deleteRecursively()`）无代码改动跳 commit；T12 全量 gate `:app:clean :app:assembleDebug :app:test --no-daemon` 全绿；T13 真机走查 13 条由用户完成后再写本 STATUS 收尾 commit。
+
 ## 项目完成总览
 
-9 个里程碑（M1-M9）完成（2026-05-22 ~ 2026-06-04）；M10/M11 待执行：
+10 个里程碑（M1-M10）完成（2026-05-22 ~ 2026-06-04）；M11 待执行：
 
 | # | 里程碑 | commit 数 | 单测增量 | 关键产出 |
 |---|---|---|---|---|
@@ -498,11 +558,11 @@ M1 ✅ → M2 数据层 → M3 列表页
 | M7 | 打磨 | 17 | 3 | 手写性能（Paint 缓存 / Path 复用）+ 鲁棒（save-in-flight / SavedInstanceState / 图片 Toast）+ UX（状态栏 / 清单 toggle / Camera 引导） |
 | M8 | 体验小修 | 7 | −1（删 TITLE_ASC 测试） | 列表 statusBar / 图片圆角 / 清单 toggle 反向 / 排序 BottomSheet 2 选项 |
 | M9 | 分类 + 软删除 + metadata strip | 17 | 16 | DB v2 迁移（categories 表 + notes 扩字段）+ 4 内置筛选 + CategoryManagerBottomSheet 拖动排序 + DeleteConfirmBottomSheet 通用二确认 + 最近删除 30 天回收站 + 编辑器 metadata strip + CategoryPickerBottomSheet |
+| M10 | 语音录入 | 9 | 2 | `Block.AudioBlock` sealed 新成员 + `AudioRecorder`(MPEG_4/AAC/64kbps) + `AudioPlayer`(共享单例) + `AudioRecordingBottomSheet`(走表计时 + 停止/取消 + forceCancel) + `AudioBlockView`(播放/暂停/长按删除) + 工具栏扩 5 键 + RECORD_AUDIO 运行时权限 + onPause 兜底停播/取消 |
 
-**累计：** 116 个 commit（不含 docs/计划 commit），83 项自动化单测全绿，PRD MVP + §13 已晋升的"分类 + 录音 + 撤销重做"中 **M8 + M9 部分（图片圆角 / 排序 / 清单反向 / 状态栏 + 分类系统 + 软删除回收站 + metadata strip）** 100% 覆盖。架构守住"Block 块组合 + 手写 Overlay 透明层"原始决策，未引入 Compose / ViewModel / LiveData / Room / Hilt / Navigation；DB 首次迁移（v1→v2）走 SQLiteOpenHelper.onUpgrade 仅 ALTER + CREATE，旧装机数据无损。
+**累计：** 125 个 commit（不含 docs/计划 commit），85 项自动化单测全绿，PRD MVP + §13 已晋升的"分类 + 录音 + 撤销重做"中 **M8 + M9 + M10 部分（图片圆角 / 排序 / 清单反向 / 状态栏 + 分类系统 + 软删除回收站 + metadata strip + 语音录制/播放）** 100% 覆盖。架构守住"Block 块组合 + 手写 Overlay 透明层"原始决策，未引入 Compose / ViewModel / LiveData / Room / Hilt / Navigation；DB 首次迁移（v1→v2）走 SQLiteOpenHelper.onUpgrade 仅 ALTER + CREATE，旧装机数据无损；M10 引入媒体子系统（MediaRecorder + MediaPlayer）严格隔离在 `model/audio/` 包内不渗透 BlockView 体系。
 
-**M10-M11 待执行（PRD §13 范围）：**
-- **M10 语音录入** — `Block.AudioBlock` sealed 新成员 + 编辑器内录制/播放/删除 + m4a/AAC 编码 + RECORD_AUDIO 权限
+**M11 待执行（PRD §13 范围）：**
 - **M11 撤销 / 重做** — `EditHistoryManager` 命令模式 + 工具栏按钮 + 跨保存清栈
 
 **后续可选方向（仍超出 PRD §13 范围，需用户重新决策）：** 置顶 pin / 提醒 / 加锁 / 导出 / 分享 / 备份 / 深色模式 / 多端同步。
