@@ -33,6 +33,18 @@ class TextBlockView @JvmOverloads constructor(
     /** Presenter 注入：把 pending 样式应用到刚插入的文字范围。 */
     var pendingApplier: ((android.text.Spannable, Int, Int) -> Unit)? = null
 
+    /** Presenter 注入：防抖窗口结束后回调，让 Presenter 决定是否落栈。 */
+    var textDebounceCallback: ((blockId: String, beforeText: String, beforeSpans: List<com.fan.hwnote.app.model.entity.TextSpan>, afterText: String, afterSpans: List<com.fan.hwnote.app.model.entity.TextSpan>) -> Unit)? = null
+
+    private val debounceHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private val debounceMs = 800L
+    private var debounceArmed = false
+    private var pendingBeforeText: String = ""
+    private var pendingBeforeSpans: List<com.fan.hwnote.app.model.entity.TextSpan> = emptyList()
+    private val debounceRunnable = Runnable { flushPendingTextEdit() }
+    /** Presenter silentReplaceText 调用前后会用此守卫，避免那段 setText 又触发本 TextWatcher 入栈。 */
+    private var suppressDebounce = false
+
     init {
         LayoutInflater.from(context).inflate(R.layout.block_text, this, true)
         edit = findViewById(R.id.block_edit)
@@ -84,7 +96,11 @@ class TextBlockView @JvmOverloads constructor(
 
     private fun wireListeners() {
         edit.setOnFocusChangeListener { _, focused ->
-            if (focused) callback?.onFocusGained(this)
+            if (focused) {
+                callback?.onFocusGained(this)
+            } else {
+                flushPendingTextEdit()
+            }
         }
 
         // 末尾按回车 → 上抛 split；中间按回车 → 让 EditText 自己换行
@@ -109,17 +125,48 @@ class TextBlockView @JvmOverloads constructor(
         edit.addTextChangedListener(object : TextWatcher {
             private var insertStart = 0
             private var insertCount = 0
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
+                // 第一次变更进入窗口前抓 before 快照
+                if (!suppressDebounce && !debounceArmed) {
+                    val pre = SpannableString(edit.text)
+                    pendingBeforeText = pre.toString()
+                    pendingBeforeSpans = pre.toTextSpans()
+                }
+            }
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 insertStart = start
-                // count 即新内容长度 [start, start+count)；不能用 count-before，否则等长替换 / 选区粘贴会漏
                 insertCount = count
             }
             override fun afterTextChanged(s: Editable?) {
                 if (insertCount > 0 && s is android.text.Spannable) {
                     pendingApplier?.invoke(s, insertStart, insertCount)
                 }
+                if (suppressDebounce) return
+                debounceArmed = true
+                debounceHandler.removeCallbacks(debounceRunnable)
+                debounceHandler.postDelayed(debounceRunnable, debounceMs)
             }
         })
+    }
+
+    /** 立即把防抖窗口未落栈的变更落栈（focus 切换 / save / undo / redo 触发）。 */
+    fun flushPendingTextEdit() {
+        if (!debounceArmed) return
+        debounceHandler.removeCallbacks(debounceRunnable)
+        debounceArmed = false
+        val currentSp = SpannableString(edit.text)
+        val afterText = currentSp.toString()
+        val afterSpans = currentSp.toTextSpans()
+        textDebounceCallback?.invoke(blockId, pendingBeforeText, pendingBeforeSpans, afterText, afterSpans)
+    }
+
+    /** Presenter silentReplaceText 用：在 block 内执行 setText 时屏蔽防抖入栈。 */
+    fun suppressDebounceWhile(block: () -> Unit) {
+        suppressDebounce = true
+        try { block() } finally {
+            suppressDebounce = false
+            debounceArmed = false
+            debounceHandler.removeCallbacks(debounceRunnable)
+        }
     }
 }

@@ -328,6 +328,9 @@ class EditorPresenter(
             )
             callback = this@EditorPresenter
             pendingApplier = { sp, start, count -> applyPendingTo(sp, start, count) }
+            textDebounceCallback = { blockId, beforeText, beforeSpans, afterText, afterSpans ->
+                recordTextEdit(blockId, beforeText, beforeSpans, afterText, afterSpans)
+            }
             bind(block)
         }
         if (insertAt < 0 || insertAt >= currentBlocks.size) {
@@ -629,9 +632,9 @@ class EditorPresenter(
         val view = currentBlocks.firstOrNull { it.toBlock().id == blockId } as? TextBlockView ?: return
         val sp = SpannableString(text)
         spans.applyTo(sp)
-        view.edit.setText(sp)
-        // 注：Task 8 引入 TextWatcher 防抖后，本调用会触发新的入栈循环。
-        //     Task 8 内会改成 view.suppressDebounceWhile { view.edit.setText(sp) }。
+        view.suppressDebounceWhile {
+            view.edit.setText(sp)
+        }
     }
 
     // ----- M11 公共入口 -----
@@ -664,7 +667,9 @@ class EditorPresenter(
 
     /** 遍历当前所有 TextBlockView 强制 flush 防抖窗口未落栈的变更。 */
     fun flushPendingTextEdits() {
-        // Task 8 内接通：for (v in currentBlocks) if (v is TextBlockView) v.flushPendingTextEdit()
+        for (v in currentBlocks) {
+            if (v is TextBlockView) v.flushPendingTextEdit()
+        }
     }
 
     /** Activity onPause 调：停掉编辑器内任何在播的音频。 */
