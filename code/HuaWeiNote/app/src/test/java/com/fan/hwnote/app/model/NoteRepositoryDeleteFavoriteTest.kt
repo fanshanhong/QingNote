@@ -8,7 +8,6 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
-import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -69,7 +68,6 @@ class NoteRepositoryDeleteFavoriteTest {
         assertFalse(loaded.isFavorite)
     }
 
-    @Ignore("Depends on T5: list() default ListFilter.All filters deleted_at = 0")
     @Test
     fun `softDelete marks deleted_at and excludes from default list`() = runBlocking {
         val a = NoteRepository.save(Note.new().copy(title = "A"))

@@ -29,6 +29,7 @@ object NoteRepository {
     }
 
     suspend fun list(
+        filter: ListFilter = ListFilter.All,
         sortBy: SortBy = SortBy.UPDATED_DESC,
         query: String? = null,
     ): List<Note> = withContext(Dispatchers.IO) {
@@ -36,18 +37,37 @@ object NoteRepository {
             SortBy.UPDATED_DESC -> "updated_at DESC"
             SortBy.CREATED_DESC -> "created_at DESC"
         }
-        val (selection, args) = if (!query.isNullOrEmpty()) {
+        val where = mutableListOf<String>()
+        val args = mutableListOf<String>()
+        when (filter) {
+            ListFilter.All -> where += "deleted_at = 0"
+            ListFilter.Uncategorized -> {
+                where += "deleted_at = 0"
+                where += "category_id IS NULL"
+            }
+            ListFilter.Favorite -> {
+                where += "deleted_at = 0"
+                where += "is_favorite = 1"
+            }
+            ListFilter.Deleted -> where += "deleted_at > 0"
+            is ListFilter.Category -> {
+                where += "deleted_at = 0"
+                where += "category_id = ?"
+                args += filter.id.toString()
+            }
+        }
+        if (!query.isNullOrEmpty()) {
             val like = "%$query%"
-            "title LIKE ? OR plain_text LIKE ?" to arrayOf(like, like)
-        } else {
-            null to null
+            where += "(title LIKE ? OR plain_text LIKE ?)"
+            args += like
+            args += like
         }
+        val selection = where.joinToString(" AND ")
         val out = mutableListOf<Note>()
-        val db = dbHelper.readableDatabase
-        val cursor = db.query("notes", null, selection, args, null, null, orderBy)
-        cursor.use { c ->
-            while (c.moveToNext()) out.add(cursorToNote(c))
-        }
+        val cursor = dbHelper.readableDatabase.query(
+            "notes", null, selection, args.toTypedArray(), null, null, orderBy,
+        )
+        cursor.use { c -> while (c.moveToNext()) out += cursorToNote(c) }
         out
     }
 
@@ -141,6 +161,14 @@ object NoteRepository {
     }
 
     enum class SortBy { UPDATED_DESC, CREATED_DESC }
+
+    sealed class ListFilter {
+        object All : ListFilter()
+        object Uncategorized : ListFilter()
+        object Favorite : ListFilter()
+        object Deleted : ListFilter()
+        data class Category(val id: Long) : ListFilter()
+    }
 
     // ----- private -----
 

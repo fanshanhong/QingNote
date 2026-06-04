@@ -94,7 +94,7 @@ class NoteListActivity : AppCompatActivity() {
 
     private fun reload() {
         lifecycleScope.launch {
-            val list = NoteRepository.list(sortBy, currentQuery)
+            val list = NoteRepository.list(sortBy = sortBy, query = currentQuery)
             adapter.submit(list)
             renderEmpty(list.isEmpty())
         }

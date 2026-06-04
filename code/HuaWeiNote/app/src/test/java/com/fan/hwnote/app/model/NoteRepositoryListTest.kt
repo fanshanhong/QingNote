@@ -92,4 +92,37 @@ class NoteRepositoryListTest {
         val list = NoteRepository.list(query = "找不到的关键词")
         assertTrue(list.isEmpty())
     }
+
+    @Test
+    fun `filter Uncategorized excludes notes with categoryId`() = runBlocking {
+        val a = NoteRepository.save(Note.new().copy(title = "A", categoryId = null))
+        val b = NoteRepository.save(Note.new().copy(title = "B", categoryId = 1L))
+        val list = NoteRepository.list(filter = NoteRepository.ListFilter.Uncategorized)
+        assertEquals(listOf(a), list.map { it.id })
+    }
+
+    @Test
+    fun `filter Favorite includes only is_favorite notes`() = runBlocking {
+        val a = NoteRepository.save(Note.new().copy(title = "A", isFavorite = false))
+        val b = NoteRepository.save(Note.new().copy(title = "B", isFavorite = true))
+        val list = NoteRepository.list(filter = NoteRepository.ListFilter.Favorite)
+        assertEquals(listOf(b), list.map { it.id })
+    }
+
+    @Test
+    fun `filter Deleted shows only soft-deleted notes`() = runBlocking {
+        val a = NoteRepository.save(Note.new().copy(title = "A"))
+        val b = NoteRepository.save(Note.new().copy(title = "B"))
+        NoteRepository.softDelete(a)
+        val list = NoteRepository.list(filter = NoteRepository.ListFilter.Deleted)
+        assertEquals(listOf(a), list.map { it.id })
+    }
+
+    @Test
+    fun `filter Category matches categoryId`() = runBlocking {
+        val a = NoteRepository.save(Note.new().copy(title = "A", categoryId = 1L))
+        val b = NoteRepository.save(Note.new().copy(title = "B", categoryId = 2L))
+        val list = NoteRepository.list(filter = NoteRepository.ListFilter.Category(1L))
+        assertEquals(listOf(a), list.map { it.id })
+    }
 }
