@@ -1,16 +1,22 @@
 package com.fan.hwnote.app.model.db
 
 import android.database.sqlite.SQLiteDatabase
-import android.database.sqlite.SQLiteOpenHelper
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
 @RunWith(RobolectricTestRunner::class)
 class NoteDbHelperTest {
+
+    @Before
+    fun setUp() {
+        val ctx = ApplicationProvider.getApplicationContext<android.content.Context>()
+        ctx.deleteDatabase(NoteDbHelper.DB_NAME)
+    }
 
     @Test
     fun `creates notes table with all columns`() {
@@ -28,6 +34,7 @@ class NoteDbHelperTest {
             setOf("id", "title", "plain_text", "content_json", "is_favorite", "created_at", "updated_at", "category_id", "deleted_at"),
             columns,
         )
+        db.close()
     }
 
     @Test
@@ -46,6 +53,7 @@ class NoteDbHelperTest {
 
         assertTrue("缺索引 idx_notes_updated_at: $indexes", indexes.contains("idx_notes_updated_at"))
         assertTrue("缺索引 idx_notes_favorite: $indexes",  indexes.contains("idx_notes_favorite"))
+        db.close()
     }
 
     @Test
@@ -66,12 +74,12 @@ class NoteDbHelperTest {
 
         assertTrue("expected id1 > 0, got $id1", id1 > 0)
         assertTrue("expected id2 > id1, got id1=$id1 id2=$id2", id2 > id1)
+        db.close()
     }
 
     @Test
     fun `onCreate v2 has categories table and indexes`() {
         val ctx = ApplicationProvider.getApplicationContext<android.content.Context>()
-        ctx.deleteDatabase(NoteDbHelper.DB_NAME)
         val db = NoteDbHelper(ctx).writableDatabase
 
         // categories 表必须存在
@@ -95,27 +103,25 @@ class NoteDbHelperTest {
     @Test
     fun `onUpgrade v1 to v2 alters notes and creates categories`() {
         val ctx = ApplicationProvider.getApplicationContext<android.content.Context>()
-        ctx.deleteDatabase(NoteDbHelper.DB_NAME)
 
-        // 手工建 v1 schema 模拟旧装机
-        val v1Helper = object : SQLiteOpenHelper(ctx, NoteDbHelper.DB_NAME, null, 1) {
-            override fun onCreate(db: SQLiteDatabase) {
-                db.execSQL(
-                    """CREATE TABLE notes (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        title TEXT NOT NULL DEFAULT '',
-                        plain_text TEXT NOT NULL DEFAULT '',
-                        content_json TEXT NOT NULL DEFAULT '{"blocks":[],"handwriting":{"strokes":[]}}',
-                        is_favorite INTEGER NOT NULL DEFAULT 0,
-                        created_at INTEGER NOT NULL,
-                        updated_at INTEGER NOT NULL
-                    )""",
-                )
-                db.execSQL("INSERT INTO notes(title, created_at, updated_at) VALUES('old', 1, 1)")
-            }
-            override fun onUpgrade(db: SQLiteDatabase, o: Int, n: Int) {}
-        }
-        v1Helper.writableDatabase.close()
+        // 直接以 v1 schema 建 DB（绕开 SQLiteOpenHelper，避免跨测残留连接触发 downgrade）
+        val dbFile = ctx.getDatabasePath(NoteDbHelper.DB_NAME)
+        dbFile.parentFile?.mkdirs()
+        val v1Db = SQLiteDatabase.openOrCreateDatabase(dbFile, null)
+        v1Db.version = 1
+        v1Db.execSQL(
+            """CREATE TABLE notes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL DEFAULT '',
+                plain_text TEXT NOT NULL DEFAULT '',
+                content_json TEXT NOT NULL DEFAULT '{"blocks":[],"handwriting":{"strokes":[]}}',
+                is_favorite INTEGER NOT NULL DEFAULT 0,
+                created_at INTEGER NOT NULL,
+                updated_at INTEGER NOT NULL
+            )""",
+        )
+        v1Db.execSQL("INSERT INTO notes(title, created_at, updated_at) VALUES('old', 1, 1)")
+        v1Db.close()
 
         // 用 v2 helper 打开 → 触发 onUpgrade
         val v2Db = NoteDbHelper(ctx).writableDatabase
