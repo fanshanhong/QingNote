@@ -9,7 +9,9 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.widget.EditText
+import android.widget.LinearLayout
 import android.widget.RadioGroup
+import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
@@ -19,8 +21,10 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.fan.hwnote.app.R
 import com.fan.hwnote.app.controller.editor.NoteEditorActivity
+import com.fan.hwnote.app.model.CategoryRepository
 import com.fan.hwnote.app.model.NoteRepository
 import com.fan.hwnote.app.model.entity.Note
+import com.fan.hwnote.app.view.list.FilterPickerBottomSheet
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.launch
@@ -28,6 +32,8 @@ import kotlinx.coroutines.launch
 class NoteListActivity : AppCompatActivity() {
 
     private lateinit var toolbar: Toolbar
+    private lateinit var filterChip: LinearLayout
+    private lateinit var filterChipText: TextView
     private lateinit var searchInput: EditText
     private lateinit var recycler: RecyclerView
     private lateinit var emptyState: View
@@ -36,6 +42,7 @@ class NoteListActivity : AppCompatActivity() {
 
     private var sortBy: NoteRepository.SortBy = NoteRepository.SortBy.UPDATED_DESC
     private var currentQuery: String? = null
+    private var currentFilter: NoteRepository.ListFilter = NoteRepository.ListFilter.All
 
     private val searchHandler = Handler(Looper.getMainLooper())
     private var searchRunnable: Runnable? = null
@@ -45,6 +52,8 @@ class NoteListActivity : AppCompatActivity() {
         setContentView(R.layout.activity_note_list)
 
         toolbar = findViewById(R.id.toolbar)
+        filterChip = findViewById(R.id.filter_chip)
+        filterChipText = findViewById(R.id.filter_chip_text)
         searchInput = findViewById(R.id.search_input)
         recycler = findViewById(R.id.recycler_notes)
         emptyState = findViewById(R.id.empty_state)
@@ -62,6 +71,9 @@ class NoteListActivity : AppCompatActivity() {
         recycler.adapter = adapter
 
         sortBy = loadSort()
+        currentFilter = loadFilter()
+        lifecycleScope.launch { updateFilterChipLabel() }
+        filterChip.setOnClickListener { showFilterPicker() }
 
         fab.setOnClickListener {
             startActivity(NoteEditorActivity.newIntent(this, -1L))
@@ -94,7 +106,7 @@ class NoteListActivity : AppCompatActivity() {
 
     private fun reload() {
         lifecycleScope.launch {
-            val list = NoteRepository.list(sortBy = sortBy, query = currentQuery)
+            val list = NoteRepository.list(currentFilter, sortBy, currentQuery)
             adapter.submit(list)
             renderEmpty(list.isEmpty())
         }
@@ -184,8 +196,81 @@ class NoteListActivity : AppCompatActivity() {
             .putString(KEY_SORT, sortBy.name).apply()
     }
 
+    private fun showFilterPicker() {
+        FilterPickerBottomSheet(
+            activity = this,
+            currentFilter = currentFilter,
+            onPick = { picked ->
+                currentFilter = picked
+                saveFilter(picked)
+                lifecycleScope.launch { updateFilterChipLabel() }
+                reload()
+            },
+            onManage = {
+                android.widget.Toast.makeText(
+                    this, "管理分类（T8 实现）", android.widget.Toast.LENGTH_SHORT,
+                ).show()
+            },
+        ).show()
+    }
+
+    private fun loadFilter(): NoteRepository.ListFilter {
+        val prefs = getSharedPreferences(PREFS, MODE_PRIVATE)
+        val type = prefs.getString(KEY_FILTER_TYPE, "ALL") ?: "ALL"
+        return when (type) {
+            "ALL" -> NoteRepository.ListFilter.All
+            "UNCATEGORIZED" -> NoteRepository.ListFilter.Uncategorized
+            "FAVORITE" -> NoteRepository.ListFilter.Favorite
+            "DELETED" -> NoteRepository.ListFilter.Deleted
+            "CATEGORY" -> {
+                val id = prefs.getLong(KEY_FILTER_CATEGORY_ID, -1L)
+                if (id > 0) NoteRepository.ListFilter.Category(id)
+                else NoteRepository.ListFilter.All
+            }
+            else -> NoteRepository.ListFilter.All
+        }
+    }
+
+    private fun saveFilter(filter: NoteRepository.ListFilter) {
+        val editor = getSharedPreferences(PREFS, MODE_PRIVATE).edit()
+        when (filter) {
+            NoteRepository.ListFilter.All -> {
+                editor.putString(KEY_FILTER_TYPE, "ALL").remove(KEY_FILTER_CATEGORY_ID)
+            }
+            NoteRepository.ListFilter.Uncategorized -> {
+                editor.putString(KEY_FILTER_TYPE, "UNCATEGORIZED").remove(KEY_FILTER_CATEGORY_ID)
+            }
+            NoteRepository.ListFilter.Favorite -> {
+                editor.putString(KEY_FILTER_TYPE, "FAVORITE").remove(KEY_FILTER_CATEGORY_ID)
+            }
+            NoteRepository.ListFilter.Deleted -> {
+                editor.putString(KEY_FILTER_TYPE, "DELETED").remove(KEY_FILTER_CATEGORY_ID)
+            }
+            is NoteRepository.ListFilter.Category -> {
+                editor.putString(KEY_FILTER_TYPE, "CATEGORY")
+                    .putLong(KEY_FILTER_CATEGORY_ID, filter.id)
+            }
+        }
+        editor.apply()
+    }
+
+    private suspend fun updateFilterChipLabel() {
+        val label = when (val f = currentFilter) {
+            NoteRepository.ListFilter.All -> getString(R.string.filter_all)
+            NoteRepository.ListFilter.Uncategorized -> getString(R.string.filter_uncategorized)
+            NoteRepository.ListFilter.Favorite -> getString(R.string.filter_favorite)
+            NoteRepository.ListFilter.Deleted -> getString(R.string.filter_deleted)
+            is NoteRepository.ListFilter.Category -> {
+                CategoryRepository.get(f.id)?.name ?: getString(R.string.filter_all)
+            }
+        }
+        filterChipText.text = label
+    }
+
     companion object {
         private const val PREFS = "hwnote_settings"
         private const val KEY_SORT = "sort_by"
+        private const val KEY_FILTER_TYPE = "filter_type"
+        private const val KEY_FILTER_CATEGORY_ID = "filter_category_id"
     }
 }
