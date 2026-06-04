@@ -25,6 +25,12 @@ class NoteEditorActivity : AppCompatActivity() {
     private lateinit var handwritingToolbar: com.fan.hwnote.app.view.toolbar.HandwritingToolbarView
     private lateinit var textToolbar: com.fan.hwnote.app.view.toolbar.TextToolbarView
 
+    // M9 T10：标题下方 metadata strip（时间 · 分类）
+    private lateinit var metaTime: android.widget.TextView
+    private lateinit var metaCategoryDot: android.widget.ImageView
+    private lateinit var metaCategoryName: android.widget.TextView
+    private lateinit var metaCategoryChip: android.view.View
+
     private var noteId: Long = -1L
     private var loadedNote: Note? = null
     @Volatile private var saveInFlight: Boolean = false
@@ -156,6 +162,12 @@ class NoteEditorActivity : AppCompatActivity() {
             }
         }
 
+        metaTime = findViewById(R.id.meta_time)
+        metaCategoryDot = findViewById(R.id.meta_category_dot)
+        metaCategoryName = findViewById(R.id.meta_category_name)
+        metaCategoryChip = findViewById(R.id.meta_category_chip)
+        metaCategoryChip.setOnClickListener { showCategoryPicker() }
+
         if (savedInstanceState != null) {
             pendingCameraOutputUri =
                 @Suppress("DEPRECATION") savedInstanceState.getParcelable(STATE_CAMERA_URI)
@@ -184,7 +196,65 @@ class NoteEditorActivity : AppCompatActivity() {
             presenter.noteId = note.id // 0L for 新笔记，正数 for 已落库
             titleInput.setText(note.title)
             presenter.bind(note)
+            refreshMetadataStrip()
         }
+    }
+
+    /**
+     * 刷新标题下方的「时间 · 分类」strip：
+     * - 时间走 DateUtils.formatRelative（与列表卡片右上角同规则）
+     * - 分类：未分类显示灰色圆点 + "未分类"；已分类显示分类色 + 分类名
+     */
+    private fun refreshMetadataStrip() {
+        val n = loadedNote ?: return
+        val ts = if (n.updatedAt > 0) n.updatedAt else System.currentTimeMillis()
+        metaTime.text = com.fan.hwnote.app.util.DateUtils.formatRelative(ts)
+        lifecycleScope.launch {
+            val cat = n.categoryId?.let { com.fan.hwnote.app.model.CategoryRepository.get(it) }
+            if (cat == null) {
+                metaCategoryName.text = getString(R.string.filter_uncategorized)
+                val hint = androidx.core.content.ContextCompat.getColor(
+                    this@NoteEditorActivity, R.color.text_hint,
+                )
+                androidx.core.widget.ImageViewCompat.setImageTintList(
+                    metaCategoryDot,
+                    android.content.res.ColorStateList.valueOf(hint),
+                )
+            } else {
+                metaCategoryName.text = cat.name
+                val tint = runCatching { android.graphics.Color.parseColor(cat.color) }
+                    .getOrDefault(android.graphics.Color.GRAY)
+                androidx.core.widget.ImageViewCompat.setImageTintList(
+                    metaCategoryDot,
+                    android.content.res.ColorStateList.valueOf(tint),
+                )
+            }
+        }
+    }
+
+    /**
+     * 弹「移动到」分类选择 BottomSheet。
+     * - 已落库笔记（id > 0）：选完即时持久化 categoryId（onPause 时 saveNote 会再合并一次）
+     * - 未落库笔记（id == 0）：只更新 loadedNote，不内联 INSERT，避免与后续 onPause 重复 INSERT；
+     *   等用户离开页面 / 触发 ensureNoteSavedAndThen 时统一走 saveNote 路径（该路径会从
+     *   loadedNote 合并 categoryId）。
+     */
+    private fun showCategoryPicker() {
+        val cur = loadedNote ?: return
+        com.fan.hwnote.app.view.editor.CategoryPickerBottomSheet(
+            activity = this,
+            currentCategoryId = cur.categoryId,
+            onPick = { newCatId ->
+                val updated = cur.copy(categoryId = newCatId)
+                loadedNote = updated
+                refreshMetadataStrip()
+                if (cur.id > 0L) {
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        NoteRepository.save(updated)
+                    }
+                }
+            },
+        ).show()
     }
 
     private fun showImageSourceDialog() {
@@ -308,7 +378,9 @@ class NoteEditorActivity : AppCompatActivity() {
         saveInFlight = true
         // 这里复用 saveNote 路径，但要等 IO 完成后再回主线程跑 block
         val title = titleInput.text.toString()
+        // 同 saveNote：编辑期内通过 CategoryPickerBottomSheet 改的 categoryId 不在 presenter 快照里
         val toSave = presenter.collectCurrentNote(title)
+            .copy(categoryId = loadedNote?.categoryId)
         lifecycleScope.launch(Dispatchers.IO) {
             val newId = NoteRepository.save(toSave)
             withContext(Dispatchers.Main) {
@@ -329,7 +401,10 @@ class NoteEditorActivity : AppCompatActivity() {
     private fun saveNote() {
         val loaded = loadedNote ?: return // 还没加载完成，不存
         val title = titleInput.text.toString()
-        val toSave = presenter.collectCurrentNote(title).copy(id = loaded.id)
+        // 注意：presenter.collectCurrentNote 基于 bind 时的快照，不含编辑期内通过
+        // CategoryPickerBottomSheet 改写过的 categoryId，必须从 loadedNote 重新合并。
+        val toSave = presenter.collectCurrentNote(title)
+            .copy(id = loaded.id, categoryId = loaded.categoryId)
         // 全空且是新笔记则不存
         val isAllEmpty = title.isEmpty() && toSave.plainText.isEmpty()
         if (loaded.id == 0L && isAllEmpty) return
