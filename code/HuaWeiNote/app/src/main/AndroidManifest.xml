@@ -4,6 +4,9 @@
     <!-- 拍照权限：M5 才会真正请求 -->
     <uses-permission android:name="android.permission.CAMERA" />
 
+    <!-- M10 录音 -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+
     <uses-feature
         android:name="android.hardware.camera"
         android:required="false" />

@@ -119,4 +119,16 @@
     <string name="dialog_soft_delete_message">该笔记将移入\"最近删除\"，30 天后自动清理。</string>
     <string name="dialog_delete_permanently_title">彻底删除笔记</string>
     <string name="dialog_delete_permanently_message">彻底删除后不可恢复，确定删除？</string>
+
+    <!-- M10 录音 -->
+    <string name="tb_record_cd">录音</string>
+    <string name="record_audio_permission_dialog_title">需要录音权限</string>
+    <string name="record_audio_permission_dialog_message">已拒绝录音权限。请在系统设置中开启「麦克风」权限后再次尝试。</string>
+    <string name="audio_recording_title">正在录音</string>
+    <string name="audio_recording_stop">停止</string>
+    <string name="audio_recording_cancel">取消</string>
+    <string name="audio_record_failed">录音启动失败</string>
+    <string name="audio_play_failed">音频播放失败</string>
+    <string name="audio_delete_title">删除录音</string>
+    <string name="audio_delete_message">将删除本条录音，操作不可撤销。</string>
 </resources>
