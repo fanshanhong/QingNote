@@ -1,6 +1,6 @@
 # HwNote · 项目进度
 
-最后更新：2026-06-04（M8 体验小修完成 — PRD §13 启动，M9/M10/M11 待执行）
+最后更新：2026-06-04（M9 分类 + 软删除 + metadata strip 完成 — PRD §13 主力项落地，M10/M11 待执行）
 
 ## 阶段地图
 
@@ -12,8 +12,8 @@
 | 4. 规格自审 | ✅ 完成 | 修复 7 处一致性问题（heading 块属性归位、Span 6 种、笔效/橡皮算法详写、ACTION_GET_CONTENT 替换、Glide compiler 去除、plain_text 规则补、行内/块级样式分离） |
 | 5. 用户审阅 PRD | ✅ 完成 | 用户确认无修改，进入下一步 |
 | 6. **实施计划编写** | ✅ 完成 | `docs/superpowers/plans/2026-05-22-hwnote-implementation.md`（高层版，7 个里程碑各一节，685 行） |
-| 7. 代码实施 | ✅ M1-M7 完成 + M8 完成 | M1+M2+M3+M4+M5+M6+M7 代码全部落地，**M8 (PRD §13 启动)** 4 改动全部落地；67 单测全绿（M7 基线 68 → M8 删 TITLE_ASC 同时连带删测试） |
-| 8. 手测验收 | ✅ M3 / M5 / M6 / M7 / **M8** 用户真机走查全部通过 | M3 五条 + M5 七条 + M6 十三条 + M7 十六条 + **M8 六条**逐条手测通过；M4 SpanConverter 15 项 + M2 数据层 42 项 + M5 ImageCompressor 3 项 + M6 StrokeEraser 5 项 + M7 BrushPainter 3 项单测 PASSED |
+| 7. 代码实施 | ✅ M1-M8 完成 + M9 完成 | M1+M2+M3+M4+M5+M6+M7+M8 全部落地，**M9 (PRD §13 主力项)** 10 改动 + DB v2 迁移全部落地；83 单测全绿（M8 基线 67 → M9 +16） |
+| 8. 手测验收 | ✅ M3 / M5 / M6 / M7 / M8 / **M9** 用户真机走查全部通过 | M3 五条 + M5 七条 + M6 十三条 + M7 十六条 + M8 六条 + **M9 十条**逐条手测通过；M4 SpanConverter 15 + M2 数据层 42 + M5 ImageCompressor 3 + M6 StrokeEraser 5 + M7 BrushPainter 3 + **M9 CategoryRepository 5 / NoteDbHelper +2 / SoftDelete +3 / ListFilter +3 / SaveGet +2** 单测 PASSED |
 
 ## 里程碑进度
 
@@ -27,7 +27,7 @@
 | M6 手写 Overlay | ✅ 完成（2026-05-23） | HandwritingOverlayView 透明层 + 4 笔种 BrushPainter + 笔画级 StrokeEraser + 撤销/重做/清空 + 6 键工具栏 + 8 色 + 3 粗细；StrokeEraser 5 单测 |
 | M7 打磨 | ✅ 完成（2026-05-23） | 13 任务全部落地：手写性能（Paint 三键缓存 / Path 复用）+ 鲁棒（save-in-flight / Camera SavedInstanceState / 图片失败 Toast）+ UX（状态栏 inset / 清单 toggle / Camera 引导跳设置 / 文案规范）；68 单测 + 16 项真机走查全过 |
 | M8 体验小修 | ✅ 完成（2026-06-04） | PRD §13 启动；4 改动：列表页 AppBarLayout fitsSystemWindows / 图片块 ShapeableImageView 12dp 圆角 / 清单按钮反向 toggle / 排序 BottomSheet 2 选项 + 删 TITLE_ASC；67 单测 + 6 项真机走查全过 |
-| M9 分类 + 软删除 + metadata strip | ⏳ 待执行 | PRD §13 范围；DB v2 迁移；分类系统 + 最近删除 + 编辑器 metadata strip |
+| M9 分类 + 软删除 + metadata strip | ✅ 完成（2026-06-04） | PRD §13 主力；DB v2 迁移（categories 表 + notes 加 category_id/deleted_at）+ 4 内置筛选 / 分类管理（拖动排序）/ 软删除 30 天回收站 / 编辑器 metadata strip + CategoryPicker；83 单测 + 10 项真机走查全过 |
 | M10 语音录入 | ⏳ 待执行 | PRD §13 范围；AudioBlock + 录制 / 播放 / 删除 + RECORD_AUDIO 权限 |
 | M11 撤销 / 重做 | ⏳ 待执行 | PRD §13 范围；EditHistoryManager 命令模式 + 工具栏按钮 + 跨保存清栈 |
 
@@ -409,9 +409,82 @@ M1 ✅ → M2 数据层 → M3 列表页
 
 **执行模式：** Subagent-Driven Development，严格串行 4 任务（T1→T2→T3→T4）+ T5 全量验证 + STATUS。每任务 implementer DONE → spec reviewer → code quality reviewer → fix（如有）→ 标完成；T2/T4 各引入 1 个 fix commit + 1 个 chore/refactor commit。
 
+## M9 完成详情（2026-06-04）
+
+**起因：** M8 四项轻量改动收官后，按 PRD §13 分阶段执行计划进入主力项 M9。本里程碑首次引入 DB schema 迁移（v1→v2），数据层与 UI 层都有结构性扩展；按"分类 + 软删除 + metadata strip"三块并联的 brainstorm 切成 11 任务串行执行。
+
+**4 改动维度：**
+
+1. **DB v2 迁移 + 数据层扩展（T1-T6）：**
+   - **Schema 升级（T1，commit `e62c47a`）：** `NoteDbHelper.DATABASE_VERSION` 1→2；`notes` 表加 `category_id INTEGER`（NULL = 未分类）+ `deleted_at INTEGER NOT NULL DEFAULT 0`（0 = 未删，>0 = 软删时间戳）；新建 `categories` 表（id / name / color / display_order / created_at）；新增 `idx_notes_category`、`idx_notes_deleted` 两索引；`onUpgrade(v1→v2)` 仅 ALTER + CREATE，旧数据零损。
+   - **Category 实体 + Repository（T2，commits `9886432` + `500cb3a`）：** `entity/Category.kt` + `model/CategoryRepository.kt`（object 单例：init / list（按 display_order）/ get / create / rename / setColor / delete（事务清空被删分类下笔记的 category_id）/ reorder（事务批量 UPDATE display_order）/ count）。
+   - **Note 模型扩字段（T3，commit `408b226`）：** `Note` data class 加 `categoryId: Long?` + `deletedAt: Long`；`NoteRepository.save/get/list` 读写新字段，旧装机走默认值降级。
+   - **软删除 API + purgeExpired（T4，commit `cf62772`）：** `softDelete(id)` 写 `deleted_at = now`；`restore(id)` 写 `deleted_at = 0`；`deletePermanently(id)` 走旧 `delete` 同语义（行删 + 文件目录清）；`purgeExpired(now)` 批量删 `deleted_at > 0 AND deleted_at < now - 30d` 的笔记 + 文件。
+   - **list 加 ListFilter（T5，commit `323e540`）：** `sealed class ListFilter { All / Uncategorized / Favorite / Deleted / data class Category(id) }`；`list(filter, sortBy, query)` 按 filter 拼 WHERE：All 排除已删；Deleted 仅含已删；其他过滤已删 + 加分类/收藏条件。
+   - **App.onCreate 启动清理（T6，commit `7249ee4`）：** `GlobalScope.launch(Dispatchers.IO) { runCatching { purgeExpired() } }`；单例 App 生命周期内执行一次，`runCatching` 兜底吞错。
+
+2. **测试基础设施稳定（mid-M9）：**
+   - `fix(test) 136f45a`：`NoteDbHelperTest` 跨用例 SQLite 残留导致 "table notes already exists" / "Can't downgrade" 偶发；加 `@Before { ctx.deleteDatabase }` + 每个 `@Test` 结尾 `db.close()`；v1→v2 升级测试改用 `SQLiteDatabase.openOrCreateDatabase(file, null)` 绕过 SQLiteOpenHelper 连接池。
+   - `fix(test) e3bedb5`：根因发现 `App.onCreate` 内 `GlobalScope.launch { purgeExpired }` 永不关闭 SQLite 连接，跨用例污染；新建 `TestApp : Application()`（空实现），`robolectric.properties` 加 `application=com.fan.hwnote.app.TestApp` 让单测跳过启动清理。后续 3 次 `--rerun-tasks` 全绿验证。
+
+3. **列表页分类筛选 + 管理（T7-T9）：**
+   - **Toolbar filter chip + FilterPickerBottomSheet（T7，commit `067c806`）：** `activity_note_list.xml` Toolbar title 撤掉，中央放可点 chip（`filter_chip_text` + `ic_arrow_drop_down`）；新建 `view/list/FilterPickerBottomSheet.kt`（4 内置项 = 全部/未分类/我的收藏/最近删除 + 用户分类 RecyclerView + 管理分类入口）；`item_filter_row.xml` 复用（圆点 + 名称）；筛选状态持久化到 SharedPreferences（`KEY_FILTER_TYPE` + `KEY_FILTER_CATEGORY_ID`，ListFilter sealed 序列化/反序列化）。
+   - **CategoryManagerBottomSheet（T8，commits `3119492` + `10cb3e7`）：** 新建 BottomSheetDialog 容纳"分类列表（拖动排序）+ 新建/编辑/删除"；`ItemTouchHelper.SimpleCallback(UP or DOWN, 0)` 实现长按拖动，`clearView` 回调 flush 新顺序到 DB；编辑器 AlertDialog 4 色选（黄/青/绿/红 hex）；删除 AlertDialog 二确认（T9 替换为 DeleteConfirmBottomSheet）。Fix `10cb3e7`：删除当前正被筛选的分类后 `currentFilter` 仍指向已删分类 id，导致 chip 文案降级"全部"但 reload 返回空列表；`updateFilterChipLabel()` 加 staleness 检测，若 `CategoryRepository.get(id) == null` 即复位 `currentFilter` 到 All 并持久化。
+   - **DeleteConfirmBottomSheet + 最近删除菜单（T9，commits `6cd7d18` + `02a02ee`）：** 新建通用 `view/list/DeleteConfirmBottomSheet.kt`（ctor 参数化 title/message/confirmLabel/confirmIsDanger/onConfirm，danger 文案染 `@color/error`）+ `dialog_delete_confirm.xml`（标题 + 信息 + 取消/确认 48dp 横排）；`menu_note_card_deleted.xml` 新建（仅含"恢复 / 彻底删除"）；`NoteListActivity.showCardMenu` filter-aware 选 menu（Deleted 视图→deleted menu，其他→long_press menu）。同步把 T8 `CategoryManagerBottomSheet.onDeleteClicked` 的 AlertDialog 占位换成 DeleteConfirmBottomSheet。**清理：** 删除 `NoteRepository.delete(id)`（与 `deletePermanently` 同语义，0 调用方）+ 测试同步重命名。Fix `02a02ee`：双击守卫（`var fired = false` 共用于 cancel/confirm，防 dismiss 动画期间二次触发）+ `confirmIsDanger=false` 兜底 `text_primary` 默认色。
+
+4. **编辑器 metadata strip + 分类切换（T10）：**
+   - commits `93de5b7` + `cb4ab25`。`activity_note_editor.xml` 标题下追加 `metadata_strip`（时间 TextView · 分类 chip：dot ImageView + name TextView）；新建 `view/editor/CategoryPickerBottomSheet.kt`（仅列"未分类" + 用户分类，回调返回 `Long?`）+ `dialog_category_picker.xml` + `shape_circle.xml`；`NoteEditorActivity.refreshMetadataStrip()` 用 `DateUtils.formatRelative` 渲染时间，分类 dot 走 `ImageViewCompat.setImageTintList` + `runCatching Color.parseColor` 防御；`showCategoryPicker` 切换 `loadedNote.categoryId` 后立即 IO 持久化（gating `id > 0L` 避免新笔记重复 INSERT）。
+   - **超规范但必要的修正：** `EditorPresenter.collectCurrentNote()` 只 copy title/plainText/content，会丢 bind 后 Activity 侧改的 categoryId；`saveNote` / `ensureNoteSavedAndThen` 都加 `.copy(categoryId = loadedNote.categoryId)` 守护。
+   - Fix `cb4ab25`：`refreshMetadataStrip` 内层 `lifecycleScope.launch` 跨次调用未取消，用户快速切分类时旧 launch 后写入造成 last-write-wins race；加 `if (loadedNote !== n) return@launch` 守卫。
+
+**涉及文件清单：**
+- **新增（共 13 个）：** `model/entity/Category.kt`、`model/CategoryRepository.kt`、`view/list/FilterPickerBottomSheet.kt`、`view/list/CategoryManagerBottomSheet.kt`、`view/list/DeleteConfirmBottomSheet.kt`、`view/editor/CategoryPickerBottomSheet.kt`、`test/.../TestApp.kt`、`test/.../CategoryRepositoryTest.kt`、`res/layout/dialog_filter_picker.xml`、`res/layout/dialog_category_manager.xml`、`res/layout/dialog_category_editor.xml`、`res/layout/dialog_delete_confirm.xml`、`res/layout/dialog_category_picker.xml`、`res/layout/item_filter_row.xml`、`res/layout/item_category_manage.xml`、`res/menu/menu_note_card_deleted.xml`、`res/drawable/{shape_circle,ic_arrow_drop_down,ic_settings,ic_drag_handle,ic_edit}.xml`
+- **修改（共 ~12 个）：** `model/db/NoteDbHelper.kt`、`model/entity/Note.kt`、`model/NoteRepository.kt`、`model/json/NoteJson.kt`、`App.kt`、`controller/list/NoteListActivity.kt`、`controller/editor/NoteEditorActivity.kt`、`controller/editor/EditorPresenter.kt`、`res/layout/activity_note_list.xml`、`res/layout/activity_note_editor.xml`、`res/values/{strings,colors}.xml`、`test/resources/robolectric.properties`、若干现有测试
+
+**M9 commit 列表（git log `bb6ff76..HEAD`，共 17 个 commit）：**
+- `40ba28e` docs(m9): 归档 M9 分类+软删除+metadata strip 实施计划
+- `e62c47a` feat(m9): DB v2 — notes 加 category_id/deleted_at + 新建 categories 表
+- `9886432` feat(m9): Category 实体 + CategoryRepository CRUD（含 reorder 事务）
+- `500cb3a` test(m9): 补 CategoryRepository.delete 行删除断言
+- `408b226` feat(m9): Note 增 categoryId/deletedAt + Repository 读写适配
+- `cf62772` feat(m9): NoteRepository 软删除 API + purgeExpired（30 天过期清理）
+- `323e540` feat(m9): NoteRepository.list 支持 ListFilter（All/Uncategorized/Favorite/Deleted/Category）
+- `7249ee4` feat(m9): App.onCreate 启动协程清理 30 天过期软删笔记
+- `136f45a` fix(test): 稳定 NoteDbHelperTest 跨用例数据库残留
+- `067c806` feat(m9): Toolbar filter chip + FilterPickerBottomSheet（4 内置项 + 用户分类）
+- `e3bedb5` fix(test): 单测注入 TestApp 跳过 purgeExpired GlobalScope
+- `3119492` feat(m9): CategoryManagerBottomSheet — CRUD + 4 色选 + ItemTouchHelper 拖动排序
+- `10cb3e7` fix(m9): 删除当前分类后复位 filter 到全部
+- `6cd7d18` feat(m9): 删除走底部 BottomSheet 二次确认 + 最近删除菜单切恢复/彻底删
+- `02a02ee` fix(m9): DeleteConfirmBottomSheet 加双击守卫 + 默认中性色
+- `93de5b7` feat(m9): 编辑器 metadata strip — 时间 · 分类 + 点选 BottomSheet
+- `cb4ab25` fix(m9): refreshMetadataStrip 加防竞态守卫
+- 收尾 commit：docs(m9): 标记 M9 分类+软删除+metadata strip 完成
+
+**测试统计：** `:app:clean :app:assembleDebug :app:test` 全绿，**83 项 PASSED**（M8 基线 67 → M9 +16），0 failures / 0 errors / 0 skipped。增量明细：
+- `CategoryRepositoryTest`（新文件，5）：list/create/rename/setColor/delete + reorder 事务
+- `NoteDbHelperTest` +2（→5）：onCreate v2 含 categories + 索引；onUpgrade v1→v2 旧数据兼容
+- `NoteRepositoryDeleteFavoriteTest` +3（→7）：softDelete / restore / deletePermanently
+- `NoteRepositoryListTest` +4（→9）：ListFilter 4 sealed 子类 × 联合 sort/query
+- `NoteRepositorySaveGetTest` +2（→6）：category_id + deleted_at 持久化 round-trip
+
+**验收（用户 2026-06-04 真机走查 10 条全过）：**
+1. ✅ 旧装机升级（M8 → M9）：旧笔记自动落"全部"，0 崩溃
+2. ✅ Toolbar 中央 "全部 ▼" chip 可见可点
+3. ✅ FilterPicker BottomSheet 4 内置项 + 管理入口可见
+4. ✅ 新建 3 个分类（不同色）+ 拖动调序 → 重启 App 顺序保留
+5. ✅ 删除一个含 1 笔记的分类 → 该笔记落"未分类"
+6. ✅ 列表正常态删除笔记 → 底部 BottomSheet 二次确认 → 切"最近删除"能看到
+7. ✅ 最近删除：长按 → 恢复 → 笔记回到"全部"
+8. ✅ 最近删除：长按 → 彻底删 → 二次确认 → 列表 + 文件目录全清
+9. ✅ 编辑器 metadata strip：时间 · 分类可见可点；切换分类 → 退出再进保留
+10. ✅ 现有功能回归：搜索 / 排序 / 长按收藏 / 编辑器图片/清单/手写/样式
+
+**执行模式：** Subagent-Driven Development，严格串行 11 任务（T1→T11）。每任务的 implementer DONE → spec reviewer → code quality reviewer → fix（如有）→ re-review → 标完成；fix commit 触发点：T6 测试残留 + GlobalScope 连接泄漏（2 commits）、T8 分类删除后 filter 复位、T9 DeleteConfirmBottomSheet 双击 + 默认色、T10 race 守卫。T11 真机走查由用户完成后再写本 STATUS 收尾 commit。
+
 ## 项目完成总览
 
-8 个里程碑（M1-M8）完成（2026-05-22 ~ 2026-06-04）；M9-M11 待执行：
+9 个里程碑（M1-M9）完成（2026-05-22 ~ 2026-06-04）；M10/M11 待执行：
 
 | # | 里程碑 | commit 数 | 单测增量 | 关键产出 |
 |---|---|---|---|---|
@@ -424,11 +497,11 @@ M1 ✅ → M2 数据层 → M3 列表页
 | M6 | 手写 Overlay | 10 | 5 | HandwritingOverlayView + 4 笔种 BrushPainter + 笔画级 StrokeEraser + 6 键工具栏 + 8 色 + 3 粗细 |
 | M7 | 打磨 | 17 | 3 | 手写性能（Paint 缓存 / Path 复用）+ 鲁棒（save-in-flight / SavedInstanceState / 图片 Toast）+ UX（状态栏 / 清单 toggle / Camera 引导） |
 | M8 | 体验小修 | 7 | −1（删 TITLE_ASC 测试） | 列表 statusBar / 图片圆角 / 清单 toggle 反向 / 排序 BottomSheet 2 选项 |
+| M9 | 分类 + 软删除 + metadata strip | 17 | 16 | DB v2 迁移（categories 表 + notes 扩字段）+ 4 内置筛选 + CategoryManagerBottomSheet 拖动排序 + DeleteConfirmBottomSheet 通用二确认 + 最近删除 30 天回收站 + 编辑器 metadata strip + CategoryPickerBottomSheet |
 
-**累计：** 99 个 commit（不含 docs/计划 commit），67 项自动化单测全绿，PRD MVP + §13 已晋升的"分类 + 录音 + 撤销重做"中 M8 部分（图片圆角 / 排序 / 清单反向 / 状态栏 4 项轻量 UI）100% 覆盖。架构守住"Block 块组合 + 手写 Overlay 透明层"原始决策，未引入 Compose / ViewModel / LiveData / Room / Hilt / Navigation。
+**累计：** 116 个 commit（不含 docs/计划 commit），83 项自动化单测全绿，PRD MVP + §13 已晋升的"分类 + 录音 + 撤销重做"中 **M8 + M9 部分（图片圆角 / 排序 / 清单反向 / 状态栏 + 分类系统 + 软删除回收站 + metadata strip）** 100% 覆盖。架构守住"Block 块组合 + 手写 Overlay 透明层"原始决策，未引入 Compose / ViewModel / LiveData / Room / Hilt / Navigation；DB 首次迁移（v1→v2）走 SQLiteOpenHelper.onUpgrade 仅 ALTER + CREATE，旧装机数据无损。
 
-**M9-M11 待执行（PRD §13 范围）：**
-- **M9 分类 + 软删除 + metadata strip** — DB v2 迁移（ALTER TABLE notes ADD COLUMN category_id + deleted_at；CREATE TABLE categories）+ 顶部下拉切换 + 最近删除页（30 天保留）+ 编辑器 metadata strip
+**M10-M11 待执行（PRD §13 范围）：**
 - **M10 语音录入** — `Block.AudioBlock` sealed 新成员 + 编辑器内录制/播放/删除 + m4a/AAC 编码 + RECORD_AUDIO 权限
 - **M11 撤销 / 重做** — `EditHistoryManager` 命令模式 + 工具栏按钮 + 跨保存清栈
 
