@@ -3,6 +3,8 @@ package com.fan.hwnote.app.controller.editor
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.view.Menu
+import android.view.MenuItem
 import android.widget.EditText
 import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
@@ -192,18 +194,18 @@ class NoteEditorActivity : AppCompatActivity() {
         loadNote()
     }
 
-    override fun onCreateOptionsMenu(menu: android.view.Menu): Boolean {
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.menu_editor, menu)
         return true
     }
 
-    override fun onPrepareOptionsMenu(menu: android.view.Menu): Boolean {
+    override fun onPrepareOptionsMenu(menu: Menu): Boolean {
         menu.findItem(R.id.action_undo)?.let { it.isEnabled = presenter.history.canUndo(); applyMenuIconAlpha(it) }
         menu.findItem(R.id.action_redo)?.let { it.isEnabled = presenter.history.canRedo(); applyMenuIconAlpha(it) }
         return super.onPrepareOptionsMenu(menu)
     }
 
-    override fun onOptionsItemSelected(item: android.view.MenuItem): Boolean {
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             R.id.action_undo -> { presenter.undo(); true }
             R.id.action_redo -> { presenter.redo(); true }
@@ -212,7 +214,7 @@ class NoteEditorActivity : AppCompatActivity() {
     }
 
     /** disabled 时图标显示半透明（Material 不会自动 alpha；自己 mutate）。 */
-    private fun applyMenuIconAlpha(item: android.view.MenuItem) {
+    private fun applyMenuIconAlpha(item: MenuItem) {
         item.icon?.mutate()?.alpha = if (item.isEnabled) 255 else 102
     }
 
