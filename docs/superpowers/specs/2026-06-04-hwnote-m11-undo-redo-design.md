@@ -360,3 +360,54 @@ TextBlockView TextWatcher.onTextChanged 每次回调:
 ---
 
 **审稿状态：** brainstorm § 1-5 五节呈现已用户逐节确认，进入 spec 写作 + 自审 + 用户审阅环节。
+
+---
+
+## 10. 交付实况（2026-06-04 收尾回填）
+
+**状态：** ✅ 全部交付。HEAD `4a3e2e5`，21 commit（含 2 docs），114 单测全绿，13 条真机走查 + 1 条文件遗孤 adb 验证全过。
+
+### 10.1 与设计对齐情况
+
+| 决策 / 组件 | 设计预期 | 实际交付 | 一致性 |
+|---|---|---|---|
+| 1. 块级 + 文本 800ms 防抖 | TextBlock 防抖落 1 步 ReplaceText | 实现一致：`TextBlockView` `Handler.postDelayed(800ms)` + `flushPendingTextEdit()` + `setOnFocusChangeListener` 焦失也 flush | ✅ |
+| 2. onSaveSuccess 唯一清栈入口 | saveNote 成功 → history.clear() | 实现一致 + 加 `newId > 0L` gate（避免 insert 失败误清，spec §4.5） | ✅（加固） |
+| 3. 顶部 AppBar 2 MenuItem | menu_editor.xml + invalidateOptionsMenu | 实现一致 + `applyMenuIconAlpha(255/102)` 视觉灰态（Drawable.mutate 防 ConstantState 污染） | ✅（加细节） |
+| 4. 手写 Overlay 隔离 | M6 ArrayDeque 完全保留 | 实现一致，0 行 Overlay 代码改动 | ✅ |
+| 5. 双栈 cap 50 FIFO | EditHistoryManager | 实现一致 + listener 在四种入口（push/undo/redo/clear）触发；undo/redo `revert/apply` 异常吞咽不污染对面栈 | ✅（加固） |
+| 6. 删块不动文件 + 异步清孤 | NoteRepository.cleanOrphanFiles | 实现一致：`runCatching{}.onFailure{Log.w}` 容错 + `noteId<=0` early return + sealed when 表达式形式（编译期穷尽） | ✅（加固） |
+| 7. Inverse Op 风格 | 每 Command 自带 apply/revert | 实现一致，但 `RemoveBlockCommand` / `ReplaceBlockCommand` 额外引入 `preSnapshot` / `preOldBlock` 构造参数支持"先 mutate 再 push"模式（零成本入栈） | ✅（扩展） |
+
+### 10.2 设计未覆盖、实施中新增的概念
+
+| 新增 | 起因 | 落点 |
+|---|---|---|
+| **`CompositeCommand`** | T7 spec reviewer 走查发现"插图/录音/转清单/图片加载失败"4 个站点 push 多个 cmd，导致用户 1 操作需多次 ↶ 才能完全撤销；与"块级 = 1 步"决策违背 | `model/history/CompositeCommand.kt`（list 包装 + apply 顺序 + revert 反序 + 防御性 toList 拷贝 + KDoc 显式说明"非原子"边界） |
+| **`suppressDebounceWhile { block }` 守卫** | T8 实施中发现 silent 路径调 `view.edit.setText` 会触发 TextWatcher 自激入栈无限循环；T8-fix 发现 bind() 加载笔记的初始 setText 800ms 后冒幻影 ReplaceText push 违反"空栈"语义 | `TextBlockView` 公开 `suppressDebounceWhile { ... }` try/finally 守卫；silent 路径与 bind 都必须包 |
+| **`presnapshot` / `preOldBlock` 构造参数** | T2 实施中 Presenter 已经手工 silentRemove 后才能拿到旧 block 引用，Command 构造时回拉成本高 | `RemoveBlockCommand(idx, preSnapshot)` / `ReplaceBlockCommand(idx, newBlock, preOldBlock)` 让"已 mutate 后再 push"零成本（注：apply 必须 `block.copy()` 深拷贝存 snapshot，否则 revert 拿到的是后续被 mutate 的引用） |
+| **`presenter.flushPendingTextEdits()` 在 onPause** | T9 实施中发现 onPause 触发 saveNote 时，800ms 期内未落栈的文本编辑会丢失 | Activity `onPause` 在 saveNote 之前调，把暂停期编辑 flush 入栈再持久化 |
+| **`is Block.TextBlock, is Block.ChecklistBlock -> Unit` 替代 `else -> Unit`** | T10 code reviewer 指出 sealed `when` 用 `else` 失去编译期穷尽校验，新增 Block 子类会被静默漏掉 | `cleanOrphanFiles` 内 when 改显式列举所有 sealed 子类 |
+
+### 10.3 测试增量（设计 §5.1 预期对照）
+
+| 测试文件 | 设计预期项数 | 实际项数 | 增项原因 |
+|---|---|---|---|
+| `EditHistoryManagerTest` | 8 | 10 | T1-fix 补 undo/redo 异常路径（revert/apply 抛异常不污染对面栈） |
+| `BlockCommandsTest` | 6 | 8 | T2-fix 补 RemoveBlock snapshot 深拷贝 + AddBlock revert 焦点 |
+| `StyleCommandsTest` | 4 | 4 | 一致（含焦点 / 光标位置断言由 T3-fix 补） |
+| `TextCommandsTest` | 4 | 4 | 一致 |
+| `CompositeCommandTest` | — | 3 | T7-fix 引入 CompositeCommand 时新增（apply 顺序 / revert 反序 / 空 list 抛异常） |
+| **合计** | 22 | **29** | +7（T1-fix +2 / T2-fix +2 / CompositeCommand +3） |
+
+### 10.4 工作量实况
+
+- 设计预估：1-2 天 / ≤15 任务
+- 实际：11 任务串行 + 5 个 fix/refactor 修补 commit（T2-fix / T3-fix / T7-fix×2 / T8-fix / T9-fix / T10-fix×2）
+- 21 commit 合计（19 code + 2 docs），约 1.5 天
+
+### 10.5 关键 commit 索引（与 STATUS.md M11 章节一致）
+
+`bf4bcf7`(T1) → `bf1932e`(T1-fix) → `47e294f`(T2) → `475d5cd`(T2-fix) → `790807c`(T3) → `2ed6248`(T3-fix) → `0ef9c64`(T4) → `bc311df`(T5) → `e012534`(T6) → `72a4b24`(T7) → `13c745a`(T7-fix) → `280779f`(T7-fix-polish) → `1e1eeae`(T8) → `534390f`(T8-fix) → `86a6fd2`(T9) → `9beae52`(T9-fix) → `d6b67c2`(T10) → `837aa7b`(T10-fix-gate) → `2348fa0`(T10-fix-import) → `4a3e2e5`(收尾 docs)
+
+详见 `docs/superpowers/STATUS.md` "## M11 完成详情（2026-06-04）" 章节。

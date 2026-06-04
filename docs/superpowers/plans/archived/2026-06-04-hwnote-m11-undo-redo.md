@@ -2034,3 +2034,52 @@ memory 文件不在 repo 内，不需 git。
 Subagent-Driven Development（同 M10）：每任务 implementer DONE → spec reviewer → code quality reviewer → fix（如需）→ re-review → 标记完成。Task 11 仅静态验证 + 真机 + 收尾。
 
 预估 1-2 天。
+
+---
+
+## 实施完成状态（2026-06-04 收尾回填）
+
+**状态：** ✅ 全部交付。HEAD `4a3e2e5`，21 commit（含 2 docs），114 单测全绿（M10 基线 85 → M11 +29），13 条真机走查 + 1 条文件遗孤 adb 验证全过，2026-06-04 用户走查"完成"。
+
+### 任务执行实况（11 主任务 + 9 个 fix/refactor 修补 commit）
+
+| Task | 设计描述 | 实际 commit(s) | 状态 / 偏差 |
+|---|---|---|---|
+| T1 | Command interface + EditHistoryManager + 8 测试 | `bf4bcf7`(主) + `bf1932e`(T1-fix 补异常路径 +2 测试) | ✅ +2 测试（10 而非 8） |
+| T2 | BlockMutator + 4 Block Command + 6 测试 | `47e294f`(主) + `475d5cd`(T2-fix 修 snapshot 深拷贝 + AddBlock revert 焦点) | ✅ +2 测试（8 而非 6） |
+| T3 | StyleMutator + 2 Style Command + 4 测试 | `790807c`(主) + `2ed6248`(T3-fix 补焦点/光标断言) | ✅ 测试项数一致，断言更严 |
+| T4 | TextMutator + ReplaceTextCommand + 4 测试 | `0ef9c64` | ✅ 一致 |
+| T5 | Presenter 实现三 Mutator + history 字段 + undo/redo/flush | `bc311df` | ✅ 一致 |
+| T6 | Presenter 样式入口接 history.push | `e012534` | ✅ 一致 |
+| T7 | Presenter 块入口接 history.push + 删 purge* | `72a4b24`(主) + `13c745a`(T7-fix 引入 CompositeCommand) + `280779f`(T7-fix-polish KDoc) | ⚠️ 偏差：spec reviewer 走查发现 4 个站点多 push 导致用户 1 操作需多次 ↶；引入 `CompositeCommand` 包装多步为 1 步 undo。新增 `CompositeCommandTest` 3 项。 |
+| T8 | TextBlockView 800ms 防抖 + flush + suppressDebounceWhile | `1e1eeae`(主) + `534390f`(T8-fix bind 屏蔽防抖 + 删 stale TODO) | ⚠️ 偏差：T8-fix 发现 bind() 加载笔记的初始 setText 会触发 800ms 后幻影 ReplaceText push，违反"空栈、按钮初始 disabled"语义；bind 内 setText 也包 suppressDebounceWhile |
+| T9 | menu_editor.xml + Activity 接 menu + history.listener + onPause flush | `86a6fd2`(主) + `9beae52`(T9-fix FQN 改 import 对齐 M8 约定) | ✅ 计划内 |
+| T10 | NoteRepository.cleanOrphanFiles + saveNote 后清栈+异步清孤 | `d6b67c2`(主) + `837aa7b`(T10-fix onSaveSuccess gate) + `2348fa0`(T10-fix when 表达式 + Block/Note import) | ⚠️ 偏差：原计划把 `history.clear()` 放 Main 块尾无条件清，**spec §4.5 违规**（save 失败路径也清栈）；fix 改 `if (newId > 0L) clear()` gate。同时按 reviewer 建议 sealed when 改显式列举所有子类，编译期穷尽校验。 |
+| T11 | 全量构建 + 真机走查 13 条 + STATUS/memory/归档 | `4a3e2e5`(收尾 docs commit) | ✅ 一致；用户走查"完成" |
+
+### 计划层级 bug 复盘（修补的根因）
+
+| Bug | 计划文本位置 | 实际后果 | 修补 commit |
+|---|---|---|---|
+| 多 push 站点未识别 | T7 步骤未要求把"插图 = AddBlock + TextSplit"包成 1 cmd | 用户按 1 次 ↶ 拿不掉"插图"这一操作的视觉效果 | `13c745a` 引入 CompositeCommand |
+| bind 初始 setText 未屏蔽防抖 | T8 步骤只提"silent 路径包 suppressDebounceWhile"，未提 bind 也要包 | 笔记加载 800ms 后冒一条 `ReplaceText(before="", after=loadedText)` 幻影 push，违反"空栈"语义 | `534390f` bind 内 setText 加 suppressDebounceWhile |
+| saveNote 失败路径误清栈 | T10 步骤把 `history.clear()` 放 Main 块尾无条件清 | save 失败也会清栈，违反 spec §4.5 "onSaveSuccess 是唯一清栈入口" | `837aa7b` 加 `if (newId > 0L)` gate |
+| sealed when 用 else 失去穷尽校验 | T10 cleanOrphanFiles 实现 `when (b) { ... else -> Unit }` | 新增 Block 子类时编译器不会提示加分支，导致未来静默漏掉文件清理 | `2348fa0` 改 `is TextBlock, is ChecklistBlock -> Unit` 显式列举 |
+| FQN 违反 M8 约定 | T9 / T10 步骤代码片段用 `android.view.Menu` / `com.fan.hwnote.app.model.entity.Note` 等 FQN | 与项目 M8 commit `0096a0b` "二次出现就 import" 收口约定不一致 | `9beae52` + `2348fa0` 改 import |
+
+### 工作量实况
+
+- 设计预估：1-2 天
+- 实际：约 1.5 天（11 任务串行 + 5 个 fix 修补回归）
+- commit 总数：21（19 code/fix/chore + 2 docs）
+- 单测总数：114（M10 基线 85 → M11 +29，超出原计划 +22 = 实际 +7）
+
+### 后续维护要点（供后人）
+
+详见 `/Users/yichen/.claude/projects/-Users-yichen-cainiao-AI-ClaudeCode-HuaWeiNote/memory/project_hwnote_context.md` "M11 architectural notes worth remembering" 节，含：silent mutator 边界 / CompositeCommand 多步打包 / Inverse Op 预填快照 / 800ms 防抖 + suppressDebounceWhile / 跨保存清栈 / 文件遗孤模式 / AppBar Menu invalidate 模式 共 7 条。
+
+详见 `docs/superpowers/STATUS.md` "## M11 完成详情（2026-06-04）" 章节获取完整 commit 列表 + 真机走查记录 + 文件清单。
+
+---
+
+**归档状态：** 本实施计划已于 2026-06-04 归档至 `docs/superpowers/plans/archived/`，对应 commit `4a3e2e5`。所有 11 任务 + 5 个修补 commit 已落地，PRD §13 全部交付。
