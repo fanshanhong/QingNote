@@ -211,6 +211,9 @@ class NoteEditorActivity : AppCompatActivity() {
         metaTime.text = com.fan.hwnote.app.util.DateUtils.formatRelative(ts)
         lifecycleScope.launch {
             val cat = n.categoryId?.let { com.fan.hwnote.app.model.CategoryRepository.get(it) }
+            // 防竞态：若 loadedNote 在 suspend 期间已被新一次 refresh 替换，跳过 UI 写入
+            // 避免 last-write-wins 导致旧分类名/圆点颜色覆盖最新状态
+            if (loadedNote !== n) return@launch
             if (cat == null) {
                 metaCategoryName.text = getString(R.string.filter_uncategorized)
                 val hint = androidx.core.content.ContextCompat.getColor(
