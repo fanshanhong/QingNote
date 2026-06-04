@@ -510,10 +510,9 @@ class NoteEditorActivity : AppCompatActivity() {
         if (loaded.id == 0L && saveInFlight) return  // ensureNoteSavedAndThen 正在跑同一条 INSERT
         lifecycleScope.launch(Dispatchers.IO) {
             val newId = NoteRepository.save(toSave)
-            // M11: 异步清理本次保存后产生的孤儿文件（图片 / 音频）
-            val savedId = if (newId > 0L) newId else loaded.id
-            if (savedId > 0L) {
-                NoteRepository.cleanOrphanFiles(savedId, toSave.copy(id = savedId))
+            // M11: 仅保存成功路径（newId > 0）才异步清孤 + 清栈（spec §4.5 "onSaveSuccess 是唯一清栈入口"）
+            if (newId > 0L) {
+                NoteRepository.cleanOrphanFiles(newId, toSave.copy(id = newId))
             }
             withContext(Dispatchers.Main) {
                 // 更新 noteId / loadedNote，避免下次 onPause 再 insert 一条
@@ -525,8 +524,8 @@ class NoteEditorActivity : AppCompatActivity() {
                     android.widget.Toast.makeText(this@NoteEditorActivity,
                         R.string.note_save_failed, android.widget.Toast.LENGTH_SHORT).show()
                 }
-                // M11: 跨保存清栈
-                presenter.history.clear()
+                // M11: 跨保存清栈（仅成功）
+                if (newId > 0L) presenter.history.clear()
             }
         }
     }
