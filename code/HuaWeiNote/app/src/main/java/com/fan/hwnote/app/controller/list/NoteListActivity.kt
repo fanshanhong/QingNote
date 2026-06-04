@@ -24,6 +24,7 @@ import com.fan.hwnote.app.model.FolderRepository
 import com.fan.hwnote.app.model.NoteRepository
 import com.fan.hwnote.app.model.NotebookRepository
 import com.fan.hwnote.app.model.entity.Note
+import com.fan.hwnote.app.view.folder.NotebookFilterPopupWindow
 import com.fan.hwnote.app.view.list.DeleteConfirmBottomSheet
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -213,7 +214,16 @@ class NoteListActivity : AppCompatActivity() {
     }
 
     private fun showFilterPicker() {
-        android.widget.Toast.makeText(this, "filter (M12 T8 接通)", android.widget.Toast.LENGTH_SHORT).show()
+        NotebookFilterPopupWindow(
+            context = this,
+            current = currentFilter,
+            onPicked = { picked ->
+                currentFilter = picked
+                saveFilter(picked)
+                lifecycleScope.launch { updateFilterChipLabel() }
+                reload()
+            },
+        ).show(filterChip)
     }
 
     private fun loadFilter(): NoteRepository.ListFilter {

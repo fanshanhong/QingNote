@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="@dimen/notebook_item_height"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingStart="40dp"
+    android:paddingEnd="16dp"
+    android:background="?attr/selectableItemBackground">
+
+    <View
+        android:id="@+id/color_dot"
+        android:layout_width="@dimen/notebook_color_dot"
+        android:layout_height="@dimen/notebook_color_dot"
+        android:layout_marginEnd="12dp"/>
+
+    <TextView
+        android:id="@+id/notebook_name"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:textAppearance="?attr/textAppearanceBodyMedium"/>
+
+    <ImageView
+        android:id="@+id/check"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:visibility="gone"
+        android:src="@android:drawable/checkbox_on_background"/>
+</LinearLayout>
