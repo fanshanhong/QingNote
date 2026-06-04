@@ -19,6 +19,7 @@ class TextToolbarView @JvmOverloads constructor(
     private val btnStyle by lazy { findViewById<ImageView>(R.id.btn_style) }
     private val btnImage by lazy { findViewById<ImageView>(R.id.btn_image) }
     private val btnHandwriting by lazy { findViewById<ImageView>(R.id.btn_handwriting) }
+    private val btnRecord by lazy { findViewById<ImageView>(R.id.btn_record) }
 
     init {
         LayoutInflater.from(context).inflate(R.layout.toolbar_text, this, true)
@@ -30,6 +31,7 @@ class TextToolbarView @JvmOverloads constructor(
         btnStyle.setOnClickListener { listener?.onStyleClicked() }
         btnImage.setOnClickListener { listener?.onImageClicked() }
         btnHandwriting.setOnClickListener { listener?.onHandwritingClicked() }
+        btnRecord.setOnClickListener { listener?.onRecordClicked() }
     }
 
     interface Listener {
@@ -37,5 +39,6 @@ class TextToolbarView @JvmOverloads constructor(
         fun onStyleClicked()
         fun onImageClicked()
         fun onHandwritingClicked()
+        fun onRecordClicked()
     }
 }

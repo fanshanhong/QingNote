@@ -74,6 +74,15 @@ class NoteEditorActivity : AppCompatActivity() {
         else showCameraPermissionDialog()
     }
 
+    private val recordAudioPermissionLauncher = registerForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) startAudioRecording()
+        else showRecordAudioPermissionDialog()
+    }
+
+    private var currentRecordingSheet: com.fan.hwnote.app.view.editor.AudioRecordingBottomSheet? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_note_editor)
@@ -124,6 +133,9 @@ class NoteEditorActivity : AppCompatActivity() {
             }
             override fun onHandwritingClicked() {
                 enterHandwritingMode()
+            }
+            override fun onRecordClicked() {
+                ensureNoteSavedAndThen { launchRecordAudioWithPermission() }
             }
         }
         handwritingToolbar.listener = object : com.fan.hwnote.app.view.toolbar.HandwritingToolbarView.Listener {
@@ -179,6 +191,11 @@ class NoteEditorActivity : AppCompatActivity() {
 
     override fun onPause() {
         super.onPause()
+        // 停掉编辑器内任何在播的音频
+        presenter.stopAllPlayback()
+        // 兜底取消正在录的 Sheet（用户切后台/锁屏/跳别的 Activity）
+        currentRecordingSheet?.forceCancel()
+        currentRecordingSheet = null
         // 退出（包括按返回 / Home / 横屏）都落库一次。
         saveNote()
     }
@@ -366,6 +383,54 @@ class NoteEditorActivity : AppCompatActivity() {
                 android.widget.Toast.makeText(this,
                     R.string.camera_unavailable, android.widget.Toast.LENGTH_SHORT).show()
             }
+    }
+
+    private fun launchRecordAudioWithPermission() {
+        val granted = androidx.core.content.ContextCompat.checkSelfPermission(
+            this, android.Manifest.permission.RECORD_AUDIO,
+        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        if (granted) startAudioRecording()
+        else recordAudioPermissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
+    }
+
+    private fun showRecordAudioPermissionDialog() {
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle(R.string.record_audio_permission_dialog_title)
+            .setMessage(R.string.record_audio_permission_dialog_message)
+            .setPositiveButton(R.string.action_open_settings) { _, _ ->
+                val intent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                    data = android.net.Uri.fromParts("package", packageName, null)
+                }
+                runCatching { startActivity(intent) }
+            }
+            .setNegativeButton(R.string.action_cancel, null)
+            .show()
+    }
+
+    private fun startAudioRecording() {
+        val curNoteId = loadedNote?.id ?: return
+        if (curNoteId <= 0L) return
+        val storage = com.fan.hwnote.app.model.storage.NoteFileStorage(this)
+        val fileName = "${java.util.UUID.randomUUID()}.m4a"
+        val target = storage.audioFile(curNoteId, fileName)
+        val sheet = com.fan.hwnote.app.view.editor.AudioRecordingBottomSheet(
+            context = this,
+            targetFile = target,
+            onComplete = { durationMs ->
+                currentRecordingSheet = null
+                val block = com.fan.hwnote.app.model.entity.Block.AudioBlock(
+                    id = "a-${java.util.UUID.randomUUID().toString().take(8)}",
+                    fileName = fileName,
+                    durationMs = durationMs,
+                )
+                presenter.insertAudioBlockAtFocus(block)
+            },
+            onCancel = {
+                currentRecordingSheet = null
+            },
+        )
+        currentRecordingSheet = sheet
+        sheet.show()
     }
 
     /**

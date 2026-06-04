@@ -46,4 +46,14 @@
         android:padding="12dp"
         android:src="@drawable/ic_handwriting" />
 
+    <ImageView android:id="@+id/btn_record"
+        android:layout_width="0dp" android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:clickable="true"
+        android:contentDescription="@string/tb_record_cd"
+        android:focusable="true"
+        android:padding="12dp"
+        android:src="@drawable/ic_mic" />
+
 </LinearLayout>
