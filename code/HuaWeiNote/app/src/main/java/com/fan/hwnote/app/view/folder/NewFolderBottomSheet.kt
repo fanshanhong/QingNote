@@ -5,13 +5,13 @@ import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.lifecycleScope
 import com.fan.hwnote.app.R
 import com.fan.hwnote.app.model.FolderRepository
 import com.google.android.material.bottomsheet.BottomSheetDialog
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 /**
  * 新建文件夹（editing == null）或重命名（editing == 文件夹 id）的 BottomSheet。
@@ -43,14 +43,13 @@ class NewFolderBottomSheet(
             val name = edit.text?.toString()?.trim().orEmpty()
             if (name.isEmpty()) return@setOnClickListener
             fired = true
-            CoroutineScope(Dispatchers.Main).launch {
-                val id = withContext(Dispatchers.IO) {
-                    if (editing != null) {
-                        FolderRepository.rename(editing, name)
-                        editing
-                    } else {
-                        FolderRepository.insert(name)
-                    }
+            val scope = (context as? LifecycleOwner)?.lifecycleScope ?: MainScope()
+            scope.launch {
+                val id = if (editing != null) {
+                    FolderRepository.rename(editing, name)
+                    editing
+                } else {
+                    FolderRepository.insert(name)
                 }
                 onSaved(id)
                 dismiss()

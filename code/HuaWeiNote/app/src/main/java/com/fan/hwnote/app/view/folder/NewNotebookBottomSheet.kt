@@ -10,14 +10,14 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.lifecycleScope
 import com.fan.hwnote.app.R
 import com.fan.hwnote.app.model.NotebookRepository
 import com.fan.hwnote.app.model.entity.Notebook
 import com.google.android.material.bottomsheet.BottomSheetDialog
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 /**
  * 新建笔记本（editing == null）或重命名+改色（editing != null）的 BottomSheet。
@@ -55,15 +55,14 @@ class NewNotebookBottomSheet(
             val name = edit.text?.toString()?.trim().orEmpty()
             if (name.isEmpty()) return@setOnClickListener
             fired = true
-            CoroutineScope(Dispatchers.Main).launch {
-                val id = withContext(Dispatchers.IO) {
-                    if (editing != null) {
-                        NotebookRepository.rename(editing.id, name)
-                        NotebookRepository.updateColor(editing.id, pickedColor)
-                        editing.id
-                    } else {
-                        NotebookRepository.insert(folderId, name, pickedColor)
-                    }
+            val scope = (context as? LifecycleOwner)?.lifecycleScope ?: MainScope()
+            scope.launch {
+                val id = if (editing != null) {
+                    NotebookRepository.rename(editing.id, name)
+                    NotebookRepository.updateColor(editing.id, pickedColor)
+                    editing.id
+                } else {
+                    NotebookRepository.insert(folderId, name, pickedColor)
                 }
                 onSaved(id)
                 dismiss()
