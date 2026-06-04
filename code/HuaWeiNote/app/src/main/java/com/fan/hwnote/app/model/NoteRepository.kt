@@ -4,6 +4,7 @@ import android.content.ContentValues
 import android.content.Context
 import android.database.Cursor
 import com.fan.hwnote.app.model.db.NoteDbHelper
+import com.fan.hwnote.app.model.entity.Block
 import com.fan.hwnote.app.model.entity.Note
 import com.fan.hwnote.app.model.json.NoteJson
 import com.fan.hwnote.app.model.storage.NoteFileStorage
@@ -155,15 +156,15 @@ object NoteRepository {
      * - 容错：任何 IOException 仅 log，不抛
      * - 幂等：多次调用对同一份 note 行为一致
      */
-    suspend fun cleanOrphanFiles(noteId: Long, note: com.fan.hwnote.app.model.entity.Note) =
+    suspend fun cleanOrphanFiles(noteId: Long, note: Note) =
         withContext(Dispatchers.IO) {
             if (noteId <= 0L) return@withContext
             val referenced = mutableSetOf<String>()
             for (b in note.content.blocks) {
                 when (b) {
-                    is com.fan.hwnote.app.model.entity.Block.ImageBlock -> referenced += b.fileName
-                    is com.fan.hwnote.app.model.entity.Block.AudioBlock -> referenced += b.fileName
-                    else -> Unit
+                    is Block.ImageBlock -> referenced += b.fileName
+                    is Block.AudioBlock -> referenced += b.fileName
+                    is Block.TextBlock, is Block.ChecklistBlock -> Unit
                 }
             }
             runCatching {
