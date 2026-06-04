@@ -128,8 +128,7 @@ class NotebookFilterPopupWindow(
                     PseudoKind.Favorite -> { onPicked(NoteRepository.ListFilter.Favorite); dismiss() }
                     PseudoKind.Deleted -> { onPicked(NoteRepository.ListFilter.Deleted); dismiss() }
                     PseudoKind.Manage -> {
-                        // TODO: M12 T9 接 FolderManagerActivity
-                        android.widget.Toast.makeText(context, "管理（M12 T9 接通）", android.widget.Toast.LENGTH_SHORT).show()
+                        context.startActivity(android.content.Intent(context, com.fan.hwnote.app.controller.folder.FolderManagerActivity::class.java))
                         dismiss()
                     }
                 }

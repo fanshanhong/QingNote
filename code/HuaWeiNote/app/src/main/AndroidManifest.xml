@@ -41,6 +41,11 @@
                 android:value=".controller.list.NoteListActivity" />
         </activity>
 
+        <activity
+            android:name=".controller.folder.FolderManagerActivity"
+            android:label="@string/folder_manage"
+            android:parentActivityName=".controller.list.NoteListActivity"/>
+
         <!-- FileProvider：M5 拍照功能用 -->
         <provider
             android:name="androidx.core.content.FileProvider"
