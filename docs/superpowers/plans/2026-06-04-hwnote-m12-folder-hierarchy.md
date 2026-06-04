@@ -1,5 +1,7 @@
 # HwNote M12 文件夹层级 实施计划
 
+> **Status: DONE** — 全部 13 任务已完成，137 项单测全绿，2026-06-05 归档。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 在 HwNote 上落地"文件夹 → 笔记本 → 笔记"三级层级，含顶部下拉切 filter / 编辑器右上当前归属 picker / 独立 FolderManagerActivity（含三粒度拖动 + 改名改色 + 级联软删）/ 8 色笔记本 / 列表长按"移到笔记本"。

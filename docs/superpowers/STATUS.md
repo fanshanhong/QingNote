@@ -645,9 +645,56 @@ M1 ✅ → M2 数据层 → M3 列表页
 | M9 | 分类 + 软删除 + metadata strip | 17 | 16 | DB v2 迁移（categories 表 + notes 扩字段）+ 4 内置筛选 + CategoryManagerBottomSheet 拖动排序 + DeleteConfirmBottomSheet 通用二确认 + 最近删除 30 天回收站 + 编辑器 metadata strip + CategoryPickerBottomSheet |
 | M10 | 语音录入 | 9 | 2 | `Block.AudioBlock` sealed 新成员 + `AudioRecorder`(MPEG_4/AAC/64kbps) + `AudioPlayer`(共享单例) + `AudioRecordingBottomSheet`(走表计时 + 停止/取消 + forceCancel) + `AudioBlockView`(播放/暂停/长按删除) + 工具栏扩 5 键 + RECORD_AUDIO 运行时权限 + onPause 兜底停播/取消 |
 | M11 | 撤销 / 重做 | 19 (+2 docs) | 29 | `model/history/` 包（Command interface + EditHistoryManager 双栈 cap50 listener + CompositeCommand 多步打包）+ 7 Command 子类 (Add/Remove/Move/Replace/ApplySpan/ApplyHeading/ReplaceText) + Presenter 三 Mutator(silent) 接口与 push 收口 + TextBlockView 800ms 防抖 + suppressDebounceWhile 守卫 + 顶部 AppBar ↶↷ MenuItem + onPause flush + `NoteRepository.cleanOrphanFiles` 异步清孤 + onSaveSuccess 唯一清栈入口 |
+| M12 | 文件夹层级 | 12 (+3 docs) | 23 | DB v3 迁移（folders/notebooks 表 + notes.notebook_id）+ Folder/Notebook 实体 + FolderRepository/NotebookRepository（级联软删/移动/默认保护）+ ListFilter 改造（Folder/Notebook 二级 + 旧 prefs 兼容）+ NewFolder/NewNotebook BottomSheet（创建+编辑双模式 + 8 色选色）+ NotebookFilterPopupWindow（伪项+折叠树 chip 筛选）+ FolderManagerActivity（折叠树 + overflow 菜单 + 三粒度拖动排序）+ NotebookPickerPopupWindow（卡片长按移动笔记本）+ 编辑器 AppBar indicator（色点+名称+点击切换笔记本） |
 
-**累计：** 146 个 commit（不含 docs/计划 commit），114 项自动化单测全绿，**PRD MVP + §13 全部 100% 覆盖**（M8 体验小修 / M9 分类+软删除+metadata strip / M10 语音录入 / M11 撤销重做）。架构守住"Block 块组合 + 手写 Overlay 透明层"原始决策，未引入 Compose / ViewModel / LiveData / Room / Hilt / Navigation；DB 首次迁移（v1→v2）走 SQLiteOpenHelper.onUpgrade 仅 ALTER + CREATE，旧装机数据无损；M10 引入媒体子系统（MediaRecorder + MediaPlayer）严格隔离在 `model/audio/` 包内不渗透 BlockView 体系；M11 引入 Inverse Op Command 模式与"silent mutator 边界"约束（公共方法 = silent + push），新增 `model/history/` 包独立装载所有撤销/重做逻辑，UI 层仅接 1 个 menu xml + 4 个 Activity 方法 + TextBlockView 防抖；撤销栈纯内存（process death 即丢，不持久化 DB/JSON）。
+**累计：** 183 个 commit（含 docs/计划 commit），137 项自动化单测全绿，**PRD MVP + §13 全部 100% 覆盖 + M12 文件夹层级完成**。架构守住"Block 块组合 + 手写 Overlay 透明层"原始决策，未引入 Compose / ViewModel / LiveData / Room / Hilt / Navigation；DB 二次迁移（v2→v3）走 SQLiteOpenHelper.onUpgrade 新增 folders/notebooks 表 + notes.notebook_id 列 + 预置默认行，旧装机数据无损；M12 引入二级分类体系（Folder→Notebook→Note），全面替换 M9 的 Category 平级模型，PopupWindow 复用折叠树 UI 模式，FolderManager 三粒度拖动排序（文件夹整体 / 笔记本同夹 / 笔记本跨夹），默认文件夹(id=1)与默认笔记本(id=1)受保护不可删除/移动。
 
-**Pending：** 无。PRD §13 已全部交付。
+**Pending：** 无。PRD §13 + M12 文件夹层级已全部交付。
 
-**后续可选方向（超出当前 PRD 范围，需用户重新 brainstorm）：** 置顶 pin / 提醒 / 加锁 / 导出 / 分享 / 备份 / 深色模式 / 多端同步。
+**后续可选方向（超出当前 PRD 范围，需用户重新 brainstorm）：** M13 笔记 Tab UI 打磨 / M14 待办子系统 / M15 UI 全面审查 / 置顶 pin / 提醒 / 加锁 / 导出 / 分享 / 备份 / 深色模式 / 多端同步。
+
+---
+
+## M12 完成详情（2026-06-05）
+
+**目标：** 用二级 Folder → Notebook 层级替代 M9 的 Category 平级分类，对齐华为备忘录"文件夹 > 笔记本 > 笔记"三层组织架构。
+
+**变更概要：**
+
+| 层 | 新增/改动 | 说明 |
+|---|---|---|
+| 数据层 | DB v3 迁移 | 新增 `folders`(id/name/order_index/is_deleted) + `notebooks`(id/folder_id/name/color/order_index/is_deleted) 表；`notes` 表新增 `notebook_id` 列；预置默认文件夹"我的文件夹"(id=1) + 默认笔记本"默认笔记本"(id=1) |
+| 数据层 | Folder / Notebook 实体 | data class，与 DB 列一一对应 |
+| 数据层 | FolderRepository | list / get / create / rename / softDelete / reorder / count；默认文件夹(id=1)保护 |
+| 数据层 | NotebookRepository | listByFolder / get / create / rename / updateColor / softDelete / reorder / moveToFolder / count；默认笔记本(id=1)保护 |
+| 数据层 | NoteRepository.moveNoteToNotebook | 单条笔记移动到指定笔记本 |
+| 列表层 | ListFilter 改造 | sealed class 从 All/Favorite/Deleted/Category/Uncategorized 改为 All/Favorite/Deleted/Folder/Notebook；SharedPreferences 兼容旧 "CATEGORY"/"UNCATEGORIZED" → All |
+| 列表层 | NotebookFilterPopupWindow | 替代旧 FilterPickerPopupWindow，折叠树 UI（伪项"全部/收藏/已删除" + Folder→Notebook 树 + "管理"入口） |
+| 列表层 | 卡片长按"移动到笔记本" | NotebookPickerPopupWindow 弹出折叠树，选中即 moveNoteToNotebook |
+| 管理层 | FolderManagerActivity | 独立 Activity，折叠树 RecyclerView + overflow 菜单（改名/删除/移动/新建） |
+| 管理层 | FolderManagerDragHelper | 三粒度拖动排序：文件夹整段移动 / 笔记本同夹移动 / 笔记本跨夹移动；默认文件夹与默认笔记本保护 |
+| 管理层 | NewFolder/NewNotebook BottomSheet | 创建+编辑双模式，8 色选色（仅 Notebook） |
+| 编辑器 | AppBar notebook indicator | 色点+笔记本名+下拉箭头；点击弹 NotebookPickerPopupWindow 切换；saveNote 保留 notebookId |
+
+**测试：**
+
+- M11 结束时：114 项 → M12 结束时：137 项（+23）
+- 新增测试覆盖：DbV3MigrationTest(3) / FolderRepositoryTest(7) / NotebookRepositoryTest(7) / NoteRepositoryListFilterTest(3) / ListFilterPersistenceTest(2) / moveNoteToNotebook(1)
+- 全部 137 项 `testDebugUnitTest` PASSED
+
+**Commit 清单（12 个功能 commit + 3 个 docs commit）：**
+
+```
+9313e5a feat(m12): DB v3 迁移 — 新增 folders/notebooks 表与 notes.notebook_id 列，预置默认行
+1741816 feat(m12): 加 Folder/Notebook 实体与 Note.notebookId 持久化
+4219105 feat(m12): 加 FolderRepository 与 NotebookRepository（含级联软删/移动/默认保护）
+a7f5f0b refactor(m12): ListFilter 由 Category/Uncategorized 切到 Folder/Notebook + 兼容旧 prefs
+db12598 chore(m12): 加文件夹/笔记本资源（strings/colors/dimens/drawables/menus）
+4898abb feat(m12): 加 NewFolder/NewNotebook BottomSheet（含改名/改色编辑模式）
+44ed8d5 refactor(m12): NewFolder/NewNotebook 改用 lifecycleScope 并去重 IO 调度
+5c161fb feat(m12): chip 切到 NotebookFilterPopupWindow + 删旧 FilterPicker/CategoryManager
+d503023 feat(m12): 加 FolderManagerActivity 骨架（折叠树 + overflow 菜单 + 新建/改名/删除/移动）
+1e6848e feat(m12): FolderManager 三粒度拖动（文件夹整体/笔记本同夹/笔记本跨夹）
+20aacfd feat(m12): 卡片长按移动到笔记本（NotebookPickerPopupWindow + moveNoteToNotebook）
+e5f9f68 feat(m12): 编辑器 AppBar indicator 接 NotebookPickerPopupWindow + saveNote 保留 notebookId
+```
