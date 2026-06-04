@@ -20,13 +20,19 @@ interface BlockMutator {
     fun silentRequestFocus(blockId: String, cursorIndex: Int = Int.MAX_VALUE)
     /** 查询某 blockId 当前 index；不存在返回 -1。 */
     fun indexOfBlock(blockId: String): Int
+    /** 取某 index 处的 Block（不深拷贝；越界返回 null）。Command 用于捕获邻居 id 等只读查询。 */
+    fun blockAt(index: Int): Block?
     /** 取某 blockId 当前 Block 快照（深拷贝语义由 data class copy 给出）。不存在返回 null。 */
     fun snapshotBlock(blockId: String): Block?
 }
 
 /**
  * 在 index 处插入 block。
- * apply = insert；revert = removeByBlockId。
+ * apply = insert + 焦点到新块；revert = removeByBlockId + 焦点回到插入前的前一块（若有）。
+ *
+ * 焦点还原策略（spec §4.4）：apply 时记录 index-1 处块的 id；revert 在移除新块后把焦点
+ * 拉回该 id。若 index=0（无前块），revert 不主动设焦点 —— 该 head 特例由 Presenter
+ * Task 5 利用完整列表上下文补齐。
  */
 class AddBlockCommand(
     private val mutator: BlockMutator,
@@ -34,12 +40,15 @@ class AddBlockCommand(
     private val block: Block,
 ) : Command {
     override val label = "AddBlock(${block.id}@$index)"
+    private var previousBlockId: String? = null
     override fun apply() {
+        previousBlockId = if (index > 0) mutator.blockAt(index - 1)?.id else null
         mutator.silentInsertBlock(index, block)
         mutator.silentRequestFocus(block.id)
     }
     override fun revert() {
         mutator.silentRemoveBlock(block.id)
+        previousBlockId?.let { mutator.silentRequestFocus(it, Int.MAX_VALUE) }
     }
 }
 
