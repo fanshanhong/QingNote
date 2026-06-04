@@ -10,6 +10,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
 import androidx.appcompat.widget.Toolbar
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.fan.hwnote.app.R
@@ -37,6 +38,14 @@ class FolderManagerActivity : AppCompatActivity(), FolderManagerAdapter.Callback
         adapter = FolderManagerAdapter(emptyList(), this)
         recycler.adapter = adapter
         expanded += 1L
+        val helper = ItemTouchHelper(FolderManagerDragHelper(
+            getRows = { adapter.rows },
+            setRows = { newRows -> adapter.rows = newRows; adapter.notifyDataSetChanged() },
+            commitFolderOrder = { ids -> lifecycleScope.launch { FolderRepository.reorder(ids); rebind() } },
+            commitNotebookOrder = { fId, ids -> lifecycleScope.launch { NotebookRepository.reorderInFolder(fId, ids); rebind() } },
+            commitNotebookMove = { nbId, target -> lifecycleScope.launch { NotebookRepository.move(nbId, target) } },
+        ))
+        helper.attachToRecyclerView(recycler)
         rebind()
     }
 
