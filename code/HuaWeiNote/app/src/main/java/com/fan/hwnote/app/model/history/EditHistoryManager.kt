@@ -35,7 +35,7 @@ class EditHistoryManager(private val cap: Int = 50) {
             cmd.revert()
             redoStack.addLast(cmd)
         } catch (t: Throwable) {
-            android.util.Log.w("EditHistoryManager", "undo revert failed: ${cmd.label}", t)
+            System.err.println("EditHistoryManager: undo revert failed: ${cmd.label}: ${t.message}")
         }
         notifyListener()
     }
@@ -48,7 +48,7 @@ class EditHistoryManager(private val cap: Int = 50) {
             cmd.apply()
             undoStack.addLast(cmd)
         } catch (t: Throwable) {
-            android.util.Log.w("EditHistoryManager", "redo apply failed: ${cmd.label}", t)
+            System.err.println("EditHistoryManager: redo apply failed: ${cmd.label}: ${t.message}")
         }
         notifyListener()
     }
