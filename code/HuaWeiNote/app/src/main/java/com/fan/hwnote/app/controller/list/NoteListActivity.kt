@@ -256,13 +256,19 @@ class NoteListActivity : AppCompatActivity() {
     }
 
     private suspend fun updateFilterChipLabel() {
-        val label = when (val f = currentFilter) {
+        // 若当前 filter 指向已被删除的分类，复位到"全部"，避免 chip 文案与列表分离
+        val f = currentFilter
+        if (f is NoteRepository.ListFilter.Category && CategoryRepository.get(f.id) == null) {
+            currentFilter = NoteRepository.ListFilter.All
+            saveFilter(NoteRepository.ListFilter.All)
+        }
+        val label = when (val cur = currentFilter) {
             NoteRepository.ListFilter.All -> getString(R.string.filter_all)
             NoteRepository.ListFilter.Uncategorized -> getString(R.string.filter_uncategorized)
             NoteRepository.ListFilter.Favorite -> getString(R.string.filter_favorite)
             NoteRepository.ListFilter.Deleted -> getString(R.string.filter_deleted)
             is NoteRepository.ListFilter.Category -> {
-                CategoryRepository.get(f.id)?.name ?: getString(R.string.filter_all)
+                CategoryRepository.get(cur.id)?.name ?: getString(R.string.filter_all)
             }
         }
         filterChipText.text = label
