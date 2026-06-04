@@ -24,6 +24,7 @@ import com.fan.hwnote.app.controller.editor.NoteEditorActivity
 import com.fan.hwnote.app.model.CategoryRepository
 import com.fan.hwnote.app.model.NoteRepository
 import com.fan.hwnote.app.model.entity.Note
+import com.fan.hwnote.app.view.list.CategoryManagerBottomSheet
 import com.fan.hwnote.app.view.list.FilterPickerBottomSheet
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -207,9 +208,9 @@ class NoteListActivity : AppCompatActivity() {
                 reload()
             },
             onManage = {
-                android.widget.Toast.makeText(
-                    this, "管理分类（T8 实现）", android.widget.Toast.LENGTH_SHORT,
-                ).show()
+                CategoryManagerBottomSheet(this) {
+                    lifecycleScope.launch { updateFilterChipLabel(); reload() }
+                }.show()
             },
         ).show()
     }

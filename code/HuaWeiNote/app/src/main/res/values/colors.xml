@@ -36,6 +36,12 @@
     <color name="text_checked">#9E9E9E</color>
     <color name="image_block_border">#E0E0E0</color>
 
+    <!-- M9 分类色（PRD §13.2 4 色起步） -->
+    <color name="category_color_yellow">#FDD835</color>
+    <color name="category_color_teal">#00897B</color>
+    <color name="category_color_green">#43A047</color>
+    <color name="category_color_red">#E53935</color>
+
     <!-- 手写 8 色调色板（M6） -->
     <color name="hw_color_black">#212121</color>
     <color name="hw_color_red">#E53935</color>

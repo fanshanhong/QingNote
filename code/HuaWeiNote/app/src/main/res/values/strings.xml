@@ -102,4 +102,13 @@
     <string name="hw_width_thin">细</string>
     <string name="hw_width_medium">中</string>
     <string name="hw_width_thick">粗</string>
+
+    <!-- M9 分类管理 -->
+    <string name="category_manager_title">管理分类</string>
+    <string name="category_new">新建分类</string>
+    <string name="category_edit">编辑分类</string>
+    <string name="category_name_hint">分类名称</string>
+    <string name="category_delete_title">删除分类</string>
+    <string name="category_delete_message">删除分类\"%1$s\"？该分类下的笔记将变为\"未分类\"。</string>
+    <string name="category_drag_handle_cd">拖动排序</string>
 </resources>
