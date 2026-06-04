@@ -132,4 +132,8 @@
     <string name="audio_delete_title">删除录音</string>
     <string name="audio_delete_message">将删除本条录音，操作不可撤销。</string>
     <string name="audio_label_format">录音 · %1$s</string>
+
+    <!-- M11 编辑器顶部 撤销/重做 MenuItem -->
+    <string name="action_undo_cd">撤销</string>
+    <string name="action_redo_cd">重做</string>
 </resources>

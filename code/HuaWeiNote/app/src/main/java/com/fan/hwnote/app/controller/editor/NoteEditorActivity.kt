@@ -186,7 +186,34 @@ class NoteEditorActivity : AppCompatActivity() {
             pendingCameraOutputFile = savedInstanceState.getString(STATE_CAMERA_FILE)?.let { java.io.File(it) }
         }
         noteId = intent.getLongExtra(EXTRA_NOTE_ID, -1L)
+        // M11: AppBar 的撤销/重做 enable 状态跟随 presenter.history 栈大小变化刷新。
+        // listener 在 push/undo/redo/clear 时主线程同步回调，invalidateOptionsMenu 安全。
+        presenter.history.listener = { _, _ -> invalidateOptionsMenu() }
         loadNote()
+    }
+
+    override fun onCreateOptionsMenu(menu: android.view.Menu): Boolean {
+        menuInflater.inflate(R.menu.menu_editor, menu)
+        return true
+    }
+
+    override fun onPrepareOptionsMenu(menu: android.view.Menu): Boolean {
+        menu.findItem(R.id.action_undo)?.let { it.isEnabled = presenter.history.canUndo(); applyMenuIconAlpha(it) }
+        menu.findItem(R.id.action_redo)?.let { it.isEnabled = presenter.history.canRedo(); applyMenuIconAlpha(it) }
+        return super.onPrepareOptionsMenu(menu)
+    }
+
+    override fun onOptionsItemSelected(item: android.view.MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.action_undo -> { presenter.undo(); true }
+            R.id.action_redo -> { presenter.redo(); true }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
+
+    /** disabled 时图标显示半透明（Material 不会自动 alpha；自己 mutate）。 */
+    private fun applyMenuIconAlpha(item: android.view.MenuItem) {
+        item.icon?.mutate()?.alpha = if (item.isEnabled) 255 else 102
     }
 
     override fun onPause() {
@@ -196,6 +223,8 @@ class NoteEditorActivity : AppCompatActivity() {
         // 兜底取消正在录的 Sheet（用户切后台/锁屏/跳别的 Activity）
         currentRecordingSheet?.forceCancel()
         currentRecordingSheet = null
+        // M11: 防抖文本先入栈，再走 save（保证最后一次连续输入也能进 history）
+        presenter.flushPendingTextEdits()
         // 退出（包括按返回 / Home / 横屏）都落库一次。
         saveNote()
     }
