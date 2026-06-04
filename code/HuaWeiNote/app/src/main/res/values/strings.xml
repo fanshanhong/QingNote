@@ -111,4 +111,11 @@
     <string name="category_delete_title">删除分类</string>
     <string name="category_delete_message">删除分类\"%1$s\"？该分类下的笔记将变为\"未分类\"。</string>
     <string name="category_drag_handle_cd">拖动排序</string>
+
+    <!-- M9 最近删除 / 软删除二次确认 -->
+    <string name="action_restore">恢复</string>
+    <string name="action_delete_permanently">彻底删除</string>
+    <string name="dialog_soft_delete_message">该笔记将移入\"最近删除\"，30 天后自动清理。</string>
+    <string name="dialog_delete_permanently_title">彻底删除笔记</string>
+    <string name="dialog_delete_permanently_message">彻底删除后不可恢复，确定删除？</string>
 </resources>

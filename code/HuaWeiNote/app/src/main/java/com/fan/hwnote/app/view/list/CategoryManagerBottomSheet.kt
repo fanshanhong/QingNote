@@ -30,13 +30,11 @@ import java.util.Collections
  * - 展示全部用户分类（顺序按 order_index）。
  * - 长按行拖动重新排序，松手后 flush 到 CategoryRepository.reorder。
  * - 点击「编辑」按钮：弹 AlertDialog（dialog_category_editor.xml），可改名 + 选 4 色之一。
- * - 点击「删除」按钮：弹 AlertDialog 二次确认；确认后 CategoryRepository.delete
+ * - 点击「删除」按钮：弹 DeleteConfirmBottomSheet 二次确认；确认后 CategoryRepository.delete
  *   （该分类下笔记由 Repository 自动 SET category_id = NULL）。
  * - 底部「新建分类」入口同样走 dialog_category_editor.xml。
  *
  * 任一 CRUD/排序操作完成后，会回调外部 onChanged()，让 NoteListActivity 刷新筛选 chip / 列表。
- *
- * DeleteConfirm 暂用 AlertDialog 占位（T9 实现 DeleteConfirmBottomSheet 后替换）。
  */
 class CategoryManagerBottomSheet(
     private val activity: AppCompatActivity,
@@ -160,18 +158,19 @@ class CategoryManagerBottomSheet(
     }
 
     private fun onDeleteClicked(cat: Category) {
-        AlertDialog.Builder(context)
-            .setTitle(R.string.category_delete_title)
-            .setMessage(context.getString(R.string.category_delete_message, cat.name))
-            .setPositiveButton(R.string.action_ok) { _, _ ->
+        DeleteConfirmBottomSheet(
+            context = activity,
+            title = activity.getString(R.string.category_delete_title),
+            message = activity.getString(R.string.category_delete_message, cat.name),
+            confirmLabel = activity.getString(R.string.action_delete),
+            onConfirm = {
                 activity.lifecycleScope.launch {
                     CategoryRepository.delete(cat.id)
                     reload()
                     onChanged()
                 }
-            }
-            .setNegativeButton(R.string.action_cancel, null)
-            .show()
+            },
+        ).show()
     }
 
     private class ManageAdapter(

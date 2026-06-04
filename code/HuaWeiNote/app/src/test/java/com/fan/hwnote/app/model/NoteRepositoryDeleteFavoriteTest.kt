@@ -28,18 +28,18 @@ class NoteRepositoryDeleteFavoriteTest {
     }
 
     @Test
-    fun `delete removes db row`() = runBlocking {
+    fun `deletePermanently removes db row`() = runBlocking {
         val id = NoteRepository.save(Note.new(now = 1_000L).copy(title = "to delete"))
         assertTrue(NoteRepository.list().any { it.id == id })
 
-        NoteRepository.delete(id)
+        NoteRepository.deletePermanently(id)
 
         assertNull(NoteRepository.get(id))
         assertFalse(NoteRepository.list().any { it.id == id })
     }
 
     @Test
-    fun `delete also removes filesDir notes id directory`() = runBlocking {
+    fun `deletePermanently also removes filesDir notes id directory`() = runBlocking {
         val id = NoteRepository.save(Note.new(now = 1_000L).copy(title = "with image"))
         // 模拟图片：手动创建目录 + 文件
         val noteDir = File(ctx.filesDir, "notes/$id")
@@ -47,7 +47,7 @@ class NoteRepositoryDeleteFavoriteTest {
         File(noteDir, "images/x.jpg").writeBytes(byteArrayOf(1, 2, 3))
         assertTrue(noteDir.exists())
 
-        NoteRepository.delete(id)
+        NoteRepository.deletePermanently(id)
 
         assertFalse(noteDir.exists())
     }
@@ -84,16 +84,6 @@ class NoteRepositoryDeleteFavoriteTest {
         NoteRepository.restore(id)
         val n = NoteRepository.get(id)!!
         assertEquals(0L, n.deletedAt)
-    }
-
-    @Test
-    fun `deletePermanently removes row and disk dir`() = runBlocking {
-        val id = NoteRepository.save(Note.new().copy(title = "X"))
-        val dir = java.io.File(ctx.filesDir, "notes/$id").apply { mkdirs() }
-        java.io.File(dir, "marker.txt").writeText("x")
-        NoteRepository.deletePermanently(id)
-        assertNull(NoteRepository.get(id))
-        assertFalse(dir.exists())
     }
 
     @Test

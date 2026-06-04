@@ -12,7 +12,6 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.RadioGroup
 import android.widget.TextView
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.PopupMenu
 import androidx.appcompat.widget.Toolbar
@@ -25,6 +24,7 @@ import com.fan.hwnote.app.model.CategoryRepository
 import com.fan.hwnote.app.model.NoteRepository
 import com.fan.hwnote.app.model.entity.Note
 import com.fan.hwnote.app.view.list.CategoryManagerBottomSheet
+import com.fan.hwnote.app.view.list.DeleteConfirmBottomSheet
 import com.fan.hwnote.app.view.list.FilterPickerBottomSheet
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -120,7 +120,9 @@ class NoteListActivity : AppCompatActivity() {
 
     private fun showCardMenu(note: Note, anchor: View) {
         val popup = PopupMenu(this, anchor)
-        popup.menuInflater.inflate(R.menu.menu_note_card_long_press, popup.menu)
+        val isDeletedView = currentFilter == NoteRepository.ListFilter.Deleted
+        val menuRes = if (isDeletedView) R.menu.menu_note_card_deleted else R.menu.menu_note_card_long_press
+        popup.menuInflater.inflate(menuRes, popup.menu)
         popup.setOnMenuItemClickListener { item ->
             when (item.itemId) {
                 R.id.action_toggle_favorite -> {
@@ -131,17 +133,31 @@ class NoteListActivity : AppCompatActivity() {
                     true
                 }
                 R.id.action_delete -> {
-                    AlertDialog.Builder(this)
-                        .setTitle(R.string.dialog_delete_title)
-                        .setMessage(R.string.dialog_delete_message)
-                        .setPositiveButton(R.string.action_ok) { _, _ ->
-                            lifecycleScope.launch {
-                                NoteRepository.delete(note.id)
-                                reload()
-                            }
-                        }
-                        .setNegativeButton(R.string.action_cancel, null)
-                        .show()
+                    DeleteConfirmBottomSheet(
+                        this,
+                        title = getString(R.string.dialog_delete_title),
+                        message = getString(R.string.dialog_soft_delete_message),
+                        confirmLabel = getString(R.string.action_delete),
+                        onConfirm = {
+                            lifecycleScope.launch { NoteRepository.softDelete(note.id); reload() }
+                        },
+                    ).show()
+                    true
+                }
+                R.id.action_restore -> {
+                    lifecycleScope.launch { NoteRepository.restore(note.id); reload() }
+                    true
+                }
+                R.id.action_delete_permanently -> {
+                    DeleteConfirmBottomSheet(
+                        this,
+                        title = getString(R.string.dialog_delete_permanently_title),
+                        message = getString(R.string.dialog_delete_permanently_message),
+                        confirmLabel = getString(R.string.action_delete_permanently),
+                        onConfirm = {
+                            lifecycleScope.launch { NoteRepository.deletePermanently(note.id); reload() }
+                        },
+                    ).show()
                     true
                 }
                 else -> false

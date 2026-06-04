@@ -106,11 +106,6 @@ object NoteRepository {
         }
     }
 
-    suspend fun delete(id: Long) = withContext(Dispatchers.IO) {
-        dbHelper.writableDatabase.delete("notes", "id = ?", arrayOf(id.toString()))
-        fileStorage.deleteNoteDir(id)
-    }
-
     /** 软删除：标记 deleted_at = now。文件不动（restore 后还要用）。 */
     suspend fun softDelete(id: Long) = withContext(Dispatchers.IO) {
         val cv = ContentValues().apply { put("deleted_at", System.currentTimeMillis()) }
