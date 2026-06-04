@@ -204,14 +204,14 @@ class DbV3MigrationTest {
         db.rawQuery("SELECT id, name, is_default FROM folders WHERE id=1", null).use { c ->
             assert(c.moveToFirst())
             assertEquals(1L, c.getLong(0))
-            assertEquals("默认文件夹", c.getString(1))
+            assertEquals("默认", c.getString(1))
             assertEquals(1, c.getInt(2))
         }
         // notebooks 表存在 + 默认行 id=1 folder_id=1
         db.rawQuery("SELECT id, name, folder_id, is_default FROM notebooks WHERE id=1", null).use { c ->
             assert(c.moveToFirst())
             assertEquals(1L, c.getLong(0))
-            assertEquals("默认笔记本", c.getString(1))
+            assertEquals("默认", c.getString(1))
             assertEquals(1L, c.getLong(2))
             assertEquals(1, c.getInt(3))
         }
@@ -296,14 +296,13 @@ class NoteDbHelper(ctx: Context) : SQLiteOpenHelper(ctx, DB_NAME, null, DB_VERSI
     }
 
     private fun seedDefaults(db: SQLiteDatabase, allNotesAlreadyExist: Boolean) {
-        val now = System.currentTimeMillis()
         db.execSQL(
-            "INSERT INTO folders(id, name, display_order, is_default, deleted_at, created_at) VALUES(1, ?, 0, 1, 0, ?)",
-            arrayOf<Any>("默认文件夹", now),
+            "INSERT INTO folders(id, name, order_index, is_default, deleted_at) VALUES(1, ?, 0, 1, 0)",
+            arrayOf<Any>("默认"),
         )
         db.execSQL(
-            "INSERT INTO notebooks(id, name, folder_id, color_index, display_order, is_default, deleted_at, created_at) VALUES(1, ?, 1, 0, 0, 1, 0, ?)",
-            arrayOf<Any>("默认笔记本", now),
+            "INSERT INTO notebooks(id, name, folder_id, color, order_index, is_default, deleted_at) VALUES(1, ?, 1, ?, 0, 1, 0)",
+            arrayOf<Any>("默认", "#9E9E9E"),
         )
         if (allNotesAlreadyExist) {
             db.execSQL("UPDATE notes SET notebook_id = 1")
@@ -343,10 +342,9 @@ class NoteDbHelper(ctx: Context) : SQLiteOpenHelper(ctx, DB_NAME, null, DB_VERSI
             CREATE TABLE folders (
               id INTEGER PRIMARY KEY AUTOINCREMENT,
               name TEXT NOT NULL,
-              display_order INTEGER NOT NULL DEFAULT 0,
+              order_index INTEGER NOT NULL DEFAULT 0,
               is_default INTEGER NOT NULL DEFAULT 0,
-              deleted_at INTEGER NOT NULL DEFAULT 0,
-              created_at INTEGER NOT NULL
+              deleted_at INTEGER NOT NULL DEFAULT 0
             )
         """
 
@@ -355,11 +353,10 @@ class NoteDbHelper(ctx: Context) : SQLiteOpenHelper(ctx, DB_NAME, null, DB_VERSI
               id INTEGER PRIMARY KEY AUTOINCREMENT,
               name TEXT NOT NULL,
               folder_id INTEGER NOT NULL,
-              color_index INTEGER NOT NULL DEFAULT 0,
-              display_order INTEGER NOT NULL DEFAULT 0,
+              color TEXT NOT NULL DEFAULT '#9E9E9E',
+              order_index INTEGER NOT NULL DEFAULT 0,
               is_default INTEGER NOT NULL DEFAULT 0,
-              deleted_at INTEGER NOT NULL DEFAULT 0,
-              created_at INTEGER NOT NULL
+              deleted_at INTEGER NOT NULL DEFAULT 0
             )
         """
 
@@ -547,10 +544,9 @@ package com.fan.hwnote.app.model.entity
 data class Folder(
     val id: Long = 0L,
     val name: String,
-    val displayOrder: Int = 0,
+    val orderIndex: Int = 0,
     val isDefault: Boolean = false,
     val deletedAt: Long = 0L,    // 0 = 未删除；>0 = 软删时间戳
-    val createdAt: Long = 0L,
 )
 ```
 
@@ -563,18 +559,17 @@ package com.fan.hwnote.app.model.entity
  * 笔记本实体（M12）。id == 0L 表示尚未持久化。
  *
  * folderId 必填（DB schema 同样 NOT NULL）。
- * colorIndex ∈ 0..7，对应 NotebookColors 工具类的 8 色调色板。
+ * color = 8 色调色板（spec §6）的 hex 字符串，"#9E9E9E"/"#E53935"/.../"#8E24AA"。
  * 系统预置默认笔记本 id=1, folderId=1, isDefault=true。
  */
 data class Notebook(
     val id: Long = 0L,
     val name: String,
     val folderId: Long,
-    val colorIndex: Int = 0,
-    val displayOrder: Int = 0,
+    val color: String = "#9E9E9E",
+    val orderIndex: Int = 0,
     val isDefault: Boolean = false,
     val deletedAt: Long = 0L,
-    val createdAt: Long = 0L,
 )
 ```
 
