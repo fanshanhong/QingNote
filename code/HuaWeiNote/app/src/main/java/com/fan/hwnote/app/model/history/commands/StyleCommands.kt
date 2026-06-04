@@ -12,7 +12,7 @@ import com.fan.hwnote.app.model.history.Command
  * 不做增量增删 — 简化语义、避免 span 重叠歧义。
  */
 interface StyleMutator {
-    /** 取某 blockId 的当前 spans 快照（深拷贝；data class List 已是只读引用）。不存在返回 null。 */
+    /** 取某 blockId 的当前 spans 快照。TextSpan 所有字段均为 val + 不可变枚举，引用共享安全；不存在返回 null。 */
     fun snapshotSpans(blockId: String): List<TextSpan>?
     /** 用 newSpans 整段替换 blockId 的 spans。不存在则 no-op。 */
     fun setBlockSpans(blockId: String, newSpans: List<TextSpan>)
