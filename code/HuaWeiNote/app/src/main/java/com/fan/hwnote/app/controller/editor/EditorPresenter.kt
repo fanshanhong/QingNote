@@ -93,7 +93,6 @@ class EditorPresenter(
             val before = v.toBlock().spans
             applyInlineToRange(edit.text as Spannable, type, start, end, null)
             val after = v.toBlock().spans
-            // TODO(T8): wrap applyInlineToRange in suppressDebounceWhile to avoid TextWatcher feedback loop.
             history.push(ApplySpanCommand(this, blockId, before, after, focusCursor = end, typeForLabel = type))
             return false
         }
@@ -163,7 +162,6 @@ class EditorPresenter(
             val before = v.toBlock().spans
             applyInlineToRange(edit.text as Spannable, SpanType.FONT_SIZE, start, end, value)
             val after = v.toBlock().spans
-            // TODO(T8): wrap applyInlineToRange in suppressDebounceWhile to avoid TextWatcher feedback loop.
             history.push(ApplySpanCommand(this, blockId, before, after, focusCursor = end, typeForLabel = SpanType.FONT_SIZE))
             return null
         }
@@ -181,7 +179,6 @@ class EditorPresenter(
             val before = v.toBlock().spans
             applyInlineToRange(edit.text as Spannable, SpanType.COLOR, start, end, hex)
             val after = v.toBlock().spans
-            // TODO(T8): wrap applyInlineToRange in suppressDebounceWhile to avoid TextWatcher feedback loop.
             history.push(ApplySpanCommand(this, blockId, before, after, focusCursor = end, typeForLabel = SpanType.COLOR))
             return null
         }
@@ -400,7 +397,6 @@ class EditorPresenter(
         val before = v.currentHeading()
         val after = if (before == target) null else target
         v.setHeading(after)
-        // TODO(T8): wrap v.setHeading in suppressDebounceWhile if setHeading triggers TextWatcher.
         history.push(ApplyHeadingCommand(this, blockId, before, after))
     }
 

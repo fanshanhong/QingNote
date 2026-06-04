@@ -58,7 +58,9 @@ class TextBlockView @JvmOverloads constructor(
         applyHeadingSize()
         val spannable = SpannableString(block.text)
         block.spans.applyTo(spannable)
-        edit.setText(spannable)
+        suppressDebounceWhile {
+            edit.setText(spannable)
+        }
     }
 
     override fun toBlock(): Block.TextBlock {
