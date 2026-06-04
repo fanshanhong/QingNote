@@ -185,6 +185,14 @@ object NoteRepository {
         Unit
     }
 
+    suspend fun moveNoteToNotebook(noteId: Long, targetNotebookId: Long?) = withContext(Dispatchers.IO) {
+        val cv = ContentValues()
+        if (targetNotebookId == null) cv.putNull("notebook_id") else cv.put("notebook_id", targetNotebookId)
+        cv.put("updated_at", System.currentTimeMillis())
+        dbHelper.writableDatabase.update("notes", cv, "id = ?", arrayOf(noteId.toString()))
+        Unit
+    }
+
     enum class SortBy { UPDATED_DESC, CREATED_DESC }
 
     sealed class ListFilter {

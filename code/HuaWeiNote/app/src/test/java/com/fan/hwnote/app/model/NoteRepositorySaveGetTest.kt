@@ -121,4 +121,18 @@ class NoteRepositorySaveGetTest {
         val n = NoteRepository.get(saved)!!
         assertNull(n.notebookId)
     }
+
+    @Test
+    fun `moveNoteToNotebook updates notebook_id and updated_at`() = runBlocking {
+        NotebookRepository.init(ApplicationProvider.getApplicationContext())
+        FolderRepository.init(ApplicationProvider.getApplicationContext())
+        val nb = NotebookRepository.insert(1L, "T", "#43A047")
+        val id = NoteRepository.save(Note.new().copy(title = "x", notebookId = null))
+        val before = NoteRepository.get(id)!!.updatedAt
+        Thread.sleep(5L)
+        NoteRepository.moveNoteToNotebook(id, nb)
+        val after = NoteRepository.get(id)!!
+        assertEquals(nb, after.notebookId)
+        assertTrue(after.updatedAt >= before)
+    }
 }

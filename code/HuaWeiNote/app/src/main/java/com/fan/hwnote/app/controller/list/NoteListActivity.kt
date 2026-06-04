@@ -25,6 +25,7 @@ import com.fan.hwnote.app.model.NoteRepository
 import com.fan.hwnote.app.model.NotebookRepository
 import com.fan.hwnote.app.model.entity.Note
 import com.fan.hwnote.app.view.folder.NotebookFilterPopupWindow
+import com.fan.hwnote.app.view.folder.NotebookPickerPopupWindow
 import com.fan.hwnote.app.view.list.DeleteConfirmBottomSheet
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -158,6 +159,16 @@ class NoteListActivity : AppCompatActivity() {
                             lifecycleScope.launch { NoteRepository.deletePermanently(note.id); reload() }
                         },
                     ).show()
+                    true
+                }
+                R.id.action_move_notebook -> {
+                    NotebookPickerPopupWindow(
+                        context = this,
+                        currentNotebookId = note.notebookId,
+                        onPicked = { picked ->
+                            lifecycleScope.launch { NoteRepository.moveNoteToNotebook(note.id, picked); reload() }
+                        },
+                    ).show(anchor)
                     true
                 }
                 else -> false

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="@dimen/notebook_item_height"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingStart="40dp"
+    android:paddingEnd="16dp"
+    android:background="?attr/selectableItemBackground">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/notebook_create"
+        android:textColor="?attr/colorPrimary"/>
+</LinearLayout>
