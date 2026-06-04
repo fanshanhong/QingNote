@@ -3,10 +3,12 @@ package com.fan.hwnote.app.model
 import androidx.test.core.app.ApplicationProvider
 import com.fan.hwnote.app.model.entity.Note
 import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -65,5 +67,50 @@ class NoteRepositoryDeleteFavoriteTest {
         NoteRepository.setFavorite(id, false)
         val loaded = NoteRepository.get(id)!!
         assertFalse(loaded.isFavorite)
+    }
+
+    @Ignore("Depends on T5: list() default ListFilter.All filters deleted_at = 0")
+    @Test
+    fun `softDelete marks deleted_at and excludes from default list`() = runBlocking {
+        val a = NoteRepository.save(Note.new().copy(title = "A"))
+        val b = NoteRepository.save(Note.new().copy(title = "B"))
+        NoteRepository.softDelete(a)
+        val visible = NoteRepository.list()
+        assertEquals(listOf(b), visible.map { it.id })
+    }
+
+    @Test
+    fun `restore brings note back to deletedAt zero`() = runBlocking {
+        val id = NoteRepository.save(Note.new().copy(title = "X"))
+        NoteRepository.softDelete(id)
+        NoteRepository.restore(id)
+        val n = NoteRepository.get(id)!!
+        assertEquals(0L, n.deletedAt)
+    }
+
+    @Test
+    fun `deletePermanently removes row and disk dir`() = runBlocking {
+        val id = NoteRepository.save(Note.new().copy(title = "X"))
+        val dir = java.io.File(ctx.filesDir, "notes/$id").apply { mkdirs() }
+        java.io.File(dir, "marker.txt").writeText("x")
+        NoteRepository.deletePermanently(id)
+        assertNull(NoteRepository.get(id))
+        assertFalse(dir.exists())
+    }
+
+    @Test
+    fun `purgeExpired deletes rows older than ttl and keeps fresh`() = runBlocking {
+        val now = 1_000_000_000_000L
+        val ttl = 30L * 24 * 60 * 60 * 1000
+        val oldId = NoteRepository.save(Note.new().copy(title = "old"))
+        val freshId = NoteRepository.save(Note.new().copy(title = "fresh"))
+        // 直接改库：oldId.deleted_at = now - ttl - 1（超期）；freshId.deleted_at = now - 1（未超期）
+        val db = com.fan.hwnote.app.model.db.NoteDbHelper(ctx).writableDatabase
+        db.execSQL("UPDATE notes SET deleted_at = ? WHERE id = ?", arrayOf<Any>(now - ttl - 1, oldId))
+        db.execSQL("UPDATE notes SET deleted_at = ? WHERE id = ?", arrayOf<Any>(now - 1, freshId))
+        val purged = NoteRepository.purgeExpired(now = now, ttlMs = ttl)
+        assertEquals(1, purged)
+        assertNull(NoteRepository.get(oldId))
+        assertEquals(now - 1, NoteRepository.get(freshId)!!.deletedAt)
     }
 }

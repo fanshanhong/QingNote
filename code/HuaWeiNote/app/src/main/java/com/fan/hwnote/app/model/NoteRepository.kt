@@ -91,6 +91,46 @@ object NoteRepository {
         fileStorage.deleteNoteDir(id)
     }
 
+    /** 软删除：标记 deleted_at = now。文件不动（restore 后还要用）。 */
+    suspend fun softDelete(id: Long) = withContext(Dispatchers.IO) {
+        val cv = ContentValues().apply { put("deleted_at", System.currentTimeMillis()) }
+        dbHelper.writableDatabase.update("notes", cv, "id = ?", arrayOf(id.toString()))
+        Unit
+    }
+
+    /** 恢复：deleted_at = 0。 */
+    suspend fun restore(id: Long) = withContext(Dispatchers.IO) {
+        val cv = ContentValues().apply { put("deleted_at", 0L) }
+        dbHelper.writableDatabase.update("notes", cv, "id = ?", arrayOf(id.toString()))
+        Unit
+    }
+
+    /** 彻底删除：DELETE 行 + 删本地文件目录。 */
+    suspend fun deletePermanently(id: Long) = withContext(Dispatchers.IO) {
+        dbHelper.writableDatabase.delete("notes", "id = ?", arrayOf(id.toString()))
+        fileStorage.deleteNoteDir(id)
+    }
+
+    /** 清理超 ttlMs 的软删笔记。返回清理的笔记数。 */
+    suspend fun purgeExpired(
+        now: Long = System.currentTimeMillis(),
+        ttlMs: Long = 30L * 24 * 60 * 60 * 1000,
+    ): Int = withContext(Dispatchers.IO) {
+        val cutoff = now - ttlMs
+        val db = dbHelper.writableDatabase
+        val ids = mutableListOf<Long>()
+        db.query(
+            "notes", arrayOf("id"),
+            "deleted_at > 0 AND deleted_at < ?", arrayOf(cutoff.toString()),
+            null, null, null,
+        ).use { c -> while (c.moveToNext()) ids += c.getLong(0) }
+        for (id in ids) {
+            db.delete("notes", "id = ?", arrayOf(id.toString()))
+            fileStorage.deleteNoteDir(id)
+        }
+        ids.size
+    }
+
     suspend fun setFavorite(id: Long, favorite: Boolean) = withContext(Dispatchers.IO) {
         val cv = ContentValues().apply {
             put("is_favorite", if (favorite) 1 else 0)
