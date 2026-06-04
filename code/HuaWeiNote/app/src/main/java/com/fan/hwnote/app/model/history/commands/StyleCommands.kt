@@ -20,7 +20,8 @@ interface StyleMutator {
     fun snapshotHeading(blockId: String): Heading?
     /** 设置 blockId 的 heading（null = 普通段）。 */
     fun setBlockHeading(blockId: String, heading: Heading?)
-    fun silentRequestFocus(blockId: String, cursorIndex: Int = Int.MAX_VALUE)
+    /** 不带默认值 — 多 Mutator 继承时只能由 BlockMutator 提供 default（Kotlin 限制）。 */
+    fun silentRequestFocus(blockId: String, cursorIndex: Int)
 }
 
 /**
@@ -60,10 +61,10 @@ class ApplyHeadingCommand(
     override val label = "ApplyHeading($blockId: $before -> $after)"
     override fun apply() {
         mutator.setBlockHeading(blockId, after)
-        mutator.silentRequestFocus(blockId)
+        mutator.silentRequestFocus(blockId, Int.MAX_VALUE)
     }
     override fun revert() {
         mutator.setBlockHeading(blockId, before)
-        mutator.silentRequestFocus(blockId)
+        mutator.silentRequestFocus(blockId, Int.MAX_VALUE)
     }
 }

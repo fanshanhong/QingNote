@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Color
 import android.graphics.Typeface
 import android.text.Spannable
+import android.text.SpannableString
 import android.text.style.CharacterStyle
 import android.text.style.ForegroundColorSpan
 import android.text.style.RelativeSizeSpan
@@ -17,6 +18,17 @@ import com.fan.hwnote.app.model.entity.Note
 import com.fan.hwnote.app.model.entity.NoteContent
 import com.fan.hwnote.app.model.entity.SpanType
 import com.fan.hwnote.app.model.entity.TextSpan
+import com.fan.hwnote.app.model.history.EditHistoryManager
+import com.fan.hwnote.app.model.history.commands.AddBlockCommand
+import com.fan.hwnote.app.model.history.commands.ApplyHeadingCommand
+import com.fan.hwnote.app.model.history.commands.ApplySpanCommand
+import com.fan.hwnote.app.model.history.commands.BlockMutator
+import com.fan.hwnote.app.model.history.commands.MoveBlockCommand
+import com.fan.hwnote.app.model.history.commands.RemoveBlockCommand
+import com.fan.hwnote.app.model.history.commands.ReplaceBlockCommand
+import com.fan.hwnote.app.model.history.commands.ReplaceTextCommand
+import com.fan.hwnote.app.model.history.commands.StyleMutator
+import com.fan.hwnote.app.model.history.commands.TextMutator
 import com.fan.hwnote.app.model.storage.NoteFileStorage
 import com.fan.hwnote.app.util.applyTo
 import com.fan.hwnote.app.util.toTextSpans
@@ -39,7 +51,7 @@ class EditorPresenter(
     private val context: Context,
     private val container: LinearLayout,
     private val overlay: com.fan.hwnote.app.view.handwriting.HandwritingOverlayView,
-) : BlockView.Callback {
+) : BlockView.Callback, BlockMutator, StyleMutator, TextMutator {
 
     private val currentBlocks = mutableListOf<BlockView>()
     private lateinit var currentNote: Note
@@ -50,6 +62,9 @@ class EditorPresenter(
 
     /** 编辑器内共享 AudioPlayer（多块共用，新点播放会停旧的）。 */
     val audioPlayer = com.fan.hwnote.app.model.audio.AudioPlayer()
+
+    /** M11 撤销 / 重做管理器。loadNote 完成 = 起点；saveNote 成功后 clear。 */
+    val history = EditHistoryManager()
 
     /** 无选区时，下次输入应套用的 span 类型集合。同 type 第二次点表示取消。 */
     private val pendingInline = mutableSetOf<SpanType>()
@@ -487,6 +502,125 @@ class EditorPresenter(
         val tail = emptyTextBlock()
         addTextBlockView(tail, insertAt = baseIdx + 1)
         (currentBlocks[baseIdx + 1] as TextBlockView).focusEditEnd()
+    }
+
+    // ----- M11 silent mutators (不入栈，apply/revert 共用入口) -----
+
+    override fun silentInsertBlock(index: Int, block: Block) {
+        val safe = index.coerceIn(0, currentBlocks.size)
+        when (block) {
+            is Block.TextBlock -> addTextBlockView(block, insertAt = safe)
+            is Block.ImageBlock -> addImageBlockView(block, insertAt = safe)
+            is Block.ChecklistBlock -> addChecklistBlockView(block, insertAt = safe)
+            is Block.AudioBlock -> addAudioBlockView(block, insertAt = safe)
+        }
+    }
+
+    override fun silentRemoveBlock(blockId: String) {
+        val idx = currentBlocks.indexOfFirst { it.toBlock().id == blockId }
+        if (idx < 0) return
+        val view = currentBlocks[idx]
+        container.removeView(view)
+        currentBlocks.removeAt(idx)
+        if (focusedTextBlock === view) focusedTextBlock = null
+    }
+
+    override fun silentMoveBlock(from: Int, to: Int) {
+        if (from !in currentBlocks.indices || to !in currentBlocks.indices) return
+        val view = currentBlocks.removeAt(from)
+        container.removeView(view)
+        currentBlocks.add(to, view)
+        container.addView(view, to)
+    }
+
+    override fun silentReplaceBlock(blockId: String, newBlock: Block) {
+        val idx = currentBlocks.indexOfFirst { it.toBlock().id == blockId }
+        if (idx < 0) return
+        val old = currentBlocks[idx]
+        container.removeView(old)
+        currentBlocks.removeAt(idx)
+        if (focusedTextBlock === old) focusedTextBlock = null
+        silentInsertBlock(idx, newBlock)
+    }
+
+    override fun silentRequestFocus(blockId: String, cursorIndex: Int) {
+        val view = currentBlocks.firstOrNull { it.toBlock().id == blockId } as? TextBlockView ?: return
+        view.focusEditEnd()
+        val safeCursor = cursorIndex.coerceIn(0, view.edit.text.length)
+        view.edit.setSelection(safeCursor)
+    }
+
+    override fun indexOfBlock(blockId: String): Int =
+        currentBlocks.indexOfFirst { it.toBlock().id == blockId }
+
+    override fun blockAt(index: Int): Block? =
+        currentBlocks.getOrNull(index)?.toBlock()
+
+    override fun snapshotBlock(blockId: String): Block? =
+        currentBlocks.firstOrNull { it.toBlock().id == blockId }?.toBlock()
+
+    // ----- StyleMutator -----
+
+    override fun snapshotSpans(blockId: String): List<TextSpan>? =
+        (snapshotBlock(blockId) as? Block.TextBlock)?.spans
+
+    override fun setBlockSpans(blockId: String, newSpans: List<TextSpan>) {
+        val view = currentBlocks.firstOrNull { it.toBlock().id == blockId } as? TextBlockView ?: return
+        val sp = SpannableString(view.edit.text.toString())
+        newSpans.applyTo(sp)
+        view.edit.setText(sp)
+    }
+
+    override fun snapshotHeading(blockId: String): Heading? =
+        (snapshotBlock(blockId) as? Block.TextBlock)?.heading
+
+    override fun setBlockHeading(blockId: String, heading: Heading?) {
+        val view = currentBlocks.firstOrNull { it.toBlock().id == blockId } as? TextBlockView ?: return
+        view.setHeading(heading)
+    }
+
+    // ----- TextMutator -----
+
+    override fun silentReplaceText(blockId: String, text: String, spans: List<TextSpan>) {
+        val view = currentBlocks.firstOrNull { it.toBlock().id == blockId } as? TextBlockView ?: return
+        val sp = SpannableString(text)
+        spans.applyTo(sp)
+        view.edit.setText(sp)
+        // 注：Task 8 引入 TextWatcher 防抖后，本调用会触发新的入栈循环。
+        //     Task 8 内会改成 view.suppressDebounceWhile { view.edit.setText(sp) }。
+    }
+
+    // ----- M11 公共入口 -----
+
+    /** Activity 顶部 ↶ 按钮入口。 */
+    fun undo() {
+        flushPendingTextEdits()
+        history.undo()
+    }
+
+    /** Activity 顶部 ↷ 按钮入口。 */
+    fun redo() {
+        flushPendingTextEdits()
+        history.redo()
+    }
+
+    /** TextBlockView 防抖窗口结束时调，落 ReplaceTextCommand 入栈。 */
+    fun recordTextEdit(
+        blockId: String,
+        beforeText: String,
+        beforeSpans: List<TextSpan>,
+        afterText: String,
+        afterSpans: List<TextSpan>,
+    ) {
+        if (beforeText == afterText && beforeSpans == afterSpans) return
+        history.push(ReplaceTextCommand(
+            this, blockId, beforeText, beforeSpans, afterText, afterSpans,
+        ))
+    }
+
+    /** 遍历当前所有 TextBlockView 强制 flush 防抖窗口未落栈的变更。 */
+    fun flushPendingTextEdits() {
+        // Task 8 内接通：for (v in currentBlocks) if (v is TextBlockView) v.flushPendingTextEdit()
     }
 
     /** Activity onPause 调：停掉编辑器内任何在播的音频。 */

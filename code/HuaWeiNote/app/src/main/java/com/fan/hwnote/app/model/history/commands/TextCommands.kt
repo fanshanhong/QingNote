@@ -9,8 +9,8 @@ import com.fan.hwnote.app.model.history.Command
 interface TextMutator {
     /** 用 text + spans 整段替换 blockId 的内容。不存在则 no-op。 */
     fun silentReplaceText(blockId: String, text: String, spans: List<TextSpan>)
-    /** 把焦点拉到某 blockId 的 cursor 位置。 */
-    fun silentRequestFocus(blockId: String, cursorIndex: Int = Int.MAX_VALUE)
+    /** 不带默认值 — 多 Mutator 继承时只能由 BlockMutator 提供 default（Kotlin 限制）。 */
+    fun silentRequestFocus(blockId: String, cursorIndex: Int)
 }
 
 /**
