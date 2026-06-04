@@ -48,6 +48,9 @@ class EditorPresenter(
     /** 当前正在编辑的 noteId（>0 表示已落库）；ImageBlockView 用它定位本地文件目录。 */
     var noteId: Long = 0L
 
+    /** 编辑器内共享 AudioPlayer（多块共用，新点播放会停旧的）。 */
+    val audioPlayer = com.fan.hwnote.app.model.audio.AudioPlayer()
+
     /** 无选区时，下次输入应套用的 span 类型集合。同 type 第二次点表示取消。 */
     private val pendingInline = mutableSetOf<SpanType>()
     /** 待生效字号 / 颜色（互斥单值，null 表示未启用 pending）。 */
@@ -167,7 +170,7 @@ class EditorPresenter(
                 is Block.TextBlock -> addTextBlockView(b)
                 is Block.ImageBlock -> addImageBlockView(b)
                 is Block.ChecklistBlock -> addChecklistBlockView(b)
-                is Block.AudioBlock -> Unit // T8 接通
+                is Block.AudioBlock -> addAudioBlockView(b)
             }
         }
         // 默认让第一个 TextBlock 拿到焦点（找不到就让第一块的可聚焦子 view 自己来）
@@ -220,6 +223,8 @@ class EditorPresenter(
         // 图片块顺手清掉本地 jpg；ChecklistBlock 没有文件需要清
         if (view is ImageBlockView) {
             (view.toBlock() as? Block.ImageBlock)?.let { purgeImageOnDisk(it) }
+        } else if (view is com.fan.hwnote.app.view.block.AudioBlockView) {
+            (view.toBlock() as? Block.AudioBlock)?.let { purgeAudioOnDisk(it) }
         }
         container.removeView(view)
         currentBlocks.removeAt(idx)
@@ -273,6 +278,14 @@ class EditorPresenter(
         }
     }
 
+    /** 删除某 audio 块对应的本地 m4a。noteId<=0 视为未落库，no-op。失败吞掉。 */
+    private fun purgeAudioOnDisk(block: Block.AudioBlock) {
+        if (noteId <= 0L) return
+        runCatching {
+            NoteFileStorage(context).audioFile(noteId, block.fileName).delete()
+        }
+    }
+
     // ----- private -----
 
     private fun emptyTextBlock(): Block.TextBlock =
@@ -321,6 +334,24 @@ class EditorPresenter(
                 LinearLayout.LayoutParams.WRAP_CONTENT,
             )
             callback = this@EditorPresenter
+            bind(block)
+        }
+        if (insertAt < 0 || insertAt >= currentBlocks.size) {
+            container.addView(v); currentBlocks.add(v)
+        } else {
+            container.addView(v, insertAt); currentBlocks.add(insertAt, v)
+        }
+    }
+
+    private fun addAudioBlockView(block: Block.AudioBlock, insertAt: Int = -1) {
+        val v = com.fan.hwnote.app.view.block.AudioBlockView(context).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            )
+            callback = this@EditorPresenter
+            noteId = this@EditorPresenter.noteId
+            audioPlayer = this@EditorPresenter.audioPlayer
             bind(block)
         }
         if (insertAt < 0 || insertAt >= currentBlocks.size) {
@@ -442,5 +473,24 @@ class EditorPresenter(
             addTextBlockView(newBlock, insertAt = blockIdx + 1)
             (currentBlocks[blockIdx + 1] as TextBlockView).focusEditEnd()
         }
+    }
+
+    /**
+     * M10 入口：把 1 个 AudioBlock 插到当前焦点 TextBlock 之后，并补尾 TextBlock 接管焦点。
+     * 焦点未知 → 追加到列表末尾。
+     */
+    fun insertAudioBlockAtFocus(block: Block.AudioBlock) {
+        val anchor = focusedTextBlock
+        val baseIdx = if (anchor != null) currentBlocks.indexOf(anchor) + 1
+                      else currentBlocks.size
+        addAudioBlockView(block, insertAt = baseIdx)
+        val tail = emptyTextBlock()
+        addTextBlockView(tail, insertAt = baseIdx + 1)
+        (currentBlocks[baseIdx + 1] as TextBlockView).focusEditEnd()
+    }
+
+    /** Activity onPause 调：停掉编辑器内任何在播的音频。 */
+    fun stopAllPlayback() {
+        audioPlayer.stop()
     }
 }
