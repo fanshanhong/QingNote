@@ -51,4 +51,14 @@
     <color name="hw_color_teal">#00897B</color>
     <color name="hw_color_blue">#1E88E5</color>
     <color name="hw_color_purple">#8E24AA</color>
+
+    <!-- M12 笔记本封面 8 色 -->
+    <color name="nb_color_grey">#9E9E9E</color>
+    <color name="nb_color_red">#E53935</color>
+    <color name="nb_color_orange">#FB8C00</color>
+    <color name="nb_color_yellow">#FBC02D</color>
+    <color name="nb_color_green">#43A047</color>
+    <color name="nb_color_cyan">#00ACC1</color>
+    <color name="nb_color_blue">#1E88E5</color>
+    <color name="nb_color_purple">#8E24AA</color>
 </resources>

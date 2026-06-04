@@ -6,4 +6,7 @@
     <item
         android:id="@+id/action_delete"
         android:title="@string/action_delete" />
+    <item
+        android:id="@+id/action_move_notebook"
+        android:title="@string/action_move_notebook" />
 </menu>

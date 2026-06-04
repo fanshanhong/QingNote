@@ -21,4 +21,11 @@
     <dimen name="editor_text_normal">16sp</dimen>
     <dimen name="editor_text_h2">18sp</dimen>
     <dimen name="editor_text_h1">22sp</dimen>
+
+    <!-- M12 文件夹层级 -->
+    <dimen name="folder_header_height">48dp</dimen>
+    <dimen name="notebook_item_height">48dp</dimen>
+    <dimen name="notebook_color_dot">14dp</dimen>
+    <dimen name="notebook_color_dot_picker">28dp</dimen>
+    <dimen name="popup_window_width">280dp</dimen>
 </resources>

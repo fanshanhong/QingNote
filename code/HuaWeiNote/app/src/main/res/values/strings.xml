@@ -136,4 +136,23 @@
     <!-- M11 编辑器顶部 撤销/重做 MenuItem -->
     <string name="action_undo_cd">撤销</string>
     <string name="action_redo_cd">重做</string>
+
+    <!-- M12 文件夹层级 -->
+    <string name="filter_chip_default">默认</string>
+    <string name="folder_root">默认</string>
+    <string name="notebook_default">默认</string>
+    <string name="folder_create">新建文件夹</string>
+    <string name="notebook_create">新建笔记本</string>
+    <string name="folder_rename">重命名文件夹</string>
+    <string name="notebook_rename">重命名笔记本</string>
+    <string name="folder_delete">删除文件夹</string>
+    <string name="notebook_delete">删除笔记本</string>
+    <string name="notebook_change_color">更改颜色</string>
+    <string name="notebook_move_to">移动到…</string>
+    <string name="action_move_notebook">移动到笔记本…</string>
+    <string name="folder_manage">管理文件夹</string>
+    <string name="dialog_delete_folder_message">删除该文件夹及其下所有笔记本与笔记？</string>
+    <string name="dialog_delete_notebook_message">删除该笔记本及其下所有笔记？</string>
+    <string name="indicator_no_notebook">无笔记本</string>
+    <string name="folder_default_undeletable">默认文件夹不可删除</string>
 </resources>
