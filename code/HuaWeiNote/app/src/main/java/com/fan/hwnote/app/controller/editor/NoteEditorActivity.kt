@@ -208,38 +208,25 @@ class NoteEditorActivity : AppCompatActivity() {
             }
         }
         handwritingToolbar.listener = object : com.fan.hwnote.app.view.toolbar.HandwritingToolbarView.Listener {
-            override fun onDoneClicked() = exitHandwritingMode()
-            override fun onUndoClicked() {
-                handwritingOverlay.undo()
-                refreshUndoRedoEnabled()
+            override fun onColorClicked() {
+                showHandwritingColorPopup(handwritingToolbar.colorButton())
             }
-            override fun onRedoClicked() {
-                handwritingOverlay.redo()
-                refreshUndoRedoEnabled()
-            }
-            override fun onClearClicked() {
-                androidx.appcompat.app.AlertDialog.Builder(this@NoteEditorActivity)
-                    .setTitle(R.string.tb_clear_cd)
-                    .setMessage(R.string.dialog_clear_handwriting_message)
-                    .setPositiveButton(R.string.action_ok) { _, _ ->
-                        handwritingOverlay.clear()
-                        refreshUndoRedoEnabled()
-                    }
-                    .setNegativeButton(R.string.action_cancel, null)
-                    .show()
+            override fun onBrushSelected(type: com.fan.hwnote.app.model.entity.BrushType) {
+                handwritingOverlay.isErasing = false
+                handwritingOverlay.currentBrush = type
+                handwritingToolbar.highlightBrush(type)
+                handwritingToolbar.highlightEraser(false)
             }
             override fun onEraserClicked() {
                 handwritingOverlay.isErasing = !handwritingOverlay.isErasing
                 handwritingToolbar.highlightEraser(handwritingOverlay.isErasing)
             }
-            override fun onStyleClicked() {
-                com.fan.hwnote.app.view.toolbar.HandwritingStylePickerBottomSheet(
-                    this@NoteEditorActivity, handwritingOverlay,
-                ).apply {
-                    setOnDismissListener {
-                        handwritingToolbar.highlightEraser(handwritingOverlay.isErasing)
-                    }
-                }.show()
+            override fun onPlusClicked() {
+                android.widget.Toast.makeText(
+                    this@NoteEditorActivity,
+                    R.string.toast_hw_plus_placeholder,
+                    android.widget.Toast.LENGTH_SHORT
+                ).show()
             }
         }
 
@@ -649,6 +636,8 @@ class NoteEditorActivity : AppCompatActivity() {
         updateUndoRedoButtons()
         val imm = getSystemService(INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
         imm.hideSoftInputFromWindow(blocksContainer.windowToken, 0)
+        handwritingToolbar.highlightBrush(handwritingOverlay.currentBrush)
+        handwritingToolbar.setColorIndicator(handwritingOverlay.currentColor)
     }
 
     private fun exitHandwritingMode() {
@@ -660,9 +649,47 @@ class NoteEditorActivity : AppCompatActivity() {
         updateUndoRedoButtons()
     }
 
-    private fun refreshUndoRedoEnabled() {
-        handwritingToolbar.setUndoEnabled(handwritingOverlay.canUndo())
-        handwritingToolbar.setRedoEnabled(handwritingOverlay.canRedo())
+    private fun showHandwritingColorPopup(anchor: android.view.View) {
+        val colors = listOf(
+            "#212121", "#E53935", "#FB8C00", "#FDD835",
+            "#43A047", "#00897B", "#1E88E5", "#8E24AA",
+        )
+        val row = android.widget.LinearLayout(this).apply {
+            orientation = android.widget.LinearLayout.HORIZONTAL
+            setPadding(8, 8, 8, 8)
+        }
+        val dotSize = resources.getDimensionPixelSize(R.dimen.style_color_dot_size)
+        val dotPadding = (8 * resources.displayMetrics.density).toInt()
+        val popup = android.widget.PopupWindow(
+            row,
+            android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
+            android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
+            true,
+        )
+        for (hex in colors) {
+            val dot = android.widget.ImageView(this).apply {
+                setImageResource(R.drawable.ic_color_dot)
+                imageTintList = android.content.res.ColorStateList.valueOf(
+                    android.graphics.Color.parseColor(hex)
+                )
+                layoutParams = android.widget.LinearLayout.LayoutParams(dotSize, dotSize).apply {
+                    setMargins(dotPadding, dotPadding, dotPadding, dotPadding)
+                }
+                isClickable = true
+                isFocusable = true
+                background = getDrawable(android.R.drawable.list_selector_background)
+            }
+            dot.setOnClickListener {
+                handwritingOverlay.currentColor = hex
+                handwritingToolbar.setColorIndicator(hex)
+                popup.dismiss()
+            }
+            row.addView(dot)
+        }
+        row.setBackgroundColor(android.graphics.Color.WHITE)
+        row.elevation = 8f * resources.displayMetrics.density
+        popup.elevation = 8f * resources.displayMetrics.density
+        popup.showAsDropDown(anchor, 0, -(anchor.height + row.measuredHeight))
     }
 
     private fun enterEditMode() {
