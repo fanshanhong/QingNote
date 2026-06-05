@@ -1,6 +1,6 @@
 # HwNote · 项目进度
 
-最后更新：2026-06-04（M11 撤销/重做完成 — PRD §13 全部完成 4/4）
+最后更新：2026-06-05（M13a 视觉基础+列表页重设计完成）
 
 ## 阶段地图
 
@@ -30,6 +30,8 @@
 | M9 分类 + 软删除 + metadata strip | ✅ 完成（2026-06-04） | PRD §13 主力；DB v2 迁移（categories 表 + notes 加 category_id/deleted_at）+ 4 内置筛选 / 分类管理（拖动排序）/ 软删除 30 天回收站 / 编辑器 metadata strip + CategoryPicker；83 单测 + 10 项真机走查全过 |
 | M10 语音录入 | ✅ 完成（2026-06-04） | PRD §13 范围；`Block.AudioBlock` + `AudioRecorder`(MPEG_4/AAC/64kbps) + `AudioPlayer`(共享单例) + `AudioRecordingBottomSheet`(走表计时 + 停止/取消) + `AudioBlockView`(播放/暂停/长按删除) + 工具栏扩 5 键 + RECORD_AUDIO 运行时权限 + onPause 兜底停播/取消；85 单测 + 13 项真机走查全过 |
 | M11 撤销 / 重做 | ✅ 完成（2026-06-04） | PRD §13 收口；`EditHistoryManager`(双栈+cap50+listener) + 5 Command 子类 (Add/Remove/Move/Replace/ApplySpan/ApplyHeading/ReplaceText) + `CompositeCommand` 多步打包 + Presenter 三 Mutator(silent) + TextBlockView 800ms 防抖 + 顶部 AppBar ↶↷ MenuItem + onPause flush + `NoteRepository.cleanOrphanFiles` 异步清孤 + onSaveSuccess 唯一清栈入口 |
+| M12 文件夹层级 | ✅ 完成（2026-06-05） | DB v3 迁移 + Folder/Notebook 实体 + 三级层级 + FolderManagerActivity 三粒度拖动 + NotebookFilterPopupWindow + 编辑器 indicator；137 单测 |
+| M13a 视觉基础+列表页重设计 | ✅ 完成（2026-06-05） | 色彩绿→蓝 + 白底大标题 + 筛选面板(FilterPanelAdapter) + 底部导航 + 卡片扁平化 + 笔记本颜色淡化 + Overflow PopupMenu + 排序/删除 Sheet 改版；140 单测 |
 
 ## M1 完成详情（2026-05-22）
 
@@ -646,12 +648,13 @@ M1 ✅ → M2 数据层 → M3 列表页
 | M10 | 语音录入 | 9 | 2 | `Block.AudioBlock` sealed 新成员 + `AudioRecorder`(MPEG_4/AAC/64kbps) + `AudioPlayer`(共享单例) + `AudioRecordingBottomSheet`(走表计时 + 停止/取消 + forceCancel) + `AudioBlockView`(播放/暂停/长按删除) + 工具栏扩 5 键 + RECORD_AUDIO 运行时权限 + onPause 兜底停播/取消 |
 | M11 | 撤销 / 重做 | 19 (+2 docs) | 29 | `model/history/` 包（Command interface + EditHistoryManager 双栈 cap50 listener + CompositeCommand 多步打包）+ 7 Command 子类 (Add/Remove/Move/Replace/ApplySpan/ApplyHeading/ReplaceText) + Presenter 三 Mutator(silent) 接口与 push 收口 + TextBlockView 800ms 防抖 + suppressDebounceWhile 守卫 + 顶部 AppBar ↶↷ MenuItem + onPause flush + `NoteRepository.cleanOrphanFiles` 异步清孤 + onSaveSuccess 唯一清栈入口 |
 | M12 | 文件夹层级 | 12 (+3 docs) | 23 | DB v3 迁移（folders/notebooks 表 + notes.notebook_id）+ Folder/Notebook 实体 + FolderRepository/NotebookRepository（级联软删/移动/默认保护）+ ListFilter 改造（Folder/Notebook 二级 + 旧 prefs 兼容）+ NewFolder/NewNotebook BottomSheet（创建+编辑双模式 + 8 色选色）+ NotebookFilterPopupWindow（伪项+折叠树 chip 筛选）+ FolderManagerActivity（折叠树 + overflow 菜单 + 三粒度拖动排序）+ NotebookPickerPopupWindow（卡片长按移动笔记本）+ 编辑器 AppBar indicator（色点+名称+点击切换笔记本） |
+| M13a | 视觉基础+列表页重设计 | 14 (+2 docs) | 3 | 色彩体系绿→蓝(#007DFF) + 白色状态栏 + 列表页 LinearLayout 大标题重写(去 CoordinatorLayout/AppBarLayout/Toolbar) + FilterPanelAdapter 内嵌筛选面板(伪项4+折叠文件夹树+计数) + 底部导航 2-tab + 卡片扁平化(elevation=0/stroke=0.5dp) + 笔记本颜色淡化(卡片 alpha=20/页面 alpha=25) + Overflow PopupMenu + 排序 Sheet 加取消 + 删除确认 Sheet 简化 + ListFilter.Uncategorized + NoteRepository.count() + 删除旧 NotebookFilterPopupWindow |
 
-**累计：** 183 个 commit（含 docs/计划 commit），137 项自动化单测全绿，**PRD MVP + §13 全部 100% 覆盖 + M12 文件夹层级完成**。架构守住"Block 块组合 + 手写 Overlay 透明层"原始决策，未引入 Compose / ViewModel / LiveData / Room / Hilt / Navigation；DB 二次迁移（v2→v3）走 SQLiteOpenHelper.onUpgrade 新增 folders/notebooks 表 + notes.notebook_id 列 + 预置默认行，旧装机数据无损；M12 引入二级分类体系（Folder→Notebook→Note），全面替换 M9 的 Category 平级模型，PopupWindow 复用折叠树 UI 模式，FolderManager 三粒度拖动排序（文件夹整体 / 笔记本同夹 / 笔记本跨夹），默认文件夹(id=1)与默认笔记本(id=1)受保护不可删除/移动。
+**累计：** ~200 个 commit（含 docs/计划 commit），140 项自动化单测全绿，**PRD MVP + §13 全部 100% 覆盖 + M12 文件夹层级 + M13a 视觉重设计完成**。架构守住"Block 块组合 + 手写 Overlay 透明层"原始决策，未引入 Compose / ViewModel / LiveData / Room / Hilt / Navigation；DB 二次迁移（v2→v3）走 SQLiteOpenHelper.onUpgrade 新增 folders/notebooks 表 + notes.notebook_id 列 + 预置默认行，旧装机数据无损；M12 引入二级分类体系（Folder→Notebook→Note），全面替换 M9 的 Category 平级模型，PopupWindow 复用折叠树 UI 模式，FolderManager 三粒度拖动排序（文件夹整体 / 笔记本同夹 / 笔记本跨夹），默认文件夹(id=1)与默认笔记本(id=1)受保护不可删除/移动。
 
-**Pending：** 无。PRD §13 + M12 文件夹层级已全部交付。
+**Pending：** M13b 编辑器重设计 / M13c 样式增强 / M13d 宫格+批量删除 / M13e 分享功能（均依赖 M13a 色彩基础）。
 
-**后续可选方向（超出当前 PRD 范围，需用户重新 brainstorm）：** M13 笔记 Tab UI 打磨 / M14 待办子系统 / M15 UI 全面审查 / 置顶 pin / 提醒 / 加锁 / 导出 / 分享 / 备份 / 深色模式 / 多端同步。
+**后续可选方向：** M14 待办子系统 / M15 UI 全面审查 / 置顶 pin / 提醒 / 加锁 / 导出 / 备份 / 深色模式 / 多端同步。
 
 ---
 
@@ -698,3 +701,59 @@ d503023 feat(m12): 加 FolderManagerActivity 骨架（折叠树 + overflow 菜�
 20aacfd feat(m12): 卡片长按移动到笔记本（NotebookPickerPopupWindow + moveNoteToNotebook）
 e5f9f68 feat(m12): 编辑器 AppBar indicator 接 NotebookPickerPopupWindow + saveNote 保留 notebookId
 ```
+
+## M13a 完成详情（2026-06-05）
+
+**目标：** 将 HwNote 视觉体系从"绿色 Material Toolbar"全面切换到华为备忘录"白底大标题 + 蓝色强调"风格。聚焦色彩体系和列表页，为 M13b-M13e 奠定视觉基础。
+
+**10 改动维度：**
+
+1. **色彩体系绿→蓝：** primary #00897B → #007DFF，primary_dark → #0056B3，primary_light → #E3F2FD；状态栏白色背景+深色系统图标（`windowLightStatusBar=true`）；`colorControlActivated` 跟随主色（RadioButton 等控件自动变蓝）
+2. **列表页布局重写：** CoordinatorLayout+AppBarLayout+Toolbar → LinearLayout+header+FrameLayout 结构；26sp bold 大标题 + 副标题条数 + ▼▲ 箭头 + ⋮ overflow
+3. **筛选面板：** PopupWindow → 同页内嵌 FilterPanelAdapter（5 种 ViewType：Pseudo 伪项 4 个 + Divider + SectionHeader + FolderHead 折叠 + NotebookRow），每项右侧显示笔记计数，选中态蓝色竖条+淡蓝背景
+4. **底部导航：** LinearLayout 2-tab（笔记蓝色固定选中 + 待办灰色占位 Toast）
+5. **笔记卡片扁平化：** elevation=0dp，strokeWidth=0.5dp，strokeColor=#E8E8E8
+6. **笔记本颜色淡化：** 归属笔记本的卡片背景 Color.argb(20, r, g, b)；浏览特定笔记本时整页背景 Color.argb(25, r, g, b)
+7. **Overflow 菜单：** 旧 Toolbar action menu → header 区 ⋮ ImageView + PopupMenu
+8. **排序 Sheet：** 加底部"取消"蓝色文字按钮
+9. **删除确认 Sheet：** 去独立 title → 单行居中提示 + 横排取消/删除蓝色按钮
+10. **数据层：** ListFilter.Uncategorized 新增 + NoteRepository.count(filter) suspend 方法
+
+**涉及文件：**
+- **新增（共 7 个）：** `FilterPanelAdapter.kt`、`item_filter_section_header.xml`、`shape_search_bar_bg.xml`、`ic_note_tab.xml`、`ic_todo_tab.xml`、`ic_uncategorized.xml`、`menu_note_list_overflow.xml`
+- **修改（共 12 个）：** `colors.xml`、`themes.xml`、`strings.xml`、`dimens.xml`、`activity_note_list.xml`、`NoteListActivity.kt`、`NoteListAdapter.kt`、`NoteRepository.kt`、`item_note_card.xml`、`dialog_sort_picker.xml`、`dialog_delete_confirm.xml`、`DeleteConfirmBottomSheet.kt`
+- **删除（共 3 个）：** `NotebookFilterPopupWindow.kt`、`popup_notebook_filter.xml`、`menu_note_list_toolbar.xml`
+
+**M13a commit 列表（git log `03610d6..HEAD`，共 14 个功能 commit + 2 个 docs commit）：**
+```
+121a252 feat(m13a): 色彩体系绿→蓝 + 状态栏白底深色图标
+f51a998 feat(m13a): 新增列表页重设计所需 strings + dimens
+e7cbd44 feat(m13a): 新建底部导航+筛选面板 vector 图标
+78bc877 feat(m13a): 添加 ListFilter.Uncategorized + count() 方法 + 单测
+3191ee2 feat(m13a): 笔记卡片扁平化 elevation=0 + 淡边框
+955f319 feat(m13a): 排序 Sheet 加取消按钮 + RadioButton 蓝色
+2f9f0ac feat(m13a): 删除确认 Sheet 简化为单行提示+横排蓝色按钮
+71748be feat(m13a): 筛选面板布局改造 — 计数+蓝条+分节头
+9fc4562 feat(m13a): 新建 FilterPanelAdapter 筛选面板适配器
+9e4385b feat(m13a): 列表页布局重写 — 大标题+搜索栏+底部导航
+93fee49 feat(m13a): NoteListActivity 逻辑重写 — 大标题+筛选面板+底部导航+overflow
+0298bb3 fix(m13a): NoteListActivity sealed when 改为表达式形式
+8497881 feat(m13a): 笔记卡片根据笔记本颜色淡化背景
+29eae88 refactor(m13a): 删除旧 NotebookFilterPopupWindow + popup 布局 + toolbar 菜单
+```
+
+**测试统计：** `:app:clean :app:assembleDebug :app:test` 全绿，**140 项 PASSED**（M12 基线 137 → M13a +3 NoteRepository count/Uncategorized），0 failures / 0 errors / 0 skipped。
+
+**验证（待真机走查）：**
+- 列表页：白底大标题 + 副标题条数 + ⋮ 菜单，无绿色 AppBar
+- 状态栏：白色背景 + 深色系统图标
+- 筛选面板：点标题 ▼ 展开全屏面板，选中项蓝色高亮 + 计数，选中后收起
+- 笔记卡片：扁平无阴影，淡边框
+- 笔记本颜色：选中笔记本 → 整页背景淡化色 + 卡片淡化色
+- 底部导航：笔记蓝色选中 + 待办灰色，待办点击 Toast
+- FAB：蓝色
+- 排序 Sheet：有"取消"按钮，RadioButton 蓝色
+- 删除确认：单行提示 + 横排蓝色按钮
+- 编辑器/手写/管理页：仅色彩跟随变蓝，布局不变
+
+**执行模式：** Subagent-Driven Development，严格串行 14 任务。每任务 implementer DONE → spec reviewer → fix（如需）→ 标完成。T11 spec reviewer 发现 2 处 sealed when 为 statement form，手动修复并单独 commit。T12-T14 因改动明确由控制器直接实现跳过子 agent。
