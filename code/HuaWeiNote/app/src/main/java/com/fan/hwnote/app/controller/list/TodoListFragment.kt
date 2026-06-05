@@ -23,7 +23,9 @@ import com.fan.hwnote.app.model.alarm.TodoAlarmManager
 import com.fan.hwnote.app.model.FolderRepository
 import com.fan.hwnote.app.model.TodoRepository
 import com.fan.hwnote.app.model.entity.Todo
+import com.fan.hwnote.app.model.entity.RepeatType
 import com.fan.hwnote.app.view.picker.DateTimePickerDialog
+import com.fan.hwnote.app.view.picker.RepeatPickerBottomSheet
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.launch
 
@@ -53,6 +55,8 @@ class TodoListFragment : Fragment() {
 
     private var quickAddRemindAt = 0L
     private var quickAddIsImportant = false
+    private lateinit var quickAddRepeat: TextView
+    private var quickAddRepeatType = RepeatType.NONE
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?,
@@ -74,6 +78,7 @@ class TodoListFragment : Fragment() {
         quickAddTime = view.findViewById(R.id.quick_add_time)
         quickAddImportant = view.findViewById(R.id.quick_add_important)
         quickAddSave = view.findViewById(R.id.quick_add_save)
+        quickAddRepeat = view.findViewById(R.id.quick_add_repeat)
 
         adapter = TodoListAdapter(
             onCheckToggle = { todo ->
@@ -106,10 +111,18 @@ class TodoListFragment : Fragment() {
             DateTimePickerDialog(requireContext(), quickAddRemindAt) { epochMillis ->
                 quickAddRemindAt = epochMillis
                 updateQuickAddTimeIcon()
+                quickAddRepeat.visibility = View.VISIBLE
+                updateQuickAddRepeatLabel()
             }.show()
         }
         quickAddImportant.setOnClickListener { toggleQuickAddImportant() }
         quickAddSave.setOnClickListener { saveQuickAdd() }
+        quickAddRepeat.setOnClickListener {
+            RepeatPickerBottomSheet(requireContext(), quickAddRepeatType) { type ->
+                quickAddRepeatType = type
+                updateQuickAddRepeatLabel()
+            }.show()
+        }
 
         return view
     }
@@ -242,11 +255,14 @@ class TodoListFragment : Fragment() {
     }
 
     private fun showQuickAddBar() {
+        (activity as? NoteListActivity)?.setBottomNavVisible(false)
         fab.visibility = View.GONE
         quickAddBar.visibility = View.VISIBLE
         quickAddInput.text.clear()
         quickAddRemindAt = 0L
         quickAddIsImportant = false
+        quickAddRepeatType = RepeatType.NONE
+        quickAddRepeat.visibility = View.GONE
         updateQuickAddImportantIcon()
         updateQuickAddTimeIcon()
         quickAddInput.requestFocus()
@@ -256,6 +272,7 @@ class TodoListFragment : Fragment() {
     }
 
     private fun hideQuickAddBar() {
+        (activity as? NoteListActivity)?.setBottomNavVisible(true)
         quickAddBar.visibility = View.GONE
         fab.visibility = View.VISIBLE
         val imm = requireContext().getSystemService(android.content.Context.INPUT_METHOD_SERVICE)
@@ -284,6 +301,16 @@ class TodoListFragment : Fragment() {
         quickAddTime.setColorFilter(color)
     }
 
+    private fun updateQuickAddRepeatLabel() {
+        quickAddRepeat.text = when (quickAddRepeatType) {
+            RepeatType.NONE -> getString(R.string.todo_repeat_not_repeat)
+            RepeatType.DAILY -> getString(R.string.todo_repeat_daily)
+            RepeatType.WEEKLY -> getString(R.string.todo_repeat_weekly)
+            RepeatType.MONTHLY -> getString(R.string.todo_repeat_monthly)
+            RepeatType.YEARLY -> getString(R.string.todo_repeat_yearly)
+        }
+    }
+
     private fun saveQuickAdd() {
         val title = quickAddInput.text.toString().trim()
         if (title.isEmpty()) return
@@ -297,6 +324,7 @@ class TodoListFragment : Fragment() {
             val todo = Todo.new().copy(
                 title = title,
                 remindAt = quickAddRemindAt,
+                repeatType = quickAddRepeatType,
                 isImportant = quickAddIsImportant,
                 folderId = folderId,
             )
