@@ -1,6 +1,8 @@
 package com.fan.hwnote.app.model.history.commands
 
+import com.fan.hwnote.app.model.entity.Alignment
 import com.fan.hwnote.app.model.entity.Heading
+import com.fan.hwnote.app.model.entity.ListType
 import com.fan.hwnote.app.model.entity.SpanType
 import com.fan.hwnote.app.model.entity.TextSpan
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -11,6 +13,9 @@ class StyleCommandsTest {
     private class FakeMutator : StyleMutator {
         val spans: MutableMap<String, List<TextSpan>> = mutableMapOf()
         val headings: MutableMap<String, Heading?> = mutableMapOf()
+        val alignments: MutableMap<String, Alignment?> = mutableMapOf()
+        val listTypes: MutableMap<String, ListType?> = mutableMapOf()
+        val indentLevels: MutableMap<String, Int> = mutableMapOf()
         var lastFocus: String? = null
         var lastCursor: Int = -1
         override fun snapshotSpans(blockId: String) = spans[blockId]
@@ -20,6 +25,18 @@ class StyleCommandsTest {
         override fun snapshotHeading(blockId: String) = headings[blockId]
         override fun setBlockHeading(blockId: String, heading: Heading?) {
             headings[blockId] = heading
+        }
+        override fun snapshotAlignment(blockId: String) = alignments[blockId]
+        override fun setBlockAlignment(blockId: String, alignment: Alignment?) {
+            alignments[blockId] = alignment
+        }
+        override fun snapshotListType(blockId: String) = listTypes[blockId]
+        override fun setBlockListType(blockId: String, listType: ListType?) {
+            listTypes[blockId] = listType
+        }
+        override fun snapshotIndentLevel(blockId: String) = indentLevels[blockId] ?: 0
+        override fun setBlockIndentLevel(blockId: String, indentLevel: Int) {
+            indentLevels[blockId] = indentLevel
         }
         override fun silentRequestFocus(blockId: String, cursorIndex: Int) {
             lastFocus = blockId

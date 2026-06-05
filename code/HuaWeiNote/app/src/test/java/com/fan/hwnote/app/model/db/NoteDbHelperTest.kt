@@ -31,7 +31,7 @@ class NoteDbHelperTest {
         }
 
         assertEquals(
-            setOf("id", "title", "plain_text", "content_json", "is_favorite", "created_at", "updated_at", "category_id", "deleted_at", "notebook_id"),
+            setOf("id", "title", "plain_text", "content_json", "is_favorite", "created_at", "updated_at", "category_id", "deleted_at", "notebook_id", "background"),
             columns,
         )
         db.close()
