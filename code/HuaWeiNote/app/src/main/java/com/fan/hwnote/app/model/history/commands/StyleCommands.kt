@@ -1,6 +1,8 @@
 package com.fan.hwnote.app.model.history.commands
 
+import com.fan.hwnote.app.model.entity.Alignment
 import com.fan.hwnote.app.model.entity.Heading
+import com.fan.hwnote.app.model.entity.ListType
 import com.fan.hwnote.app.model.entity.SpanType
 import com.fan.hwnote.app.model.entity.TextSpan
 import com.fan.hwnote.app.model.history.Command
@@ -20,6 +22,18 @@ interface StyleMutator {
     fun snapshotHeading(blockId: String): Heading?
     /** 设置 blockId 的 heading（null = 普通段）。 */
     fun setBlockHeading(blockId: String, heading: Heading?)
+    /** 取某 blockId 的对齐方式。不存在返回 null。 */
+    fun snapshotAlignment(blockId: String): Alignment?
+    /** 设置 blockId 的对齐方式（null = 默认 START）。 */
+    fun setBlockAlignment(blockId: String, alignment: Alignment?)
+    /** 取某 blockId 的列表类型。不存在返回 null。 */
+    fun snapshotListType(blockId: String): ListType?
+    /** 设置 blockId 的列表类型（null = 非列表）。 */
+    fun setBlockListType(blockId: String, listType: ListType?)
+    /** 取某 blockId 的缩进级别。不存在返回 0。 */
+    fun snapshotIndentLevel(blockId: String): Int
+    /** 设置 blockId 的缩进级别。 */
+    fun setBlockIndentLevel(blockId: String, indentLevel: Int)
     /** 不带默认值 — 多 Mutator 继承时只能由 BlockMutator 提供 default（Kotlin 限制）。 */
     fun silentRequestFocus(blockId: String, cursorIndex: Int)
 }
