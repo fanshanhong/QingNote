@@ -27,7 +27,8 @@
         <activity
             android:name=".controller.list.NoteListActivity"
             android:exported="true"
-            android:theme="@style/Theme.HuaWeiNote">
+            android:theme="@style/Theme.HuaWeiNote"
+            android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

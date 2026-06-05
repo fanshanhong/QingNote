@@ -1,6 +1,7 @@
 package com.fan.hwnote.app.controller.list
 
 import android.os.Bundle
+import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -81,6 +82,11 @@ class NoteListActivity : AppCompatActivity() {
     private fun saveActiveTab(tab: Int) {
         getSharedPreferences(PREFS, MODE_PRIVATE).edit()
             .putInt(KEY_ACTIVE_TAB, tab).apply()
+    }
+
+    fun setBottomNavVisible(visible: Boolean) {
+        findViewById<View>(R.id.bottom_nav).visibility =
+            if (visible) View.VISIBLE else View.GONE
     }
 
     companion object {
