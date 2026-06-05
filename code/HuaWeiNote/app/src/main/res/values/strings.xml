@@ -166,4 +166,21 @@
     <string name="sort_cancel">取消</string>
     <string name="filter_section_folders">文件夹</string>
     <string name="filter_manage_action">管理</string>
+
+    <!-- M13b 编辑器重设计 -->
+    <string name="editor_done_cd">完成</string>
+    <string name="editor_share">分享</string>
+    <string name="editor_favorite">收藏</string>
+    <string name="editor_unfavorite">取消收藏</string>
+    <string name="editor_delete">删除</string>
+    <string name="editor_more">更多</string>
+    <string name="editor_move_notebook">移动到笔记本</string>
+    <string name="editor_set_category">设置分类</string>
+    <string name="toast_share_placeholder">分享功能（M13e 实现）</string>
+    <string name="editor_close_image_cd">删除图片</string>
+    <string name="tb_checklist_label">清单</string>
+    <string name="tb_style_label">样式</string>
+    <string name="tb_image_label">图片</string>
+    <string name="tb_record_label">语音</string>
+    <string name="tb_handwriting_label">手写</string>
 </resources>
