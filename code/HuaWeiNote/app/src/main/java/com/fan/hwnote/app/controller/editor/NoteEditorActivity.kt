@@ -3,12 +3,9 @@ package com.fan.hwnote.app.controller.editor
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.view.Menu
-import android.view.MenuItem
 import android.widget.EditText
 import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.Toolbar
 import androidx.lifecycle.lifecycleScope
 import com.fan.hwnote.app.R
 import com.fan.hwnote.app.model.NoteRepository
@@ -21,13 +18,23 @@ import kotlinx.coroutines.withContext
 
 class NoteEditorActivity : AppCompatActivity() {
 
-    private lateinit var toolbar: Toolbar
     private lateinit var titleInput: EditText
     private lateinit var blocksContainer: LinearLayout
     private lateinit var presenter: EditorPresenter
     private lateinit var handwritingOverlay: com.fan.hwnote.app.view.handwriting.HandwritingOverlayView
     private lateinit var handwritingToolbar: com.fan.hwnote.app.view.toolbar.HandwritingToolbarView
     private lateinit var textToolbar: com.fan.hwnote.app.view.toolbar.TextToolbarView
+
+    private lateinit var btnBack: android.widget.ImageView
+    private lateinit var btnUndo: android.widget.ImageView
+    private lateinit var btnRedo: android.widget.ImageView
+    private lateinit var btnDone: android.widget.ImageView
+    private lateinit var editActions: LinearLayout
+    private lateinit var browseActionBar: android.view.View
+    private lateinit var browseFavoriteIcon: android.widget.ImageView
+    private lateinit var browseFavoriteLabel: android.widget.TextView
+
+    private var isEditing: Boolean = false
 
     // M9 T10：标题下方 metadata strip（时间 · 分类）
     private lateinit var metaTime: android.widget.TextView
@@ -96,25 +103,31 @@ class NoteEditorActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_note_editor)
 
-        toolbar = findViewById(R.id.editor_toolbar)
+        // 顶栏
+        btnBack = findViewById(R.id.btn_back)
+        btnBack.setOnClickListener { finish() }
+        editActions = findViewById(R.id.edit_actions)
+        btnUndo = findViewById(R.id.btn_undo)
+        btnRedo = findViewById(R.id.btn_redo)
+        btnDone = findViewById(R.id.btn_done)
+
         titleInput = findViewById(R.id.title_input)
         blocksContainer = findViewById(R.id.blocks_container)
-
-        setSupportActionBar(toolbar)
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        supportActionBar?.setDisplayShowTitleEnabled(false)
-        toolbar.setNavigationOnClickListener { finish() }
 
         val editorRoot = findViewById<android.view.View>(R.id.editor_root)
         androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(editorRoot) { v, insets ->
             val ime = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.ime())
             val bars = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars())
-            v.setPadding(v.paddingLeft, v.paddingTop, v.paddingRight, kotlin.math.max(ime.bottom, bars.bottom))
+            v.setPadding(v.paddingLeft, bars.top, v.paddingRight, kotlin.math.max(ime.bottom, bars.bottom))
             insets
         }
 
         handwritingOverlay = findViewById(R.id.handwriting_overlay)
         presenter = EditorPresenter(this, blocksContainer, handwritingOverlay)
+        presenter.history.listener = { _, _ -> updateUndoRedoButtons() }
+        btnUndo.setOnClickListener { presenter.undo(); updateUndoRedoButtons() }
+        btnRedo.setOnClickListener { presenter.redo(); updateUndoRedoButtons() }
+        btnDone.setOnClickListener { exitEditMode() }
 
         // 把"空白点击聚焦末尾文本块"挂在 FrameLayout 上而非 editor_content：
         // editor_content 高度是 wrap_content，只覆盖"标题+已输入文本"那一小块；
@@ -123,11 +136,35 @@ class NoteEditorActivity : AppCompatActivity() {
         // EditText 自己消费则不冒泡，恰好只有"真空白处点击"会进这条回调。
         val editorScrollInner = findViewById<android.view.View>(R.id.editor_scroll_inner)
         editorScrollInner.setOnClickListener {
-            if (!handwritingOverlay.isHandwritingMode) presenter.focusLastTextBlock()
+            if (handwritingOverlay.isHandwritingMode) return@setOnClickListener
+            if (!isEditing) enterEditMode()
+            else presenter.focusLastTextBlock()
+        }
+        val editorContent = findViewById<android.view.View>(R.id.editor_content)
+        editorContent.setOnClickListener {
+            if (handwritingOverlay.isHandwritingMode) return@setOnClickListener
+            if (!isEditing) enterEditMode()
+            else presenter.focusLastTextBlock()
         }
 
         textToolbar = findViewById(R.id.text_toolbar)
         handwritingToolbar = findViewById(R.id.handwriting_toolbar)
+        browseActionBar = findViewById(R.id.browse_action_bar)
+        browseFavoriteIcon = findViewById(R.id.browse_favorite_icon)
+        browseFavoriteLabel = findViewById(R.id.browse_favorite_label)
+        findViewById<android.view.View>(R.id.btn_browse_share).setOnClickListener {
+            android.widget.Toast.makeText(this, R.string.toast_share_placeholder,
+                android.widget.Toast.LENGTH_SHORT).show()
+        }
+        findViewById<android.view.View>(R.id.btn_browse_favorite).setOnClickListener {
+            toggleFavorite()
+        }
+        findViewById<android.view.View>(R.id.btn_browse_delete).setOnClickListener {
+            softDeleteAndFinish()
+        }
+        findViewById<android.view.View>(R.id.btn_browse_more).setOnClickListener { anchor ->
+            showBrowseMoreMenu(anchor)
+        }
         textToolbar.listener = object : com.fan.hwnote.app.view.toolbar.TextToolbarView.Listener {
             override fun onChecklistClicked() {
                 presenter.toggleChecklistAtFocus()
@@ -210,34 +247,7 @@ class NoteEditorActivity : AppCompatActivity() {
             pendingCameraOutputFile = savedInstanceState.getString(STATE_CAMERA_FILE)?.let { java.io.File(it) }
         }
         noteId = intent.getLongExtra(EXTRA_NOTE_ID, -1L)
-        // M11: AppBar 的撤销/重做 enable 状态跟随 presenter.history 栈大小变化刷新。
-        // listener 在 push/undo/redo/clear 时主线程同步回调，invalidateOptionsMenu 安全。
-        presenter.history.listener = { _, _ -> invalidateOptionsMenu() }
         loadNote()
-    }
-
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.menu_editor, menu)
-        return true
-    }
-
-    override fun onPrepareOptionsMenu(menu: Menu): Boolean {
-        menu.findItem(R.id.action_undo)?.let { it.isEnabled = presenter.history.canUndo(); applyMenuIconAlpha(it) }
-        menu.findItem(R.id.action_redo)?.let { it.isEnabled = presenter.history.canRedo(); applyMenuIconAlpha(it) }
-        return super.onPrepareOptionsMenu(menu)
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when (item.itemId) {
-            R.id.action_undo -> { presenter.undo(); true }
-            R.id.action_redo -> { presenter.redo(); true }
-            else -> super.onOptionsItemSelected(item)
-        }
-    }
-
-    /** disabled 时图标显示半透明（Material 不会自动 alpha；自己 mutate）。 */
-    private fun applyMenuIconAlpha(item: MenuItem) {
-        item.icon?.mutate()?.alpha = if (item.isEnabled) 255 else 102
     }
 
     override fun onPause() {
@@ -268,6 +278,17 @@ class NoteEditorActivity : AppCompatActivity() {
             presenter.bind(note)
             refreshMetadataStrip()
             refreshIndicator(note.notebookId)
+            if (noteId == -1L) {
+                enterEditMode()
+            } else {
+                presenter.setReadOnly(true)
+                browseActionBar.visibility = android.view.View.VISIBLE
+                titleInput.isFocusableInTouchMode = false
+                titleInput.isFocusable = false
+                titleInput.isClickable = false
+                titleInput.isLongClickable = false
+                refreshFavoriteButton()
+            }
         }
     }
 
@@ -600,13 +621,121 @@ class NoteEditorActivity : AppCompatActivity() {
         // onTouchEvent 在 !isHandwritingMode 时 return false 让 touch 穿透到下层 EditText/Block。
         blocksContainer.alpha = 1f
         titleInput.alpha = 1f
-        textToolbar.visibility = android.view.View.VISIBLE
+        textToolbar.visibility = if (isEditing) android.view.View.VISIBLE else android.view.View.GONE
         handwritingToolbar.visibility = android.view.View.GONE
     }
 
     private fun refreshUndoRedoEnabled() {
         handwritingToolbar.setUndoEnabled(handwritingOverlay.canUndo())
         handwritingToolbar.setRedoEnabled(handwritingOverlay.canRedo())
+    }
+
+    private fun enterEditMode() {
+        if (isEditing) return
+        isEditing = true
+        editActions.visibility = android.view.View.VISIBLE
+        textToolbar.visibility = android.view.View.VISIBLE
+        browseActionBar.visibility = android.view.View.GONE
+        titleInput.isFocusableInTouchMode = true
+        titleInput.isFocusable = true
+        titleInput.isClickable = true
+        titleInput.isLongClickable = true
+        presenter.setReadOnly(false)
+        updateUndoRedoButtons()
+        presenter.focusLastTextBlock()
+    }
+
+    private fun exitEditMode() {
+        if (!isEditing) return
+        isEditing = false
+        editActions.visibility = android.view.View.GONE
+        textToolbar.visibility = android.view.View.GONE
+        browseActionBar.visibility = android.view.View.VISIBLE
+        val imm = getSystemService(INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+        imm.hideSoftInputFromWindow(blocksContainer.windowToken, 0)
+        titleInput.isFocusableInTouchMode = false
+        titleInput.isFocusable = false
+        titleInput.isClickable = false
+        titleInput.isLongClickable = false
+        titleInput.clearFocus()
+        presenter.setReadOnly(true)
+        presenter.flushPendingTextEdits()
+        saveNote()
+        refreshFavoriteButton()
+    }
+
+    private fun updateUndoRedoButtons() {
+        val canUndo = presenter.history.canUndo()
+        val canRedo = presenter.history.canRedo()
+        btnUndo.isEnabled = canUndo
+        btnRedo.isEnabled = canRedo
+        btnUndo.alpha = if (canUndo) 1.0f else 0.4f
+        btnRedo.alpha = if (canRedo) 1.0f else 0.4f
+    }
+
+    private fun refreshFavoriteButton() {
+        val fav = loadedNote?.isFavorite == true
+        browseFavoriteIcon.setImageResource(
+            if (fav) R.drawable.ic_star else R.drawable.ic_star_outline
+        )
+        browseFavoriteLabel.setText(
+            if (fav) R.string.editor_unfavorite else R.string.editor_favorite
+        )
+    }
+
+    private fun toggleFavorite() {
+        val note = loadedNote ?: return
+        val updated = note.copy(isFavorite = !note.isFavorite)
+        loadedNote = updated
+        refreshFavoriteButton()
+        if (note.id > 0L) {
+            lifecycleScope.launch(Dispatchers.IO) {
+                NoteRepository.save(updated)
+            }
+        }
+    }
+
+    private fun softDeleteAndFinish() {
+        val note = loadedNote ?: return
+        if (note.id <= 0L) { finish(); return }
+        com.fan.hwnote.app.view.list.DeleteConfirmBottomSheet(
+            context = this,
+            message = getString(R.string.dialog_soft_delete_message),
+            confirmLabel = getString(R.string.action_delete),
+            onConfirm = {
+                lifecycleScope.launch(Dispatchers.IO) {
+                    NoteRepository.softDelete(note.id)
+                    withContext(Dispatchers.Main) { finish() }
+                }
+            },
+        ).show()
+    }
+
+    private fun showBrowseMoreMenu(anchor: android.view.View) {
+        val popup = android.widget.PopupMenu(this, anchor)
+        popup.menuInflater.inflate(R.menu.menu_editor_browse_more, popup.menu)
+        popup.setOnMenuItemClickListener { item ->
+            when (item.itemId) {
+                R.id.action_move_notebook -> {
+                    val current = pendingNotebookId ?: loadedNote?.notebookId
+                    NotebookPickerPopupWindow(
+                        context = this,
+                        currentNotebookId = current,
+                        onPicked = { picked ->
+                            pendingNotebookId = picked
+                            lifecycleScope.launch { refreshIndicator(picked) }
+                        },
+                    ).show(anchor)
+                    true
+                }
+                R.id.action_set_category -> {
+                    showCategoryPicker()
+                    true
+                }
+                else -> false
+            }
+        }
+        popup.show()
     }
 
     companion object {
