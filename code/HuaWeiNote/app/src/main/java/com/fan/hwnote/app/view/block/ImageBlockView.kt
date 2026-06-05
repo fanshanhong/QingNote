@@ -23,6 +23,7 @@ class ImageBlockView @JvmOverloads constructor(
 ) : BlockView(context, attrs, defStyleAttr) {
 
     private val imageView: ImageView
+    private val btnDelete: ImageView
     private var data: Block.ImageBlock? = null
     private var deleteDialog: AlertDialog? = null
 
@@ -32,6 +33,8 @@ class ImageBlockView @JvmOverloads constructor(
     init {
         LayoutInflater.from(context).inflate(R.layout.block_image, this, true)
         imageView = findViewById(R.id.block_image)
+        btnDelete = findViewById(R.id.btn_delete_image)
+        btnDelete.setOnClickListener { callback?.onRequestDelete(this) }
         imageView.setOnLongClickListener {
             showDeleteDialog()
             true
@@ -80,6 +83,12 @@ class ImageBlockView @JvmOverloads constructor(
         deleteDialog?.dismiss()
         deleteDialog = null
         super.onDetachedFromWindow()
+    }
+
+    fun setDeleteVisible(visible: Boolean) {
+        btnDelete.visibility = if (visible) VISIBLE else GONE
+        imageView.isClickable = visible
+        imageView.isLongClickable = visible
     }
 
     private fun showDeleteDialog() {

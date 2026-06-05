@@ -14,4 +14,15 @@
         android:maxHeight="320dp"
         android:scaleType="fitCenter"
         app:shapeAppearanceOverlay="@style/ShapeAppearance.HwNote.ImageBlock" />
+
+    <ImageView
+        android:id="@+id/btn_delete_image"
+        android:layout_width="28dp"
+        android:layout_height="28dp"
+        android:layout_gravity="top|end"
+        android:layout_marginTop="@dimen/spacing_s"
+        android:layout_marginEnd="6dp"
+        android:contentDescription="@string/editor_close_image_cd"
+        android:src="@drawable/ic_close_circle"
+        android:visibility="gone" />
 </merge>
