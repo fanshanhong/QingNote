@@ -223,17 +223,28 @@ class EditorPresenter(
 
     fun currentFocusedTextBlock(): TextBlockView? = focusedTextBlock
 
-    /** 空白点击入口：优先聚焦最近一次有焦点的 TextBlock；否则倒着找最后一个 TextBlockView 聚焦；都没有则 no-op。 */
-    fun focusLastTextBlock() {
-        val target = focusedTextBlock
-            ?: (currentBlocks.lastOrNull { it is TextBlockView } as? TextBlockView)
-            ?: return
-        target.focusEditEnd()
-        // requestFocus 不会自动拉起 IME（Manifest 无 stateVisible），在「无键盘 → 点空白」
-        // 场景下显式 showSoftInput 兜底；SHOW_IMPLICIT 不强制覆盖系统状态。
+    fun focusLastEditableBlock() {
         val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE)
             as android.view.inputmethod.InputMethodManager
-        imm.showSoftInput(target.edit, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
+        if (focusedTextBlock != null) {
+            focusedTextBlock!!.focusEditEnd()
+            imm.showSoftInput(focusedTextBlock!!.edit, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
+            return
+        }
+        val last = currentBlocks.lastOrNull { it is TextBlockView || it is ChecklistBlockView }
+        when (last) {
+            is TextBlockView -> {
+                last.focusEditEnd()
+                imm.showSoftInput(last.edit, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
+            }
+            is ChecklistBlockView -> {
+                last.focusLastItemEnd()
+                val editTarget = last.lastItemEdit()
+                if (editTarget != null) {
+                    imm.showSoftInput(editTarget, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
+                }
+            }
+        }
     }
 
     fun setReadOnly(readOnly: Boolean) {

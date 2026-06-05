@@ -104,4 +104,6 @@ class ChecklistBlockView @JvmOverloads constructor(
     fun focusLastItemEnd() {
         items.lastOrNull()?.focusEditEnd()
     }
+
+    fun lastItemEdit(): android.widget.EditText? = items.lastOrNull()?.edit
 }

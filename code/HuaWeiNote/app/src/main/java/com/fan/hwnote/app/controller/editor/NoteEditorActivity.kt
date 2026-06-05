@@ -139,13 +139,13 @@ class NoteEditorActivity : AppCompatActivity() {
         editorScrollInner.setOnClickListener {
             if (handwritingOverlay.isHandwritingMode) return@setOnClickListener
             if (!isEditing) enterEditMode()
-            else presenter.focusLastTextBlock()
+            else presenter.focusLastEditableBlock()
         }
         val editorContent = findViewById<android.view.View>(R.id.editor_content)
         editorContent.setOnClickListener {
             if (handwritingOverlay.isHandwritingMode) return@setOnClickListener
             if (!isEditing) enterEditMode()
-            else presenter.focusLastTextBlock()
+            else presenter.focusLastEditableBlock()
         }
 
         textToolbar = findViewById(R.id.text_toolbar)
@@ -659,7 +659,7 @@ class NoteEditorActivity : AppCompatActivity() {
         titleInput.isLongClickable = true
         presenter.setReadOnly(false)
         updateUndoRedoButtons()
-        presenter.focusLastTextBlock()
+        presenter.focusLastEditableBlock()
     }
 
     private fun exitEditMode() {
