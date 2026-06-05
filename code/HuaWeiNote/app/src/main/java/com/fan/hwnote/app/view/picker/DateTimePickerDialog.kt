@@ -2,7 +2,6 @@ package com.fan.hwnote.app.view.picker
 
 import android.content.Context
 import android.view.LayoutInflater
-import android.widget.NumberPicker
 import android.widget.TextView
 import com.fan.hwnote.app.R
 import com.google.android.material.bottomsheet.BottomSheetDialog
@@ -26,10 +25,10 @@ class DateTimePickerDialog(
         setContentView(view)
 
         val tvTitle = view.findViewById<TextView>(R.id.tv_date_title)
-        val pickerDate = view.findViewById<NumberPicker>(R.id.picker_date)
-        val pickerAmPm = view.findViewById<NumberPicker>(R.id.picker_ampm)
-        val pickerHour = view.findViewById<NumberPicker>(R.id.picker_hour)
-        val pickerMinute = view.findViewById<NumberPicker>(R.id.picker_minute)
+        val pickerDate = view.findViewById<WheelPickerView>(R.id.picker_date)
+        val pickerAmPm = view.findViewById<WheelPickerView>(R.id.picker_ampm)
+        val pickerHour = view.findViewById<WheelPickerView>(R.id.picker_hour)
+        val pickerMinute = view.findViewById<WheelPickerView>(R.id.picker_minute)
         val btnCancel = view.findViewById<TextView>(R.id.btn_cancel)
         val btnConfirm = view.findViewById<TextView>(R.id.btn_confirm)
 
@@ -42,49 +41,42 @@ class DateTimePickerDialog(
             roundToNext5Minutes(initCal)
         }
 
-        pickerDate.minValue = 0
-        pickerDate.maxValue = dateStrings.size - 1
-        pickerDate.displayedValues = dateStrings.toTypedArray()
+        pickerDate.setItems(dateStrings)
         pickerDate.wrapSelectorWheel = false
-        pickerDate.value = findDateIndex(initCal)
+        pickerDate.setSelectedIndex(findDateIndex(initCal))
 
-        pickerAmPm.minValue = 0
-        pickerAmPm.maxValue = 1
-        pickerAmPm.displayedValues = arrayOf(
+        pickerAmPm.setItems(listOf(
             context.getString(R.string.picker_datetime_am),
             context.getString(R.string.picker_datetime_pm),
-        )
+        ))
         pickerAmPm.wrapSelectorWheel = false
-        pickerAmPm.value = if (initCal.get(Calendar.AM_PM) == Calendar.AM) 0 else 1
+        pickerAmPm.setSelectedIndex(if (initCal.get(Calendar.AM_PM) == Calendar.AM) 0 else 1)
 
-        pickerHour.minValue = 1
-        pickerHour.maxValue = 12
+        pickerHour.setItems((1..12).map { it.toString() })
         pickerHour.wrapSelectorWheel = true
         val h = initCal.get(Calendar.HOUR)
-        pickerHour.value = if (h == 0) 12 else h
+        pickerHour.setSelectedIndex(if (h == 0) 11 else h - 1)
 
-        pickerMinute.minValue = 0
-        pickerMinute.maxValue = 59
-        pickerMinute.setFormatter { String.format("%02d", it) }
+        pickerMinute.setItems((0..59).map { String.format("%02d", it) })
         pickerMinute.wrapSelectorWheel = true
-        pickerMinute.value = initCal.get(Calendar.MINUTE)
+        pickerMinute.setSelectedIndex(initCal.get(Calendar.MINUTE))
 
-        updateTitle(tvTitle, pickerDate.value)
+        updateTitle(tvTitle, pickerDate.getSelectedIndex())
 
-        pickerDate.setOnValueChangedListener { _, _, newVal ->
+        pickerDate.setOnValueChangedListener { _, newVal ->
             updateTitle(tvTitle, newVal)
         }
 
         btnCancel.setOnClickListener { dismiss() }
 
         btnConfirm.setOnClickListener {
-            val cal = dateCalendars[pickerDate.value].clone() as Calendar
-            val amPm = if (pickerAmPm.value == 0) Calendar.AM else Calendar.PM
-            var hour = pickerHour.value
+            val cal = dateCalendars[pickerDate.getSelectedIndex()].clone() as Calendar
+            val amPm = if (pickerAmPm.getSelectedIndex() == 0) Calendar.AM else Calendar.PM
+            var hour = pickerHour.getSelectedIndex() + 1
             if (hour == 12) hour = 0
             cal.set(Calendar.AM_PM, amPm)
             cal.set(Calendar.HOUR, hour)
-            cal.set(Calendar.MINUTE, pickerMinute.value)
+            cal.set(Calendar.MINUTE, pickerMinute.getSelectedIndex())
             cal.set(Calendar.SECOND, 0)
             cal.set(Calendar.MILLISECOND, 0)
             onDateTimeSelected(cal.timeInMillis)
