@@ -8,6 +8,7 @@
     <!-- 强调与状态 -->
     <color name="accent_star">#FFB300</color>
     <color name="error">#E53935</color>
+    <color name="danger">#E53935</color>
 
     <!-- 文本 -->
     <color name="text_primary">#212121</color>
