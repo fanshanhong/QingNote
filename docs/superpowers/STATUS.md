@@ -757,3 +757,55 @@ e7cbd44 feat(m13a): 新建底部导航+筛选面板 vector 图标
 - 编辑器/手写/管理页：仅色彩跟随变蓝，布局不变
 
 **执行模式：** Subagent-Driven Development，严格串行 14 任务。每任务 implementer DONE → spec reviewer → fix（如需）→ 标完成。T11 spec reviewer 发现 2 处 sealed when 为 statement form，手动修复并单独 commit。T12-T14 因改动明确由控制器直接实现跳过子 agent。
+
+## M13b 完成详情（2026-06-05）
+
+**目标：** 编辑器从"始终编辑态 + 蓝色 Toolbar"切换到"白底双模式"（浏览态 + 编辑态），对齐华为备忘录编辑器风格。
+
+**7 改动维度：**
+
+1. **去 AppBarLayout/Toolbar：** 蓝色 Material Toolbar → 白底 LinearLayout 顶栏（← 返回 + 编辑态 ↩↪✓ 按钮组）
+2. **双模式切换：** `isEditing` 状态字段驱动浏览态⇄编辑态切换；打开已有笔记 → 浏览态，新建/点击内容区 → 编辑态，点 ✓ → 保存+浏览态
+3. **浏览态底部动作栏：** 4 按钮（分享占位/收藏切换/删除确认/更多菜单），图标+文字，白色背景
+4. **编辑态工具栏改造：** 5 按钮从纯图标改为图标+文字竖排（清单/样式/图片/语音/手写）
+5. **EditorPresenter.setReadOnly()：** 遍历 BlockView 控制可编辑性；ChecklistBlockView 特殊处理（checkbox 始终 enabled）
+6. **ImageBlockView ✕ 按钮：** 编辑态显示半透明圆形删除按钮，浏览态隐藏
+7. **笔记本指示器下移：** 从 AppBar 移到 metadata_strip 右侧（蓝色文字+▼箭头）
+
+**涉及文件：**
+- **新增（共 6 个）：** `ic_share.xml`、`ic_done.xml`、`ic_close_circle.xml`、`bar_browse_action.xml`、`menu_editor_browse_more.xml`、M13b 相关 strings 15 条
+- **修改（共 10 个）：** `NoteEditorActivity.kt`、`EditorPresenter.kt`、`activity_note_editor.xml`、`toolbar_text.xml`、`TextToolbarView.kt`、`block_image.xml`、`ImageBlockView.kt`、`TextBlockView.kt`、`ChecklistBlockView.kt`/`ChecklistItemView.kt`、`AudioBlockView.kt`
+- **删除（共 1 个）：** `menu_editor.xml`（undo/redo 迁到顶栏 ImageView）
+
+**M13b commit 列表（共 10 个）：**
+```
+2c9f7a4 feat(m13b): 加编辑器重设计资源（strings + drawables）
+9b4ad33 feat(m13b): 加浏览态更多 PopupMenu 资源
+2876965 refactor(m13b): TextToolbar 改图标+文字竖排布局
+280524f feat(m13b): 加浏览态底部动作栏布局
+098ff2e feat(m13b): ImageBlockView 加 ✕ 删除覆盖按钮 + setDeleteVisible
+5c1c7e6 feat(m13b): BlockView 各子类加 readOnly 控制方法
+0f87ddd feat(m13b): EditorPresenter 加 setReadOnly 控制 BlockView 可编辑性
+51efdb9 refactor(m13b): 编辑器布局去 AppBar 换白底顶栏 + 三底栏
+0f072cb feat(m13b): NoteEditorActivity 实现浏览/编辑双模式切换
+737ec7e chore(m13b): 删旧 menu_editor（undo/redo 迁到顶栏）
+```
+
+**测试统计：** `:app:clean :app:assembleDebug :app:test` 全绿，**140 项 PASSED**（与 M13a 基线一致），0 failures / 0 errors / 0 skipped。
+
+**验证（待真机走查）：**
+- 打开已有笔记 → 浏览态（只读 + 底部动作栏 4 按钮 + 顶栏仅 ←）
+- 点击内容区 → 进入编辑态（键盘弹起 + 底部工具栏 5 按钮 + 顶栏 ←↩↪✓）
+- 点击 ✓ → 保存 + 隐藏键盘 + 回到浏览态
+- 新建笔记 → 直接编辑态
+- 浏览态收藏 → 图标+文字切换（收藏⇄取消收藏）
+- 浏览态删除 → DeleteConfirmBottomSheet → 确认 → 软删除 + 返回列表
+- 浏览态更多 → PopupMenu（移动笔记本 / 设置分类）
+- 浏览态分享 → Toast 占位
+- 图片块编辑态显示 ✕，浏览态隐藏
+- 清单勾选框浏览态可点击
+- 手写态进入/退出不影响双模式
+- 撤销/重做 alpha 跟随 canUndo/canRedo
+- 白色状态栏 + 顶栏无蓝色
+
+**执行模式：** Subagent-Driven Development，严格串行 11 任务。T1-T4 为资源任务，T5-T7 为 BlockView 基础设施，T8 布局重写，T9 核心双模式逻辑（最大任务），T10 清理+全量测试。
