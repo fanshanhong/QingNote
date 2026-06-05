@@ -28,4 +28,11 @@
     <dimen name="notebook_color_dot">14dp</dimen>
     <dimen name="notebook_color_dot_picker">28dp</dimen>
     <dimen name="popup_window_width">280dp</dimen>
+
+    <!-- M13a 列表页重设计 -->
+    <dimen name="header_title_size">26sp</dimen>
+    <dimen name="header_subtitle_size">14sp</dimen>
+    <dimen name="search_bar_height">40dp</dimen>
+    <dimen name="bottom_nav_height">56dp</dimen>
+    <dimen name="filter_selected_bar_width">4dp</dimen>
 </resources>

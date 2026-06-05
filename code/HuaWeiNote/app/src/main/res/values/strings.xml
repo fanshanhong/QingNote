@@ -155,4 +155,15 @@
     <string name="dialog_delete_notebook_message">删除该笔记本及其下所有笔记？</string>
     <string name="indicator_no_notebook">无笔记本</string>
     <string name="folder_default_undeletable">默认文件夹不可删除</string>
+
+    <!-- M13a 列表页重设计 -->
+    <string name="filter_all_notes">全部笔记</string>
+    <string name="note_count_format">%d 条笔记</string>
+    <string name="note_count_with_folder_format">%1$d 条笔记 | %2$s</string>
+    <string name="bottom_nav_notes">笔记</string>
+    <string name="bottom_nav_todo">待办</string>
+    <string name="toast_todo_placeholder">待办功能（M14 实现）</string>
+    <string name="sort_cancel">取消</string>
+    <string name="filter_section_folders">文件夹</string>
+    <string name="filter_manage_action">管理</string>
 </resources>
