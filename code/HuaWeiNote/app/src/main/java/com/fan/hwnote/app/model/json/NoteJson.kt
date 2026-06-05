@@ -1,9 +1,11 @@
 package com.fan.hwnote.app.model.json
 
+import com.fan.hwnote.app.model.entity.Alignment
 import com.fan.hwnote.app.model.entity.Block
 import com.fan.hwnote.app.model.entity.BrushType
 import com.fan.hwnote.app.model.entity.ChecklistItem
 import com.fan.hwnote.app.model.entity.Heading
+import com.fan.hwnote.app.model.entity.ListType
 import com.fan.hwnote.app.model.entity.NoteContent
 import com.fan.hwnote.app.model.entity.SpanType
 import com.fan.hwnote.app.model.entity.Stroke
@@ -71,6 +73,9 @@ object NoteJson {
             b.heading?.let { put("heading", it.name.lowercase()) }
             put("text", b.text)
             put("spans", spansToJson(b.spans))
+            b.alignment?.let { put("alignment", it.name.lowercase()) }
+            b.listType?.let { put("listType", it.name.lowercase()) }
+            if (b.indentLevel > 0) put("indentLevel", b.indentLevel)
         }
         is Block.ImageBlock -> JSONObject().apply {
             put("type", "image")
@@ -107,6 +112,13 @@ object NoteJson {
                 ?.let { runCatching { Heading.valueOf(it.uppercase()) }.getOrNull() },
             text = o.optString("text"),
             spans = spansFromJson(o.optJSONArray("spans") ?: JSONArray()),
+            alignment = o.optString("alignment", "")
+                .takeIf { it.isNotEmpty() }
+                ?.let { runCatching { Alignment.valueOf(it.uppercase()) }.getOrNull() },
+            listType = o.optString("listType", "")
+                .takeIf { it.isNotEmpty() }
+                ?.let { runCatching { ListType.valueOf(it.uppercase()) }.getOrNull() },
+            indentLevel = o.optInt("indentLevel", 0),
         )
         "image" -> Block.ImageBlock(
             id = o.optString("id"),
