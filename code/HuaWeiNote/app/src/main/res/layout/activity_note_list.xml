@@ -1,104 +1,127 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/root_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/bg_window">
+    android:orientation="vertical"
+    android:background="@color/bg_window"
+    android:fitsSystemWindows="true">
 
-    <com.google.android.material.appbar.AppBarLayout
-        android:id="@+id/appbar"
+    <!-- header 区 -->
+    <LinearLayout
+        android:id="@+id/header"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/primary"
-        android:fitsSystemWindows="true"
-        android:theme="@style/ThemeOverlay.MaterialComponents.Dark.ActionBar">
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="@dimen/spacing_l"
+        android:paddingTop="@dimen/spacing_l"
+        android:paddingBottom="@dimen/spacing_s">
 
-        <androidx.appcompat.widget.Toolbar
-            android:id="@+id/toolbar"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:background="@color/primary">
+        <LinearLayout
+            android:id="@+id/header_title_area"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true">
 
             <LinearLayout
-                android:id="@+id/filter_chip"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:clickable="true"
-                android:focusable="true"
-                android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:paddingHorizontal="@dimen/spacing_m"
-                android:paddingVertical="@dimen/spacing_xs">
+                android:gravity="center_vertical">
 
                 <TextView
-                    android:id="@+id/filter_chip_text"
+                    android:id="@+id/header_title"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/filter_all"
-                    android:textColor="@color/white"
-                    android:textSize="@dimen/text_title"
+                    android:text="@string/filter_all_notes"
+                    android:textColor="@color/text_primary"
+                    android:textSize="@dimen/header_title_size"
                     android:textStyle="bold" />
 
                 <ImageView
-                    android:layout_width="16dp"
-                    android:layout_height="16dp"
-                    android:layout_marginStart="@dimen/spacing_xs"
-                    android:src="@drawable/ic_arrow_drop_down"
-                    app:tint="@color/white" />
-            </LinearLayout>
-        </androidx.appcompat.widget.Toolbar>
-
-        <!-- 搜索框：常驻在 Toolbar 下方，不放进 ActionBar -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:background="@color/primary"
-            android:orientation="horizontal"
-            android:paddingHorizontal="@dimen/spacing_l"
-            android:paddingBottom="@dimen/spacing_m">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="40dp"
-                android:background="@drawable/shape_note_card_bg"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingHorizontal="@dimen/spacing_m">
-
-                <ImageView
+                    android:id="@+id/header_arrow"
                     android:layout_width="20dp"
                     android:layout_height="20dp"
-                    android:src="@drawable/ic_search"
-                    app:tint="@color/text_hint" />
-
-                <EditText
-                    android:id="@+id/search_input"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:background="@null"
-                    android:hint="@string/list_search_hint"
-                    android:imeOptions="actionSearch"
-                    android:inputType="text"
-                    android:maxLines="1"
-                    android:paddingStart="@dimen/spacing_s"
-                    android:paddingEnd="0dp"
-                    android:textColor="@color/text_primary"
-                    android:textColorHint="@color/text_hint"
-                    android:textSize="@dimen/text_body" />
-
+                    android:layout_marginStart="@dimen/spacing_xs"
+                    android:src="@drawable/ic_arrow_drop_down"
+                    app:tint="@color/text_primary" />
             </LinearLayout>
+
+            <TextView
+                android:id="@+id/header_subtitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:textColor="@color/text_hint"
+                android:textSize="@dimen/header_subtitle_size" />
         </LinearLayout>
 
-    </com.google.android.material.appbar.AppBarLayout>
+        <ImageView
+            android:id="@+id/btn_overflow"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true"
+            android:padding="@dimen/spacing_s"
+            android:src="@drawable/ic_more_vert"
+            app:tint="@color/text_primary"
+            android:contentDescription="@string/editor_more_cd" />
+    </LinearLayout>
 
-    <FrameLayout
-        android:id="@+id/content_container"
+    <!-- 搜索栏 -->
+    <LinearLayout
+        android:id="@+id/search_bar"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+        android:layout_height="@dimen/search_bar_height"
+        android:layout_marginHorizontal="@dimen/spacing_l"
+        android:layout_marginBottom="@dimen/spacing_s"
+        android:background="@drawable/shape_search_bar_bg"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="@dimen/spacing_m">
+
+        <ImageView
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:src="@drawable/ic_search"
+            app:tint="@color/text_hint" />
+
+        <EditText
+            android:id="@+id/search_input"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@null"
+            android:hint="@string/list_search_hint"
+            android:imeOptions="actionSearch"
+            android:inputType="text"
+            android:maxLines="1"
+            android:paddingStart="@dimen/spacing_s"
+            android:paddingEnd="0dp"
+            android:textColor="@color/text_primary"
+            android:textColorHint="@color/text_hint"
+            android:textSize="@dimen/text_body" />
+    </LinearLayout>
+
+    <!-- 内容区：筛选面板 / 列表 / 空状态 / FAB -->
+    <FrameLayout
+        android:id="@+id/content_area"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/filter_panel"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:overScrollMode="never"
+            android:visibility="gone" />
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recycler_notes"
@@ -111,9 +134,8 @@
 
         <LinearLayout
             android:id="@+id/empty_state"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
             android:gravity="center"
             android:orientation="vertical"
             android:visibility="gone">
@@ -140,17 +162,70 @@
                 android:textSize="@dimen/text_caption" />
         </LinearLayout>
 
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fab_new_note"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:layout_margin="@dimen/spacing_l"
+            android:contentDescription="@string/fab_new_note_cd"
+            android:src="@drawable/ic_add"
+            app:backgroundTint="@color/primary"
+            app:tint="@color/white" />
     </FrameLayout>
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fab_new_note"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        android:layout_margin="@dimen/spacing_l"
-        android:contentDescription="@string/fab_new_note_cd"
-        android:src="@drawable/ic_add"
-        app:backgroundTint="@color/primary"
-        app:tint="@color/white" />
+    <!-- 底部导航栏 -->
+    <LinearLayout
+        android:id="@+id/bottom_nav"
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/bottom_nav_height"
+        android:orientation="horizontal"
+        android:background="@color/white"
+        android:elevation="8dp">
 
-</androidx.coordinatorlayout.widget.CoordinatorLayout>
+        <LinearLayout
+            android:id="@+id/nav_notes"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_note_tab"
+                app:tint="@color/primary" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/bottom_nav_notes"
+                android:textColor="@color/primary"
+                android:textSize="@dimen/text_hint" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/nav_todo"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <ImageView
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:src="@drawable/ic_todo_tab"
+                app:tint="@color/text_hint" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/bottom_nav_todo"
+                android:textColor="@color/text_hint"
+                android:textSize="@dimen/text_hint" />
+        </LinearLayout>
+    </LinearLayout>
+
+</LinearLayout>
