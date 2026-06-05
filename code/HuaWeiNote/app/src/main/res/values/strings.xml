@@ -230,4 +230,44 @@
     <string name="todo_menu_hide_completed">隐藏已完成待办</string>
     <string name="todo_menu_show_completed">显示已完成待办</string>
     <string name="todo_menu_batch_delete">批量删除</string>
+
+    <!-- M14b: 待办详情 -->
+    <string name="todo_detail_title_hint">待办事项</string>
+    <string name="todo_detail_memo_hint">添加备注</string>
+    <string name="todo_detail_add_remind">添加提醒</string>
+    <string name="todo_detail_repeat">重复</string>
+    <string name="todo_detail_no_repeat">不重复</string>
+    <string name="todo_detail_important">重要</string>
+    <string name="todo_detail_memo_label">备注</string>
+    <string name="todo_detail_share">分享</string>
+    <string name="todo_detail_delete">删除</string>
+    <string name="todo_detail_folder_none">未分类</string>
+    <string name="todo_remind_format">%1$s %2$s%3$d:%4$02d</string>
+    <string name="todo_remind_today_format">今天 %1$s%2$d:%3$02d</string>
+    <string name="todo_delete_title">删除待办</string>
+    <string name="todo_delete_message">该待办将移入"最近删除"，30 天后自动清理。</string>
+    <string name="todo_save_failed">待办保存失败</string>
+    <string name="toast_todo_share_placeholder">分享功能（待开发）</string>
+
+    <!-- M14b: 时间选择器 -->
+    <string name="picker_datetime_today">今天</string>
+    <string name="picker_datetime_am">上午</string>
+    <string name="picker_datetime_pm">下午</string>
+    <string name="picker_datetime_confirm">确定</string>
+    <string name="picker_datetime_cancel">取消</string>
+    <string name="picker_datetime_title_format">%1$d年%2$d月%3$d日%4$s</string>
+
+    <!-- M14b: 重复选择器 -->
+    <string name="picker_repeat_title">重复</string>
+    <string name="picker_repeat_none">不重复</string>
+
+    <!-- M14b: 通知 -->
+    <string name="notification_channel_todo">待办提醒</string>
+    <string name="notification_todo_title">备忘录</string>
+    <string name="notification_action_complete">标记完成</string>
+    <string name="notification_action_snooze">10分钟后提醒</string>
+    <string name="alarm_permission_title">需要闹钟权限</string>
+    <string name="alarm_permission_message">请在系统设置中允许「精确闹钟」权限以设置待办提醒。</string>
+    <string name="notification_permission_title">需要通知权限</string>
+    <string name="notification_permission_message">请允许通知权限以接收待办提醒。</string>
 </resources>
