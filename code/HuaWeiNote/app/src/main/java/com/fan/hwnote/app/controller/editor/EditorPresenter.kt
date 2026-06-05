@@ -12,8 +12,10 @@ import android.text.style.StrikethroughSpan
 import android.text.style.StyleSpan
 import android.text.style.UnderlineSpan
 import android.widget.LinearLayout
+import com.fan.hwnote.app.model.entity.Alignment
 import com.fan.hwnote.app.model.entity.Block
 import com.fan.hwnote.app.model.entity.Heading
+import com.fan.hwnote.app.model.entity.ListType
 import com.fan.hwnote.app.model.entity.Note
 import com.fan.hwnote.app.model.entity.NoteContent
 import com.fan.hwnote.app.model.entity.SpanType
@@ -22,7 +24,10 @@ import com.fan.hwnote.app.model.history.Command
 import com.fan.hwnote.app.model.history.CompositeCommand
 import com.fan.hwnote.app.model.history.EditHistoryManager
 import com.fan.hwnote.app.model.history.commands.AddBlockCommand
+import com.fan.hwnote.app.model.history.commands.ApplyAlignmentCommand
 import com.fan.hwnote.app.model.history.commands.ApplyHeadingCommand
+import com.fan.hwnote.app.model.history.commands.ApplyIndentCommand
+import com.fan.hwnote.app.model.history.commands.ApplyListTypeCommand
 import com.fan.hwnote.app.model.history.commands.ApplySpanCommand
 import com.fan.hwnote.app.model.history.commands.BlockMutator
 import com.fan.hwnote.app.model.history.commands.MoveBlockCommand
@@ -146,7 +151,13 @@ class EditorPresenter(
             sp.setSpan(StrikethroughSpan(), start, end, flag)
         }
         pendingSize?.let { v ->
-            val r = when (v) { "small" -> 0.85f; "large" -> 1.25f; else -> 1.0f }
+            val r = when (v) {
+                "xs" -> 0.75f
+                "small" -> 0.85f
+                "large" -> 1.25f
+                "xl" -> 1.5f
+                else -> 1.0f
+            }
             sp.setSpan(RelativeSizeSpan(r), start, end, flag)
         }
         pendingColor?.let { hex ->
@@ -207,6 +218,7 @@ class EditorPresenter(
         // 默认让第一个 TextBlock 拿到焦点（找不到就让第一块的可聚焦子 view 自己来）
         (currentBlocks.firstOrNull { it is TextBlockView } as? TextBlockView)?.focusEditEnd()
         overlay.setStrokes(note.content.handwriting)
+        refreshListNumbers()
     }
 
     fun currentFocusedTextBlock(): TextBlockView? = focusedTextBlock
@@ -259,6 +271,7 @@ class EditorPresenter(
         addTextBlockView(newBlock, insertAt = idx + 1)
         (currentBlocks[idx + 1] as TextBlockView).focusEditEnd()
         history.push(AddBlockCommand(this, index = idx + 1, block = newBlock))
+        refreshListNumbers()
     }
 
     override fun onRequestDelete(view: BlockView) {
@@ -273,6 +286,7 @@ class EditorPresenter(
         (currentBlocks[idx - 1] as? TextBlockView)?.focusEditEnd()
         history.push(RemoveBlockCommand(this, blockSnapshot.id,
             presnapshot = blockSnapshot, presavedIndex = idx))
+        refreshListNumbers()
     }
 
     override fun onFocusGained(view: BlockView) {
@@ -418,6 +432,74 @@ class EditorPresenter(
         v.setHeading(after)
         history.push(ApplyHeadingCommand(this, blockId, before, after))
     }
+
+    fun toggleAlignment(alignment: Alignment) {
+        val v = focusedTextBlock ?: return
+        val blockId = v.toBlock().id
+        val before = v.currentAlignment()
+        val after = if (before == alignment) null else alignment
+        v.setAlignment(after)
+        history.push(ApplyAlignmentCommand(this, blockId, before, after))
+    }
+
+    fun toggleListType(listType: ListType) {
+        val v = focusedTextBlock ?: return
+        val blockId = v.toBlock().id
+        val before = v.currentListType()
+        val after = if (before == listType) null else listType
+        v.setListType(after)
+        history.push(ApplyListTypeCommand(this, blockId, before, after))
+        refreshListNumbers()
+    }
+
+    fun indent() {
+        val v = focusedTextBlock ?: return
+        val current = v.currentIndentLevel()
+        if (current >= 3) return
+        val blockId = v.toBlock().id
+        v.setIndentLevel(current + 1)
+        history.push(ApplyIndentCommand(this, blockId, current, current + 1))
+    }
+
+    fun outdent() {
+        val v = focusedTextBlock ?: return
+        val current = v.currentIndentLevel()
+        if (current <= 0) return
+        val blockId = v.toBlock().id
+        v.setIndentLevel(current - 1)
+        history.push(ApplyIndentCommand(this, blockId, current, current - 1))
+    }
+
+    fun refreshListNumbers() {
+        for (i in currentBlocks.indices) {
+            val view = currentBlocks[i]
+            if (view !is TextBlockView) continue
+            val lt = view.currentListType()
+            when (lt) {
+                ListType.BULLET -> view.setListMarker("•")
+                ListType.HOLLOW_BULLET -> view.setListMarker("○")
+                ListType.NUMBERED -> {
+                    var count = 0
+                    for (j in 0 until i) {
+                        val prev = currentBlocks[j]
+                        if (prev is TextBlockView && prev.currentListType() == ListType.NUMBERED) count++
+                    }
+                    view.setListMarker("${count + 1}.")
+                }
+                ListType.LETTERED -> {
+                    var count = 0
+                    for (j in 0 until i) {
+                        val prev = currentBlocks[j]
+                        if (prev is TextBlockView && prev.currentListType() == ListType.LETTERED) count++
+                    }
+                    view.setListMarker("${('a' + count)}.")
+                }
+                null -> view.hideListMarker()
+            }
+        }
+    }
+
+    fun pendingHeading(): Heading? = focusedTextBlock?.currentHeading()
 
     /**
      * Task 10 入口：把若干 ImageBlock 插到当前焦点 TextBlock 之后，并在最后追加一个空 TextBlock 接管焦点。
@@ -639,6 +721,31 @@ class EditorPresenter(
     override fun setBlockHeading(blockId: String, heading: Heading?) {
         val view = currentBlocks.firstOrNull { it.toBlock().id == blockId } as? TextBlockView ?: return
         view.setHeading(heading)
+    }
+
+    override fun snapshotAlignment(blockId: String): Alignment? =
+        (currentBlocks.firstOrNull { it.toBlock().id == blockId } as? TextBlockView)?.currentAlignment()
+
+    override fun setBlockAlignment(blockId: String, alignment: Alignment?) {
+        val view = currentBlocks.firstOrNull { it.toBlock().id == blockId } as? TextBlockView ?: return
+        view.setAlignment(alignment)
+    }
+
+    override fun snapshotListType(blockId: String): ListType? =
+        (currentBlocks.firstOrNull { it.toBlock().id == blockId } as? TextBlockView)?.currentListType()
+
+    override fun setBlockListType(blockId: String, listType: ListType?) {
+        val view = currentBlocks.firstOrNull { it.toBlock().id == blockId } as? TextBlockView ?: return
+        view.setListType(listType)
+        refreshListNumbers()
+    }
+
+    override fun snapshotIndentLevel(blockId: String): Int =
+        (currentBlocks.firstOrNull { it.toBlock().id == blockId } as? TextBlockView)?.currentIndentLevel() ?: 0
+
+    override fun setBlockIndentLevel(blockId: String, indentLevel: Int) {
+        val view = currentBlocks.firstOrNull { it.toBlock().id == blockId } as? TextBlockView ?: return
+        view.setIndentLevel(indentLevel)
     }
 
     // ----- TextMutator -----
