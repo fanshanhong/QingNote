@@ -10,8 +10,10 @@ import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.widget.EditText
 import com.fan.hwnote.app.R
+import com.fan.hwnote.app.model.entity.Alignment
 import com.fan.hwnote.app.model.entity.Block
 import com.fan.hwnote.app.model.entity.Heading
+import com.fan.hwnote.app.model.entity.ListType
 import com.fan.hwnote.app.util.applyTo
 import com.fan.hwnote.app.util.toTextSpans
 
@@ -28,7 +30,11 @@ class TextBlockView @JvmOverloads constructor(
 
     private lateinit var blockId: String
     private var heading: Heading? = null
+    private var alignment: Alignment? = null
+    private var listType: ListType? = null
+    private var indentLevel: Int = 0
     val edit: EditText
+    private val listMarker: android.widget.TextView
 
     /** Presenter 注入：把 pending 样式应用到刚插入的文字范围。 */
     var pendingApplier: ((android.text.Spannable, Int, Int) -> Unit)? = null
@@ -48,6 +54,7 @@ class TextBlockView @JvmOverloads constructor(
     init {
         LayoutInflater.from(context).inflate(R.layout.block_text, this, true)
         edit = findViewById(R.id.block_edit)
+        listMarker = findViewById(R.id.list_marker)
         wireListeners()
     }
 
@@ -56,6 +63,11 @@ class TextBlockView @JvmOverloads constructor(
         blockId = block.id
         heading = block.heading
         applyHeadingSize()
+        alignment = block.alignment
+        listType = block.listType
+        indentLevel = block.indentLevel
+        applyAlignment()
+        applyIndentation()
         val spannable = SpannableString(block.text)
         block.spans.applyTo(spannable)
         suppressDebounceWhile {
@@ -70,6 +82,9 @@ class TextBlockView @JvmOverloads constructor(
             heading = heading,
             text = spannable.toString(),
             spans = spannable.toTextSpans(),
+            alignment = alignment,
+            listType = listType,
+            indentLevel = indentLevel,
         )
     }
 
@@ -95,10 +110,57 @@ class TextBlockView @JvmOverloads constructor(
         edit.isLongClickable = editable
     }
 
+    fun setListMarker(text: String) {
+        listMarker.text = text
+        listMarker.visibility = android.view.View.VISIBLE
+    }
+
+    fun hideListMarker() {
+        listMarker.visibility = android.view.View.GONE
+    }
+
+    fun setAlignment(a: Alignment?) {
+        alignment = a
+        applyAlignment()
+    }
+
+    fun currentAlignment(): Alignment? = alignment
+
+    fun setListType(lt: ListType?) {
+        listType = lt
+    }
+
+    fun currentListType(): ListType? = listType
+
+    fun setIndentLevel(level: Int) {
+        indentLevel = level
+        applyIndentation()
+    }
+
+    fun currentIndentLevel(): Int = indentLevel
+
+    private fun applyAlignment() {
+        val gravity = when (alignment) {
+            Alignment.START, null -> android.view.Gravity.START
+            Alignment.CENTER -> android.view.Gravity.CENTER_HORIZONTAL
+            Alignment.END -> android.view.Gravity.END
+        }
+        edit.gravity = gravity or android.view.Gravity.TOP
+    }
+
+    private fun applyIndentation() {
+        val indentPx = (indentLevel * resources.getDimension(R.dimen.editor_indent_unit)).toInt()
+        setPadding(indentPx, paddingTop, paddingRight, paddingBottom)
+    }
+
     private fun applyHeadingSize() {
         val sp = when (heading) {
-            Heading.H1 -> resources.getDimension(R.dimen.editor_text_h1)
-            Heading.H2 -> resources.getDimension(R.dimen.editor_text_h2)
+            Heading.H1 -> resources.getDimension(R.dimen.editor_text_h1_v2)
+            Heading.H2 -> resources.getDimension(R.dimen.editor_text_h2_v2)
+            Heading.H3 -> resources.getDimension(R.dimen.editor_text_h3)
+            Heading.H4 -> resources.getDimension(R.dimen.editor_text_h4)
+            Heading.H5 -> resources.getDimension(R.dimen.editor_text_h5)
+            Heading.H6 -> resources.getDimension(R.dimen.editor_text_h6)
             null -> resources.getDimension(R.dimen.editor_text_normal)
         }
         edit.setTextSize(TypedValue.COMPLEX_UNIT_PX, sp)

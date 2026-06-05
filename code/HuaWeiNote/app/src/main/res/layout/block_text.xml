@@ -1,10 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
-<merge xmlns:android="http://schemas.android.com/apk/res/android">
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal">
+
+    <TextView
+        android:id="@+id/list_marker"
+        android:layout_width="@dimen/editor_list_marker_width"
+        android:layout_height="wrap_content"
+        android:gravity="end"
+        android:paddingEnd="4dp"
+        android:paddingTop="@dimen/spacing_xs"
+        android:textColor="@color/text_secondary"
+        android:textSize="@dimen/editor_text_normal"
+        android:visibility="gone" />
 
     <EditText
         android:id="@+id/block_edit"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_weight="1"
         android:background="@null"
         android:gravity="top|start"
         android:inputType="textMultiLine|textCapSentences"
@@ -14,4 +29,4 @@
         android:textColorHint="@color/text_hint"
         android:textSize="@dimen/editor_text_normal" />
 
-</merge>
+</LinearLayout>
