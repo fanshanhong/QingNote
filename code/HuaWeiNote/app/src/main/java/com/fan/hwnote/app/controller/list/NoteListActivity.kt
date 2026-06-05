@@ -128,6 +128,13 @@ class NoteListActivity : AppCompatActivity() {
     private fun reload() {
         lifecycleScope.launch {
             val list = NoteRepository.list(currentFilter, sortBy, currentQuery)
+            val colorMap = mutableMapOf<Long, String>()
+            val nbIds = list.mapNotNull { it.notebookId }.toSet()
+            for (id in nbIds) {
+                val nb = NotebookRepository.get(id)
+                if (nb != null) colorMap[id] = nb.color
+            }
+            adapter.submitColors(colorMap)
             adapter.submit(list)
             renderEmpty(list.isEmpty())
         }
