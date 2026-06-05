@@ -226,11 +226,6 @@ class EditorPresenter(
     fun focusLastEditableBlock() {
         val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE)
             as android.view.inputmethod.InputMethodManager
-        if (focusedTextBlock != null) {
-            focusedTextBlock!!.focusEditEnd()
-            imm.showSoftInput(focusedTextBlock!!.edit, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
-            return
-        }
         val last = currentBlocks.lastOrNull { it is TextBlockView || it is ChecklistBlockView }
         when (last) {
             is TextBlockView -> {
