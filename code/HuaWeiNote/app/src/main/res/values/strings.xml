@@ -222,6 +222,7 @@
     <string name="todo_quick_add_save">保存</string>
     <string name="todo_empty_title">还没有待办</string>
     <string name="todo_empty_subtitle">点 + 新建一条</string>
+    <string name="todo_repeat_not_repeat">不重复</string>
     <string name="todo_repeat_daily">每天</string>
     <string name="todo_repeat_weekly">每周</string>
     <string name="todo_repeat_monthly">每月</string>

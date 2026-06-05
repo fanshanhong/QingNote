@@ -33,6 +33,14 @@
             android:textColor="@color/text_primary"
             android:textColorHint="@color/text_hint"
             android:textSize="@dimen/text_body" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="@dimen/spacing_m">
 
         <ImageView
             android:id="@+id/quick_add_time"
@@ -44,6 +52,23 @@
             android:clickable="true"
             android:focusable="true"
             android:contentDescription="@string/todo_section_today" />
+
+        <TextView
+            android:id="@+id/quick_add_repeat"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:visibility="gone"
+            android:textColor="@color/primary"
+            android:textSize="14sp"
+            android:paddingHorizontal="8dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true" />
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
 
         <ImageView
             android:id="@+id/quick_add_important"
