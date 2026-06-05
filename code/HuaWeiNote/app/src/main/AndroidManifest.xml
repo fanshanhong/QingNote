@@ -7,6 +7,10 @@
     <!-- M10 录音 -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <uses-feature
         android:name="android.hardware.camera"
         android:required="false" />
@@ -56,6 +60,30 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
+
+        <activity
+            android:name=".controller.todo.TodoDetailActivity"
+            android:exported="false"
+            android:parentActivityName=".controller.list.NoteListActivity"
+            android:windowSoftInputMode="adjustResize" />
+
+        <receiver
+            android:name=".controller.todo.TodoAlarmReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.fan.hwnote.ACTION_TODO_REMIND" />
+                <action android:name="com.fan.hwnote.ACTION_TODO_COMPLETE" />
+                <action android:name="com.fan.hwnote.ACTION_TODO_SNOOZE" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".controller.todo.TodoBootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
 
     </application>
 
