@@ -125,10 +125,29 @@ class NoteEditorActivity : AppCompatActivity() {
 
         handwritingOverlay = findViewById(R.id.handwriting_overlay)
         presenter = EditorPresenter(this, blocksContainer, handwritingOverlay)
-        presenter.history.listener = { _, _ -> updateUndoRedoButtons() }
-        btnUndo.setOnClickListener { presenter.undo(); updateUndoRedoButtons() }
-        btnRedo.setOnClickListener { presenter.redo(); updateUndoRedoButtons() }
-        btnDone.setOnClickListener { exitEditMode() }
+        presenter.history.listener = { _, _ ->
+            if (!handwritingOverlay.isHandwritingMode) updateUndoRedoButtons()
+        }
+        btnUndo.setOnClickListener {
+            if (handwritingOverlay.isHandwritingMode) {
+                handwritingOverlay.undo()
+            } else {
+                presenter.undo()
+            }
+            updateUndoRedoButtons()
+        }
+        btnRedo.setOnClickListener {
+            if (handwritingOverlay.isHandwritingMode) {
+                handwritingOverlay.redo()
+            } else {
+                presenter.redo()
+            }
+            updateUndoRedoButtons()
+        }
+        btnDone.setOnClickListener {
+            if (handwritingOverlay.isHandwritingMode) exitHandwritingMode()
+            exitEditMode()
+        }
 
         // 把"空白点击聚焦末尾文本块"挂在 FrameLayout 上而非 editor_content：
         // editor_content 高度是 wrap_content，只覆盖"标题+已输入文本"那一小块；
@@ -627,19 +646,18 @@ class NoteEditorActivity : AppCompatActivity() {
         titleInput.alpha = 0.5f
         textToolbar.visibility = android.view.View.GONE
         handwritingToolbar.visibility = android.view.View.VISIBLE
-        refreshUndoRedoEnabled()
+        updateUndoRedoButtons()
         val imm = getSystemService(INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
         imm.hideSoftInputFromWindow(blocksContainer.windowToken, 0)
     }
 
     private fun exitHandwritingMode() {
         handwritingOverlay.isHandwritingMode = false
-        // 不再 INVISIBLE：保持 VISIBLE 让笔画立即叠加显示在内容之上；
-        // onTouchEvent 在 !isHandwritingMode 时 return false 让 touch 穿透到下层 EditText/Block。
         blocksContainer.alpha = 1f
         titleInput.alpha = 1f
         textToolbar.visibility = if (isEditing) android.view.View.VISIBLE else android.view.View.GONE
         handwritingToolbar.visibility = android.view.View.GONE
+        updateUndoRedoButtons()
     }
 
     private fun refreshUndoRedoEnabled() {
@@ -682,8 +700,15 @@ class NoteEditorActivity : AppCompatActivity() {
     }
 
     private fun updateUndoRedoButtons() {
-        val canUndo = presenter.history.canUndo()
-        val canRedo = presenter.history.canRedo()
+        val canUndo: Boolean
+        val canRedo: Boolean
+        if (handwritingOverlay.isHandwritingMode) {
+            canUndo = handwritingOverlay.canUndo()
+            canRedo = handwritingOverlay.canRedo()
+        } else {
+            canUndo = presenter.history.canUndo()
+            canRedo = presenter.history.canRedo()
+        }
         btnUndo.isEnabled = canUndo
         btnRedo.isEnabled = canRedo
         btnUndo.alpha = if (canUndo) 1.0f else 0.4f
