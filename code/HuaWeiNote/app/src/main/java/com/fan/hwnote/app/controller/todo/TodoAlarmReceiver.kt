@@ -7,7 +7,7 @@ import android.content.Context
 import android.content.Intent
 import androidx.core.app.NotificationCompat
 import com.fan.hwnote.app.R
-import com.fan.hwnote.app.controller.list.NoteListActivity
+
 import com.fan.hwnote.app.model.TodoRepository
 import com.fan.hwnote.app.model.alarm.TodoAlarmManager
 import kotlinx.coroutines.DelicateCoroutinesApi
@@ -47,7 +47,8 @@ class TodoAlarmReceiver : BroadcastReceiver() {
     }
 
     private fun showNotification(context: Context, todoId: Long, todoTitle: String) {
-        val tapIntent = Intent(context, NoteListActivity::class.java).apply {
+        val tapIntent = Intent(context, TodoDetailActivity::class.java).apply {
+            putExtra(TodoDetailActivity.EXTRA_TODO_ID, todoId)
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
         val tapPi = PendingIntent.getActivity(

@@ -18,9 +18,12 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.fan.hwnote.app.R
 import com.fan.hwnote.app.controller.folder.FolderManagerActivity
+import com.fan.hwnote.app.controller.todo.TodoDetailActivity
+import com.fan.hwnote.app.model.alarm.TodoAlarmManager
 import com.fan.hwnote.app.model.FolderRepository
 import com.fan.hwnote.app.model.TodoRepository
 import com.fan.hwnote.app.model.entity.Todo
+import com.fan.hwnote.app.view.picker.DateTimePickerDialog
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.launch
 
@@ -84,7 +87,9 @@ class TodoListFragment : Fragment() {
                 }
             },
             onClick = { todo ->
-                Toast.makeText(requireContext(), todo.title, Toast.LENGTH_SHORT).show()
+                val intent = Intent(requireContext(), TodoDetailActivity::class.java)
+                intent.putExtra(TodoDetailActivity.EXTRA_TODO_ID, todo.id)
+                startActivity(intent)
             },
         )
         recycler.layoutManager = LinearLayoutManager(requireContext())
@@ -98,7 +103,10 @@ class TodoListFragment : Fragment() {
         fab.setOnClickListener { showQuickAddBar() }
 
         quickAddTime.setOnClickListener {
-            Toast.makeText(requireContext(), "时间选择（M14b 实现）", Toast.LENGTH_SHORT).show()
+            DateTimePickerDialog(requireContext(), quickAddRemindAt) { epochMillis ->
+                quickAddRemindAt = epochMillis
+                updateQuickAddTimeIcon()
+            }.show()
         }
         quickAddImportant.setOnClickListener { toggleQuickAddImportant() }
         quickAddSave.setOnClickListener { saveQuickAdd() }
@@ -240,6 +248,7 @@ class TodoListFragment : Fragment() {
         quickAddRemindAt = 0L
         quickAddIsImportant = false
         updateQuickAddImportantIcon()
+        updateQuickAddTimeIcon()
         quickAddInput.requestFocus()
         val imm = requireContext().getSystemService(android.content.Context.INPUT_METHOD_SERVICE)
             as InputMethodManager
@@ -267,6 +276,14 @@ class TodoListFragment : Fragment() {
         quickAddImportant.setColorFilter(color)
     }
 
+    private fun updateQuickAddTimeIcon() {
+        val color = if (quickAddRemindAt > 0)
+            ContextCompat.getColor(requireContext(), R.color.primary)
+        else
+            ContextCompat.getColor(requireContext(), R.color.text_hint)
+        quickAddTime.setColorFilter(color)
+    }
+
     private fun saveQuickAdd() {
         val title = quickAddInput.text.toString().trim()
         if (title.isEmpty()) return
@@ -277,12 +294,16 @@ class TodoListFragment : Fragment() {
         }
 
         lifecycleScope.launch {
-            TodoRepository.insert(Todo.new().copy(
+            val todo = Todo.new().copy(
                 title = title,
                 remindAt = quickAddRemindAt,
                 isImportant = quickAddIsImportant,
                 folderId = folderId,
-            ))
+            )
+            val newId = TodoRepository.insert(todo)
+            if (newId > 0L && todo.remindAt > System.currentTimeMillis()) {
+                TodoAlarmManager.scheduleAlarm(requireContext(), todo.copy(id = newId))
+            }
             hideQuickAddBar()
             reload()
         }
