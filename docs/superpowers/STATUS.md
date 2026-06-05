@@ -1,19 +1,15 @@
 # HwNote · 项目进度
 
-最后更新：2026-06-05（M13a 视觉基础+列表页重设计完成）
+最后更新：2026-06-05（M13c 样式增强 + 编辑器 bug/UX 修复完成）
 
-## 阶段地图
+## 项目概况
 
-| 阶段 | 状态 | 产出 |
-|------|------|------|
-| 1. 头脑风暴 / 需求澄清 | ✅ 完成 | 8 个核心需求决策（功能范围、Jetpack 边界、minSdk、富文本范围、手写笔种、图片来源、列表布局、主色） |
-| 2. 架构方案 | ✅ 完成 | 选定 **Block 块组合 + 手写 Overlay 透明层** |
-| 3. PRD / 技术设计 | ✅ 完成 | `docs/superpowers/specs/2026-05-22-hwnote-design.md`（12 节，~450 行） |
-| 4. 规格自审 | ✅ 完成 | 修复 7 处一致性问题（heading 块属性归位、Span 6 种、笔效/橡皮算法详写、ACTION_GET_CONTENT 替换、Glide compiler 去除、plain_text 规则补、行内/块级样式分离） |
-| 5. 用户审阅 PRD | ✅ 完成 | 用户确认无修改，进入下一步 |
-| 6. **实施计划编写** | ✅ 完成 | `docs/superpowers/plans/2026-05-22-hwnote-implementation.md`（高层版，7 个里程碑各一节，685 行） |
-| 7. 代码实施 | ✅ M1-M9 完成 + **M10 完成** | M1+M2+M3+M4+M5+M6+M7+M8+M9 全部落地，**M10 (PRD §13 语音录入)** AudioBlock + 录制/播放/删除 + RECORD_AUDIO 全部落地；85 单测全绿（M9 基线 83 → M10 +2 NoteJsonAudioTest） |
-| 8. 手测验收 | ✅ M3 / M5 / M6 / M7 / M8 / M9 / **M10** 用户真机走查全部通过 | M3 五条 + M5 七条 + M6 十三条 + M7 十六条 + M8 六条 + M9 十条 + **M10 十三条**逐条手测通过；M4 SpanConverter 15 + M2 数据层 42 + M5 ImageCompressor 3 + M6 StrokeEraser 5 + M7 BrushPainter 3 + M9 CategoryRepository 5 / NoteDbHelper +2 / SoftDelete +3 / ListFilter +3 / SaveGet +2 + **M10 NoteJsonAudio +2** 单测 PASSED |
+- **架构：** Block 块组合 + 手写 Overlay 透明层，MVC + XML View，无 Compose/ViewModel/Room
+- **PRD：** `docs/superpowers/specs/2026-05-22-hwnote-design.md`
+- **已完成里程碑：** M1-M13c（共 16 轮），158 项自动化测试全绿
+- **计划归档：** `docs/superpowers/plans/archived/`（16 份已完成计划）
+- **DB 版本：** v4（M12 folders/notebooks 表，M13c background 列）
+- **待开发：** M13d 宫格+批量删除 / M13e 分享功能 / M14 待办子系统
 
 ## 里程碑进度
 
@@ -32,6 +28,8 @@
 | M11 撤销 / 重做 | ✅ 完成（2026-06-04） | PRD §13 收口；`EditHistoryManager`(双栈+cap50+listener) + 5 Command 子类 (Add/Remove/Move/Replace/ApplySpan/ApplyHeading/ReplaceText) + `CompositeCommand` 多步打包 + Presenter 三 Mutator(silent) + TextBlockView 800ms 防抖 + 顶部 AppBar ↶↷ MenuItem + onPause flush + `NoteRepository.cleanOrphanFiles` 异步清孤 + onSaveSuccess 唯一清栈入口 |
 | M12 文件夹层级 | ✅ 完成（2026-06-05） | DB v3 迁移 + Folder/Notebook 实体 + 三级层级 + FolderManagerActivity 三粒度拖动 + NotebookFilterPopupWindow + 编辑器 indicator；137 单测 |
 | M13a 视觉基础+列表页重设计 | ✅ 完成（2026-06-05） | 色彩绿→蓝 + 白底大标题 + 筛选面板(FilterPanelAdapter) + 底部导航 + 卡片扁平化 + 笔记本颜色淡化 + Overflow PopupMenu + 排序/删除 Sheet 改版；140 单测 |
+| M13b 编辑器重设计 | ✅ 完成（2026-06-05） | 去 AppBarLayout → 白底顶栏(←↩↪✓) + 浏览/编辑双模式 + 浏览态底部动作栏 + ImageBlockView ✕ + EditorPresenter.setReadOnly()；140 单测 |
+| M13c 样式增强 | ✅ 完成（2026-06-05） | StylePickerBottomSheet 4行→7行 + 对齐/列表/缩进 + H1-H6 + 字号5档 + 7色 + 背景纹理(DB v4) + ParagraphCommands(3 Command)；158 单测 |
 
 ## M1 完成详情（2026-05-22）
 
