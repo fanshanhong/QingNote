@@ -1,15 +1,15 @@
 # HwNote · 项目进度
 
-最后更新：2026-06-05（M14a 数据层+Fragment 重构+待办列表页完成）
+最后更新：2026-06-05（M14b 待办详情页+时间选择器+提醒通知完成）
 
 ## 项目概况
 
 - **架构：** Block 块组合 + 手写 Overlay 透明层，MVC + XML View，无 Compose/ViewModel/Room
 - **PRD：** `docs/superpowers/specs/2026-05-22-hwnote-design.md`
-- **已完成里程碑：** M1-M13c + M14a（共 17 轮），178 项自动化测试全绿
-- **计划归档：** `docs/superpowers/plans/archived/`（17 份已完成计划）
+- **已完成里程碑：** M1-M13c + M14a-b（共 18 轮），181 项自动化测试全绿
+- **计划归档：** `docs/superpowers/plans/archived/`（18 份已完成计划）
 - **DB 版本：** v5（M14a 新增 todos 表）
-- **待开发：** M14b 待办详情页+时间选择器+通知 / M14c 批量操作+软删除 / M13d 宫格+批量删除 / M13e 分享功能
+- **待开发：** M14c 批量操作+软删除 / M13d 宫格+批量删除 / M13e 分享功能
 
 ## 里程碑进度
 
@@ -31,6 +31,7 @@
 | M13b 编辑器重设计 | ✅ 完成（2026-06-05） | 去 AppBarLayout → 白底顶栏(←↩↪✓) + 浏览/编辑双模式 + 浏览态底部动作栏 + ImageBlockView ✕ + EditorPresenter.setReadOnly()；140 单测 |
 | M13c 样式增强 | ✅ 完成（2026-06-05） | StylePickerBottomSheet 4行→7行 + 对齐/列表/缩进 + H1-H6 + 字号5档 + 7色 + 背景纹理(DB v4) + ParagraphCommands(3 Command)；158 单测 |
 | M14a 数据层+Fragment重构+待办列表页 | ✅ 完成（2026-06-05） | DB v5(todos 表) + Todo/RepeatType 实体 + TodoRepository + NoteListActivity→Fragment 容器 + NoteListFragment + TodoListFragment + TodoListAdapter(6分组) + TodoFilterPanelAdapter + QuickAddBar；178 单测 |
+| M14b 待办详情+时间选择+通知 | ✅ 完成（2026-06-05） | TodoDetailActivity(onPause 自动保存) + DateTimePickerDialog(4列 NumberPicker) + RepeatPickerBottomSheet + TodoAlarmManager(精确闹钟) + TodoAlarmReceiver(通知/完成/贪睡) + TodoBootReceiver(开机恢复) + NotificationChannel + POST_NOTIFICATIONS/SCHEDULE_EXACT_ALARM 权限；181 单测 |
 
 ## M1 完成详情（2026-05-22）
 
@@ -924,3 +925,67 @@ eddf61f fix(m14a): 修复 TodoFilterPanelAdapter 缺失类闭合大括号
 6. 笔记 tab 全部功能回归无退化
 
 **执行模式：** Subagent-Driven Development，严格串行 13 任务（T1→T13）。每任务 implementer DONE → 标完成（机械任务跳 review）。T12 构建验证发现 TodoFilterPanelAdapter 缺闭合大括号，单独 fix commit。
+
+## M14b 完成详情（2026-06-05）
+
+**起因：** M14a 完成待办数据层+列表页后，继续 M14b 实现待办详情编辑页面、自定义时间选择器和提醒通知系统。
+
+**产出：**
+
+1. **资源文件（T1-T2）：**
+   - strings.xml 追加 38 条 M14b 字符串（待办详情/时间选择器/重复选择器/通知）
+   - 4 个新 drawable：ic_bell(铃铛)、ic_repeat(重复)、ic_notes(备注)、ic_clear(清除✕)
+   - 3 个布局 XML：activity_todo_detail(详情页)、dialog_datetime_picker(4列滚轮)、dialog_repeat_picker(RadioGroup)
+
+2. **时间选择器+重复选择器（T3-T4）：**
+   - `DateTimePickerDialog`：BottomSheetDialog 4 列 NumberPicker（未来365天日期/上午下午/1-12小时/00-59分钟），顶部日期文字含星期几联动，roundToNext5Minutes 静态方法
+   - `RepeatPickerBottomSheet`：BottomSheetDialog RadioGroup 5 选项（不重复/每天/每周/每月/每年），点选立即回调 dismiss
+
+3. **通知系统三件套（T5-T7）：**
+   - `TodoAlarmManager`(object)：scheduleAlarm/cancelAlarm/scheduleSnooze/rescheduleAll，通过 AlarmManager.setExactAndAllowWhileIdle 精确闹钟
+   - `TodoAlarmReceiver`(BroadcastReceiver)：ACTION_REMIND→弹通知(标记完成+10min贪睡两按钮)、ACTION_COMPLETE→completeTodo+取消通知、ACTION_SNOOZE→+10min重调度
+   - `TodoBootReceiver`(BroadcastReceiver)：BOOT_COMPLETED→rescheduleAll 恢复所有闹钟
+   - `App.kt` 新增 createNotificationChannel (IMPORTANCE_HIGH)
+   - Manifest 新增 RECEIVE_BOOT_COMPLETED/SCHEDULE_EXACT_ALARM/POST_NOTIFICATIONS 权限 + 3 个组件声明
+
+4. **TodoDetailActivity（T8）：**
+   - 全页编辑页面：文件夹指示器+标题行(CheckBox+EditText)+提醒行+重复行+重要行(Switch)+备注区(多行EditText)+底部动作栏(分享Toast/删除)
+   - onPause 自动保存模式（同 NoteEditorActivity）
+   - 提醒时间显示：无提醒灰色/有提醒蓝色/已过期红色
+   - 权限检查：Android 12+ SCHEDULE_EXACT_ALARM、Android 13+ POST_NOTIFICATIONS
+   - Folder 选择：AlertDialog 单选列表
+
+5. **列表页接通（T10）：**
+   - TodoListFragment onClick 从 Toast 改为跳转 TodoDetailActivity
+   - QuickAddBar 时间按钮从 Toast 改为 DateTimePickerDialog
+   - saveQuickAdd 后自动注册 AlarmManager 闹钟
+   - TodoAlarmReceiver tapIntent 改为打开 TodoDetailActivity
+
+**M14b commit 列表：**
+- `11b8a6c` feat(m14b): 加待办详情/时间选择器/通知资源(strings+drawables)
+- `c6ad81d` feat(m14b): 加待办详情页/时间选择器/重复选择器布局
+- `80a1473` feat(m14b): 加 DateTimePickerDialog 4列滚轮时间选择器
+- `995382e` feat(m14b): 加 RepeatPickerBottomSheet 重复类型选择器
+- `a1a6d41` feat(m14b): 加 TodoAlarmManager 闹钟调度 + App 创建 NotificationChannel
+- `fd94136` feat(m14b): 加 TodoAlarmReceiver 通知/完成/贪睡处理
+- `197e5df` feat(m14b): 加 TodoBootReceiver + Manifest 权限/组件声明
+- `cb67f1f` feat(m14b): 加 TodoDetailActivity 骨架(onCreate+loadTodo+UI更新)
+- `bce6118` feat(m14b): TodoListFragment 接通详情页跳转+时间选择+闹钟注册
+- `0e9706b` test(m14b): 加 DateTimePickerDialog.roundToNext5Minutes 单测
+
+**测试统计：** 181 项 PASSED（178 M14a 基线 + 3 DateTimePickerDialogTest），0 failures。
+
+**真机走查项（用户验收）：**
+1. 列表点待办 → 打开详情页，字段正确回显
+2. 新建待办 → 输入标题 → 返回 → 列表出现新待办
+3. 设置提醒时间 → 时间选择器4列滚轮正常 → 确定后显示蓝色时间
+4. 清除提醒 → ✕ 按钮生效，恢复灰色"添加提醒"
+5. 设置重复 → 弹出5选项 → 选中后显示对应文字
+6. 切换重要 → Switch 状态保存
+7. 编辑备注 → onPause 自动保存
+8. 删除待办 → 二确认 → 移入最近删除
+9. 文件夹选择 → AlertDialog 切换
+10. QuickAddBar 时间按钮 → 弹出时间选择器
+11. 到达提醒时间 → 弹出通知（标记完成/10分钟后提醒）
+
+**执行模式：** Subagent-Driven Development，严格串行 13 任务。T8 实施者合并了 Task 8+9（TodoDetailActivity 骨架+事件处理）为一次提交。T11 实施者额外修复了缺失的 drawable/color 资源（surface/danger/bg_bottom_sheet/selector_todo_checkbox）。
