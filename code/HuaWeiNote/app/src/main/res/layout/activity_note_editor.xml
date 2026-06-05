@@ -6,60 +6,76 @@
     android:id="@+id/editor_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/bg_window"
+    android:background="@color/bg_card"
     android:orientation="vertical">
 
-    <com.google.android.material.appbar.AppBarLayout
+    <!-- ===== 顶栏：白底 ===== -->
+    <LinearLayout
+        android:id="@+id/top_bar"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@color/primary"
-        android:fitsSystemWindows="true"
-        android:theme="@style/ThemeOverlay.MaterialComponents.Dark.ActionBar">
+        android:layout_height="?attr/actionBarSize"
+        android:background="@color/bg_card"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="4dp">
 
-        <androidx.appcompat.widget.Toolbar
-            android:id="@+id/editor_toolbar"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:background="@color/primary"
-            app:navigationIcon="@drawable/ic_arrow_back"
-            app:navigationContentDescription="@string/editor_back_cd"
-            app:titleTextColor="@color/white" />
+        <ImageView
+            android:id="@+id/btn_back"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/editor_back_cd"
+            android:padding="12dp"
+            android:src="@drawable/ic_arrow_back"
+            app:tint="@color/text_primary" />
 
+        <View
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <!-- 编辑态才可见的右侧按钮组 -->
         <LinearLayout
-            android:id="@+id/notebook_indicator"
+            android:id="@+id/edit_actions"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
+            android:layout_height="match_parent"
             android:gravity="center_vertical"
-            android:paddingStart="12dp"
-            android:paddingEnd="12dp"
-            android:paddingTop="4dp"
-            android:paddingBottom="4dp"
-            android:layout_marginStart="8dp"
-            android:background="?attr/selectableItemBackground">
-
-            <View
-                android:id="@+id/indicator_dot"
-                android:layout_width="12dp"
-                android:layout_height="12dp"
-                android:layout_marginEnd="8dp"/>
-
-            <TextView
-                android:id="@+id/indicator_text"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textAppearance="?attr/textAppearanceLabelMedium"
-                android:textColor="@color/white"/>
+            android:orientation="horizontal"
+            android:visibility="gone">
 
             <ImageView
-                android:layout_width="14dp"
-                android:layout_height="14dp"
-                android:layout_marginStart="4dp"
-                android:src="@drawable/ic_chevron_down"
-                android:tint="@color/white"/>
-        </LinearLayout>
-    </com.google.android.material.appbar.AppBarLayout>
+                android:id="@+id/btn_undo"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/action_undo_cd"
+                android:padding="12dp"
+                android:src="@drawable/ic_undo"
+                app:tint="@color/text_primary" />
 
+            <ImageView
+                android:id="@+id/btn_redo"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/action_redo_cd"
+                android:padding="12dp"
+                android:src="@drawable/ic_redo"
+                app:tint="@color/text_primary" />
+
+            <ImageView
+                android:id="@+id/btn_done"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/editor_done_cd"
+                android:padding="12dp"
+                android:src="@drawable/ic_done"
+                app:tint="@color/primary" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- ===== 内容区 ===== -->
     <androidx.core.widget.NestedScrollView
         android:id="@+id/editor_scroll"
         android:layout_width="match_parent"
@@ -98,6 +114,7 @@
                     android:textSize="20sp"
                     android:textStyle="bold" />
 
+                <!-- metadata_strip：时间（左） + 笔记本指示器（右） -->
                 <LinearLayout
                     android:id="@+id/metadata_strip"
                     android:layout_width="match_parent"
@@ -114,42 +131,72 @@
                         android:textSize="@dimen/text_hint"
                         tools:text="2 分钟前" />
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:paddingHorizontal="@dimen/spacing_xs"
-                        android:text=" · "
-                        android:textColor="@color/text_hint"
-                        android:textSize="@dimen/text_hint"
-                        android:visibility="gone" />
+                    <View
+                        android:layout_width="0dp"
+                        android:layout_height="0dp"
+                        android:layout_weight="1" />
 
+                    <!-- 笔记本指示器（从 AppBar 移到这里） -->
                     <LinearLayout
-                        android:id="@+id/meta_category_chip"
+                        android:id="@+id/notebook_indicator"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:background="?attr/selectableItemBackgroundBorderless"
                         android:gravity="center_vertical"
                         android:orientation="horizontal"
                         android:paddingHorizontal="@dimen/spacing_xs"
-                        android:paddingVertical="2dp"
-                        android:visibility="gone">
+                        android:paddingVertical="2dp">
 
-                        <ImageView
-                            android:id="@+id/meta_category_dot"
+                        <View
+                            android:id="@+id/indicator_dot"
                             android:layout_width="8dp"
-                            android:layout_height="8dp"
-                            android:src="@drawable/shape_circle"
-                            app:tint="@color/text_hint" />
+                            android:layout_height="8dp" />
 
                         <TextView
-                            android:id="@+id/meta_category_name"
+                            android:id="@+id/indicator_text"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginStart="@dimen/spacing_xs"
-                            android:text="@string/filter_uncategorized"
-                            android:textColor="@color/text_hint"
+                            android:layout_marginStart="4dp"
+                            android:textColor="@color/primary"
                             android:textSize="@dimen/text_hint" />
+
+                        <ImageView
+                            android:layout_width="12dp"
+                            android:layout_height="12dp"
+                            android:layout_marginStart="2dp"
+                            android:importantForAccessibility="no"
+                            android:src="@drawable/ic_chevron_down"
+                            app:tint="@color/primary" />
                     </LinearLayout>
+                </LinearLayout>
+
+                <!-- 分类 chip（时间戳下方第二行，保留现有行为） -->
+                <LinearLayout
+                    android:id="@+id/meta_category_chip"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingVertical="2dp"
+                    android:visibility="gone">
+
+                    <ImageView
+                        android:id="@+id/meta_category_dot"
+                        android:layout_width="8dp"
+                        android:layout_height="8dp"
+                        android:src="@drawable/shape_circle"
+                        app:tint="@color/text_hint" />
+
+                    <TextView
+                        android:id="@+id/meta_category_name"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="@dimen/spacing_xs"
+                        android:text="@string/filter_uncategorized"
+                        android:textColor="@color/text_hint"
+                        android:textSize="@dimen/text_hint" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -165,20 +212,30 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent" />
         </FrameLayout>
-
     </androidx.core.widget.NestedScrollView>
 
+    <!-- ===== 底部工具栏：编辑态 ===== -->
     <com.fan.hwnote.app.view.toolbar.TextToolbarView
         android:id="@+id/text_toolbar"
         android:layout_width="match_parent"
         android:layout_height="48dp"
-        android:background="@color/toolbar_bg" />
+        android:background="@color/bg_card"
+        android:visibility="gone" />
 
+    <!-- ===== 底部手写工具栏 ===== -->
     <com.fan.hwnote.app.view.toolbar.HandwritingToolbarView
         android:id="@+id/handwriting_toolbar"
         android:layout_width="match_parent"
         android:layout_height="48dp"
-        android:background="@color/toolbar_bg"
+        android:background="@color/bg_card"
+        android:visibility="gone" />
+
+    <!-- ===== 底部动作栏：浏览态 ===== -->
+    <include
+        android:id="@+id/browse_action_bar"
+        layout="@layout/bar_browse_action"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         android:visibility="gone" />
 
 </LinearLayout>
