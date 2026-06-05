@@ -62,12 +62,23 @@ class NoteListAdapter(
             summary.text = TextUtils.summary(note.plainText)
             summary.visibility = if (summary.text.isNullOrEmpty()) View.GONE else View.VISIBLE
 
-            val colorStr = note.notebookId?.let { notebookColorMap[it] }
-            if (colorStr != null) {
-                val c = Color.parseColor(colorStr)
-                card.setCardBackgroundColor(Color.argb(20, Color.red(c), Color.green(c), Color.blue(c)))
+            val bg = note.background
+            if (bg != "plain") {
+                val bgColor = when (bg) {
+                    "linen" -> Color.parseColor("#F5F0E8")
+                    "kraft" -> Color.parseColor("#E8D5B7")
+                    "grid" -> Color.parseColor("#F8F8F8")
+                    else -> ContextCompat.getColor(itemView.context, R.color.bg_card)
+                }
+                card.setCardBackgroundColor(bgColor)
             } else {
-                card.setCardBackgroundColor(ContextCompat.getColor(itemView.context, R.color.bg_card))
+                val colorStr = note.notebookId?.let { notebookColorMap[it] }
+                if (colorStr != null) {
+                    val c = Color.parseColor(colorStr)
+                    card.setCardBackgroundColor(Color.argb(20, Color.red(c), Color.green(c), Color.blue(c)))
+                } else {
+                    card.setCardBackgroundColor(ContextCompat.getColor(itemView.context, R.color.bg_card))
+                }
             }
 
             itemView.setOnClickListener { onClick(note) }
