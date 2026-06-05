@@ -1,15 +1,15 @@
 # HwNote · 项目进度
 
-最后更新：2026-06-05（M13c 样式增强 + 编辑器 bug/UX 修复完成）
+最后更新：2026-06-05（M14a 数据层+Fragment 重构+待办列表页完成）
 
 ## 项目概况
 
 - **架构：** Block 块组合 + 手写 Overlay 透明层，MVC + XML View，无 Compose/ViewModel/Room
 - **PRD：** `docs/superpowers/specs/2026-05-22-hwnote-design.md`
-- **已完成里程碑：** M1-M13c（共 16 轮），158 项自动化测试全绿
-- **计划归档：** `docs/superpowers/plans/archived/`（16 份已完成计划）
-- **DB 版本：** v4（M12 folders/notebooks 表，M13c background 列）
-- **待开发：** M13d 宫格+批量删除 / M13e 分享功能 / M14 待办子系统
+- **已完成里程碑：** M1-M13c + M14a（共 17 轮），178 项自动化测试全绿
+- **计划归档：** `docs/superpowers/plans/archived/`（17 份已完成计划）
+- **DB 版本：** v5（M14a 新增 todos 表）
+- **待开发：** M14b 待办详情页+时间选择器+通知 / M14c 批量操作+软删除 / M13d 宫格+批量删除 / M13e 分享功能
 
 ## 里程碑进度
 
@@ -30,6 +30,7 @@
 | M13a 视觉基础+列表页重设计 | ✅ 完成（2026-06-05） | 色彩绿→蓝 + 白底大标题 + 筛选面板(FilterPanelAdapter) + 底部导航 + 卡片扁平化 + 笔记本颜色淡化 + Overflow PopupMenu + 排序/删除 Sheet 改版；140 单测 |
 | M13b 编辑器重设计 | ✅ 完成（2026-06-05） | 去 AppBarLayout → 白底顶栏(←↩↪✓) + 浏览/编辑双模式 + 浏览态底部动作栏 + ImageBlockView ✕ + EditorPresenter.setReadOnly()；140 单测 |
 | M13c 样式增强 | ✅ 完成（2026-06-05） | StylePickerBottomSheet 4行→7行 + 对齐/列表/缩进 + H1-H6 + 字号5档 + 7色 + 背景纹理(DB v4) + ParagraphCommands(3 Command)；158 单测 |
+| M14a 数据层+Fragment重构+待办列表页 | ✅ 完成（2026-06-05） | DB v5(todos 表) + Todo/RepeatType 实体 + TodoRepository + NoteListActivity→Fragment 容器 + NoteListFragment + TodoListFragment + TodoListAdapter(6分组) + TodoFilterPanelAdapter + QuickAddBar；178 单测 |
 
 ## M1 完成详情（2026-05-22）
 
@@ -647,12 +648,13 @@ M1 ✅ → M2 数据层 → M3 列表页
 | M11 | 撤销 / 重做 | 19 (+2 docs) | 29 | `model/history/` 包（Command interface + EditHistoryManager 双栈 cap50 listener + CompositeCommand 多步打包）+ 7 Command 子类 (Add/Remove/Move/Replace/ApplySpan/ApplyHeading/ReplaceText) + Presenter 三 Mutator(silent) 接口与 push 收口 + TextBlockView 800ms 防抖 + suppressDebounceWhile 守卫 + 顶部 AppBar ↶↷ MenuItem + onPause flush + `NoteRepository.cleanOrphanFiles` 异步清孤 + onSaveSuccess 唯一清栈入口 |
 | M12 | 文件夹层级 | 12 (+3 docs) | 23 | DB v3 迁移（folders/notebooks 表 + notes.notebook_id）+ Folder/Notebook 实体 + FolderRepository/NotebookRepository（级联软删/移动/默认保护）+ ListFilter 改造（Folder/Notebook 二级 + 旧 prefs 兼容）+ NewFolder/NewNotebook BottomSheet（创建+编辑双模式 + 8 色选色）+ NotebookFilterPopupWindow（伪项+折叠树 chip 筛选）+ FolderManagerActivity（折叠树 + overflow 菜单 + 三粒度拖动排序）+ NotebookPickerPopupWindow（卡片长按移动笔记本）+ 编辑器 AppBar indicator（色点+名称+点击切换笔记本） |
 | M13a | 视觉基础+列表页重设计 | 14 (+2 docs) | 3 | 色彩体系绿→蓝(#007DFF) + 白色状态栏 + 列表页 LinearLayout 大标题重写(去 CoordinatorLayout/AppBarLayout/Toolbar) + FilterPanelAdapter 内嵌筛选面板(伪项4+折叠文件夹树+计数) + 底部导航 2-tab + 卡片扁平化(elevation=0/stroke=0.5dp) + 笔记本颜色淡化(卡片 alpha=20/页面 alpha=25) + Overflow PopupMenu + 排序 Sheet 加取消 + 删除确认 Sheet 简化 + ListFilter.Uncategorized + NoteRepository.count() + 删除旧 NotebookFilterPopupWindow |
+| M14a | 数据层+Fragment重构+待办列表页 | 12 | 20 | DB v5(todos 表+索引) + Todo/RepeatType 实体 + TodoRepository(CRUD+软删+重复推进) + NoteListActivity→Fragment 容器 + NoteListFragment + TodoListFragment + TodoListAdapter(6分组) + TodoFilterPanelAdapter + QuickAddBar |
 
-**累计：** ~200 个 commit（含 docs/计划 commit），140 项自动化单测全绿，**PRD MVP + §13 全部 100% 覆盖 + M12 文件夹层级 + M13a 视觉重设计完成**。架构守住"Block 块组合 + 手写 Overlay 透明层"原始决策，未引入 Compose / ViewModel / LiveData / Room / Hilt / Navigation；DB 二次迁移（v2→v3）走 SQLiteOpenHelper.onUpgrade 新增 folders/notebooks 表 + notes.notebook_id 列 + 预置默认行，旧装机数据无损；M12 引入二级分类体系（Folder→Notebook→Note），全面替换 M9 的 Category 平级模型，PopupWindow 复用折叠树 UI 模式，FolderManager 三粒度拖动排序（文件夹整体 / 笔记本同夹 / 笔记本跨夹），默认文件夹(id=1)与默认笔记本(id=1)受保护不可删除/移动。
+**累计：** ~220 个 commit（含 docs/计划 commit），178 项自动化单测全绿，**PRD MVP + §13 全部 100% 覆盖 + M12 文件夹层级 + M13a-c 视觉重设计 + M14a 待办数据层+列表页完成**。架构守住"Block 块组合 + 手写 Overlay 透明层"原始决策，未引入 Compose / ViewModel / LiveData / Room / Hilt / Navigation；DB 二次迁移（v2→v3）走 SQLiteOpenHelper.onUpgrade 新增 folders/notebooks 表 + notes.notebook_id 列 + 预置默认行，旧装机数据无损；M12 引入二级分类体系（Folder→Notebook→Note），全面替换 M9 的 Category 平级模型，PopupWindow 复用折叠树 UI 模式，FolderManager 三粒度拖动排序（文件夹整体 / 笔记本同夹 / 笔记本跨夹），默认文件夹(id=1)与默认笔记本(id=1)受保护不可删除/移动。
 
-**Pending：** M13b 编辑器重设计 / M13c 样式增强 / M13d 宫格+批量删除 / M13e 分享功能（均依赖 M13a 色彩基础）。
+**Pending：** M14b 待办详情页+时间选择器+通知 / M14c 批量操作+软删除 / M13d 宫格+批量删除 / M13e 分享功能。
 
-**后续可选方向：** M14 待办子系统 / M15 UI 全面审查 / 置顶 pin / 提醒 / 加锁 / 导出 / 备份 / 深色模式 / 多端同步。
+**后续可选方向：** M15 UI 全面审查 / 置顶 pin / 加锁 / 导出 / 备份 / 深色模式 / 多端同步。
 
 ---
 
@@ -862,3 +864,63 @@ c91ac6c feat(m13c): NoteListAdapter 卡片背景纹理渲染
 **涉及文件：** EditorPresenter.kt / ChecklistBlockView.kt / NoteEditorActivity.kt / HandwritingToolbarView.kt / toolbar_handwriting.xml / strings.xml
 
 **测试：** 158 项 PASSED，0 failures。
+
+## M14a 完成详情（2026-06-05）
+
+**目标：** M14 待办子系统第一阶段——数据层（DB v5 + Todo/RepeatType 实体 + TodoRepository）+ Fragment 重构（NoteListActivity → 容器 Activity 承载 NoteListFragment + TodoListFragment）+ 待办列表页（TodoListAdapter 6 分组 + TodoFilterPanelAdapter + QuickAddBar）。
+
+**4 改动维度：**
+
+1. **数据层（T1-T5）：**
+   - **Todo 实体 + RepeatType 枚举（T1，commit `0163f51`）：** `model/entity/Todo.kt`（11 字段 data class + companion `new()` 工厂）+ `model/entity/RepeatType.kt`（NONE/DAILY/WEEKLY/MONTHLY/YEARLY + `fromValue` + `advanceRemindAt()`）。RepeatTypeTest 3 项 JUnit 5 单测。
+   - **DB v5 迁移（T2，commit `fcdb9c5`）：** `NoteDbHelper.DATABASE_VERSION` 4→5；新增 `todos` 表（11 列）+ `idx_todos_remind_at` + `idx_todos_deleted_at` 索引；`onUpgrade(v4→v5)` 仅 CREATE TABLE + 索引。TodoDbMigrationTest 3 项 Robolectric 单测。
+   - **TodoRepository CRUD（T3，commit `1204ead`）：** object 单例，init/insert/update/getById/list/count/softDelete/softDeleteBatch/restore/deletePermanently/purgeExpired/listPendingAlarms。TodoRepositoryTest 8 项。
+   - **completeTodo 重复推进（T4，commit `1faf42a`）：** completeTodo（非重复→标完成；重复→推进 remindAt 到未来）/ uncompleteTodo / advanceRemindAt。+6 单测。
+   - **TodoListFilter + App 初始化（T5，commit `a6e7147`）：** sealed class（All/Uncategorized/Deleted/ByFolder）；App.onCreate 加 `TodoRepository.init(this)` + `runCatching { TodoRepository.purgeExpired() }`。
+
+2. **资源 + Fragment 布局（T6）：**
+   - commit `af581d0`。新增 20 条 todo strings + 4 个 drawables（ic_todo_checkbox/checked/clock/important）+ fragment_note_list.xml（从 activity_note_list 抽取）+ fragment_todo_list.xml + item_todo_card.xml + item_todo_section_header.xml + layout_quick_add_bar.xml。activity_note_list.xml 简化为 fragment_container + bottom_nav。
+
+3. **Fragment 重构（T7-T8）：**
+   - **NoteListFragment（T7，commit `ada5afa`）：** ~445 行，原 NoteListActivity 的全部笔记列表逻辑搬入 Fragment（header/搜索/筛选面板/overflow/卡片菜单/排序/SharedPreferences 持久化）。
+   - **NoteListActivity 容器化（T8，commit `8daa335`）：** 458→92 行，只保留 Fragment 容器 + tab 切换（FragmentTransaction.replace）+ 底部导航高亮 + SharedPreferences tab 持久化。
+
+4. **待办列表页（T9-T11）：**
+   - **TodoListAdapter（T9，commit `5e09c3b`）：** ~201 行，sealed Item（Header/TodoItem），`groupTodos()` companion 将 Todo 列表分为已过期/今天/明天/更晚/无日期/已完成 6 个分组；checkbox toggle + 重要 ❗ 前缀 + 完成态删除线 + 过期红色时间。
+   - **TodoFilterPanelAdapter（T10，commit `2766e5b`）：** ~150 行，复用 item_filter_pseudo.xml，4 ViewType（Pseudo/Divider/SectionHeader/FolderRow），PseudoKind 三项（All/Uncategorized/Deleted）。
+   - **TodoListFragment（T11，commit `b965475`）：** ~338 行，header + 筛选面板 + reload + QuickAddBar（show/hide/save/toggleImportant）+ overflow 菜单（隐藏已完成/批量删除占位）+ SharedPreferences 持久化。点击待办/设置时间为 Toast 占位（M14b 接通）。
+
+**涉及文件：**
+- **新增（共 15 个）：** `model/entity/Todo.kt`、`model/entity/RepeatType.kt`、`model/TodoRepository.kt`、`controller/list/TodoListFilter.kt`、`controller/list/NoteListFragment.kt`、`controller/list/TodoListFragment.kt`、`controller/list/TodoListAdapter.kt`、`controller/list/TodoFilterPanelAdapter.kt`、`res/layout/fragment_note_list.xml`、`res/layout/fragment_todo_list.xml`、`res/layout/item_todo_card.xml`、`res/layout/item_todo_section_header.xml`、`res/layout/layout_quick_add_bar.xml`、`res/drawable/ic_todo_checkbox.xml`、4 drawable + test 文件
+- **修改（共 5 个）：** `model/db/NoteDbHelper.kt`、`App.kt`、`controller/list/NoteListActivity.kt`（重写）、`res/layout/activity_note_list.xml`（重写）、`res/values/strings.xml`
+
+**M14a commit 列表（共 12 个功能 commit）：**
+```
+0163f51 feat(m14a): 新增 Todo 实体 + RepeatType 枚举 + 单测
+fcdb9c5 feat(m14a): DB v4→v5 迁移，新增 todos 表 + 索引
+1204ead feat(m14a): 新增 TodoRepository CRUD + 软删除 + 单测
+1faf42a test(m14a): TodoRepository completeTodo 重复推进 + listPendingAlarms 测试
+a6e7147 feat(m14a): 新增 TodoListFilter + App 初始化 TodoRepository
+af581d0 feat(m14a): 资源批量新增 + Fragment 布局拆分
+ada5afa feat(m14a): NoteListFragment 搬迁笔记列表逻辑
+8daa335 refactor(m14a): NoteListActivity 重构为 Fragment 容器 + Tab 切换
+5e09c3b feat(m14a): 新增 TodoListAdapter 多 ViewType 分组列表
+2766e5b feat(m14a): 新增 TodoFilterPanelAdapter 待办筛选面板
+b965475 feat(m14a): 新增 TodoListFragment 待办列表页
+eddf61f fix(m14a): 修复 TodoFilterPanelAdapter 缺失类闭合大括号
+```
+
+**测试统计：** `:app:assembleDebug` + `:app:test` 全绿，**178 项 PASSED**（M13c 基线 158 → M14a +20），0 failures / 0 errors / 0 skipped。增量明细：
+- `RepeatTypeTest`（3）：valid values / unknown value / round-trip
+- `TodoDbMigrationTest`（3）：onCreate columns / onCreate indexes / v4→v5 upgrade
+- `TodoRepositoryTest`（14）：insert+getById / update / list / count / softDelete / restore / deletePermanently / purgeExpired / completeTodo 非重复 / daily 推进 / 过期推进 / uncompleteTodo / advanceRemindAt weekly / listPendingAlarms
+
+**验证（待真机走查）：**
+1. 底部 tab 切换笔记/待办，重启后恢复上次 tab
+2. 新建待办（仅标题）→ 列表出现在"无日期"分组
+3. 新建待办（标题 + 重要）→ 列表显示 ❗ 标记
+4. 点击 checkbox 完成待办 → 移入"已完成"分组
+5. 筛选面板切换 → 列表正确过滤
+6. 笔记 tab 全部功能回归无退化
+
+**执行模式：** Subagent-Driven Development，严格串行 13 任务（T1→T13）。每任务 implementer DONE → 标完成（机械任务跳 review）。T12 构建验证发现 TodoFilterPanelAdapter 缺闭合大括号，单独 fix commit。
