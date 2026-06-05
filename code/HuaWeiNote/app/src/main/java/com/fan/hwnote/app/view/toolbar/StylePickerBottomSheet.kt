@@ -3,111 +3,218 @@ package com.fan.hwnote.app.view.toolbar
 import android.content.Context
 import android.os.Bundle
 import android.widget.ImageView
+import android.widget.SeekBar
 import android.widget.TextView
 import com.fan.hwnote.app.R
 import com.fan.hwnote.app.controller.editor.EditorPresenter
+import com.fan.hwnote.app.model.entity.Alignment
 import com.fan.hwnote.app.model.entity.Heading
+import com.fan.hwnote.app.model.entity.ListType
 import com.fan.hwnote.app.model.entity.SpanType
+import com.fan.hwnote.app.view.block.TextBlockView
 import com.google.android.material.bottomsheet.BottomSheetDialog
 
-/**
- * 样式选择 BottomSheet：B/I/U/S 行内样式 + 字号 + 颜色 + H1/H2 块级样式。
- * 直接驱动 EditorPresenter 既有方法（toggleInline/toggleSize/pickColor/toggleHeading）；
- * 每次点击后从 presenter 拉一次状态，更新按钮 selected 态。BottomSheet 不主动关闭，
- * 用户可连续操作多个样式，关闭由用户外部点击或下拉触发。
- */
 class StylePickerBottomSheet(
     context: Context,
     private val presenter: EditorPresenter,
+    private val onBackgroundPicked: (String) -> Unit = {},
 ) : BottomSheetDialog(context) {
 
-    // 行 1: B/I/U/S
+    // Row 1: B/I/U/S + alignment
     private lateinit var btnBold: TextView
     private lateinit var btnItalic: TextView
     private lateinit var btnUnderline: TextView
     private lateinit var btnStrike: TextView
+    private lateinit var btnAlignLeft: ImageView
+    private lateinit var btnAlignCenter: ImageView
+    private lateinit var btnAlignRight: ImageView
 
-    // 行 2: A-/A/A+
-    private lateinit var btnSizeSmall: TextView
-    private lateinit var btnSizeNormal: TextView
-    private lateinit var btnSizeLarge: TextView
+    // Row 2: indent + lists
+    private lateinit var btnIndentInc: ImageView
+    private lateinit var btnIndentDec: ImageView
+    private lateinit var btnListNumbered: ImageView
+    private lateinit var btnListLettered: ImageView
+    private lateinit var btnListBullet: ImageView
+    private lateinit var btnListHollow: ImageView
 
-    // 行 3: 5 色
-    private lateinit var btnColorBlack: ImageView
-    private lateinit var btnColorRed: ImageView
-    private lateinit var btnColorYellow: ImageView
-    private lateinit var btnColorGreen: ImageView
-    private lateinit var btnColorBlue: ImageView
+    // Row 3: font size slider
+    private lateinit var seekFontSize: SeekBar
 
-    // 行 4: H1/H2
-    private lateinit var btnH1: TextView
-    private lateinit var btnH2: TextView
+    // Row 4: 7 colors
+    private lateinit var colorViews: Array<ImageView>
+    private val colorHexes = arrayOf("#E53935", "#FB8C00", "#43A047", "#29B6F6", "#1E88E5", "#AB47BC", "#212121")
 
-    private val colorButtons: List<Pair<ImageView, String>> by lazy {
-        listOf(
-            btnColorBlack to "#212121",
-            btnColorRed to "#E53935",
-            btnColorYellow to "#FB8C00",
-            btnColorGreen to "#43A047",
-            btnColorBlue to "#1E88E5",
-        )
-    }
+    // Row 5: H1-H6
+    private lateinit var headingViews: Array<TextView>
+    private val headingValues = Heading.values()
+
+    // Row 6: background textures
+    private lateinit var bgViews: Array<ImageView>
+    private val bgNames = arrayOf("plain", "linen", "kraft", "grid")
+
+    private var currentBackground: String = "plain"
+
+    private val sizeNames = arrayOf("xs", "small", "medium", "large", "xl")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.dialog_style_picker)
 
-        btnBold = findViewById(R.id.btn_style_bold)!!
-        btnItalic = findViewById(R.id.btn_style_italic)!!
-        btnUnderline = findViewById(R.id.btn_style_underline)!!
-        btnStrike = findViewById(R.id.btn_style_strike)!!
-        btnSizeSmall = findViewById(R.id.btn_style_size_small)!!
-        btnSizeNormal = findViewById(R.id.btn_style_size_normal)!!
-        btnSizeLarge = findViewById(R.id.btn_style_size_large)!!
-        btnColorBlack = findViewById(R.id.btn_style_color_black)!!
-        btnColorRed = findViewById(R.id.btn_style_color_red)!!
-        btnColorYellow = findViewById(R.id.btn_style_color_yellow)!!
-        btnColorGreen = findViewById(R.id.btn_style_color_green)!!
-        btnColorBlue = findViewById(R.id.btn_style_color_blue)!!
-        btnH1 = findViewById(R.id.btn_style_h1)!!
-        btnH2 = findViewById(R.id.btn_style_h2)!!
+        // Title bar
+        findViewById<android.view.View>(R.id.btn_close)!!.setOnClickListener { dismiss() }
+
+        // Row 1
+        btnBold = findViewById(R.id.btn_bold)!!
+        btnItalic = findViewById(R.id.btn_italic)!!
+        btnUnderline = findViewById(R.id.btn_underline)!!
+        btnStrike = findViewById(R.id.btn_strike)!!
+        btnAlignLeft = findViewById(R.id.btn_align_left)!!
+        btnAlignCenter = findViewById(R.id.btn_align_center)!!
+        btnAlignRight = findViewById(R.id.btn_align_right)!!
+
+        // Row 2
+        btnIndentInc = findViewById(R.id.btn_indent_inc)!!
+        btnIndentDec = findViewById(R.id.btn_indent_dec)!!
+        btnListNumbered = findViewById(R.id.btn_list_numbered)!!
+        btnListLettered = findViewById(R.id.btn_list_lettered)!!
+        btnListBullet = findViewById(R.id.btn_list_bullet)!!
+        btnListHollow = findViewById(R.id.btn_list_hollow)!!
+
+        // Row 3
+        seekFontSize = findViewById(R.id.seek_font_size)!!
+
+        // Row 4
+        colorViews = arrayOf(
+            findViewById(R.id.color_0)!!,
+            findViewById(R.id.color_1)!!,
+            findViewById(R.id.color_2)!!,
+            findViewById(R.id.color_3)!!,
+            findViewById(R.id.color_4)!!,
+            findViewById(R.id.color_5)!!,
+            findViewById(R.id.color_6)!!,
+        )
+
+        // Row 5
+        headingViews = arrayOf(
+            findViewById(R.id.btn_h1)!!,
+            findViewById(R.id.btn_h2)!!,
+            findViewById(R.id.btn_h3)!!,
+            findViewById(R.id.btn_h4)!!,
+            findViewById(R.id.btn_h5)!!,
+            findViewById(R.id.btn_h6)!!,
+        )
+
+        // Row 6
+        bgViews = arrayOf(
+            findViewById(R.id.bg_plain)!!,
+            findViewById(R.id.bg_linen)!!,
+            findViewById(R.id.bg_kraft)!!,
+            findViewById(R.id.bg_grid)!!,
+        )
 
         wireListeners()
         refreshSelected()
     }
 
     private fun wireListeners() {
+        // Row 1 - inline styles
         btnBold.setOnClickListener { presenter.toggleInline(SpanType.BOLD); refreshSelected() }
         btnItalic.setOnClickListener { presenter.toggleInline(SpanType.ITALIC); refreshSelected() }
         btnUnderline.setOnClickListener { presenter.toggleInline(SpanType.UNDERLINE); refreshSelected() }
         btnStrike.setOnClickListener { presenter.toggleInline(SpanType.STRIKETHROUGH); refreshSelected() }
 
-        btnSizeSmall.setOnClickListener { presenter.toggleSize("small"); refreshSelected() }
-        btnSizeNormal.setOnClickListener { presenter.toggleSize("medium"); refreshSelected() }
-        btnSizeLarge.setOnClickListener { presenter.toggleSize("large"); refreshSelected() }
+        // Row 1 - alignment
+        btnAlignLeft.setOnClickListener { presenter.toggleAlignment(Alignment.START); refreshSelected() }
+        btnAlignCenter.setOnClickListener { presenter.toggleAlignment(Alignment.CENTER); refreshSelected() }
+        btnAlignRight.setOnClickListener { presenter.toggleAlignment(Alignment.END); refreshSelected() }
 
-        for ((view, hex) in colorButtons) {
-            view.setOnClickListener { presenter.pickColor(hex); refreshSelected() }
+        // Row 2 - indent + lists
+        btnIndentInc.setOnClickListener { presenter.indent(); refreshSelected() }
+        btnIndentDec.setOnClickListener { presenter.outdent(); refreshSelected() }
+        btnListNumbered.setOnClickListener { presenter.toggleListType(ListType.NUMBERED); refreshSelected() }
+        btnListLettered.setOnClickListener { presenter.toggleListType(ListType.LETTERED); refreshSelected() }
+        btnListBullet.setOnClickListener { presenter.toggleListType(ListType.BULLET); refreshSelected() }
+        btnListHollow.setOnClickListener { presenter.toggleListType(ListType.HOLLOW_BULLET); refreshSelected() }
+
+        // Row 3 - font size slider
+        seekFontSize.max = 4
+        seekFontSize.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
+                if (fromUser) presenter.toggleSize(sizeNames[progress])
+            }
+            override fun onStartTrackingTouch(seekBar: SeekBar) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar) {}
+        })
+
+        // Row 4 - colors
+        for (i in colorViews.indices) {
+            colorViews[i].setOnClickListener {
+                presenter.pickColor(colorHexes[i])
+                refreshSelected()
+            }
         }
 
-        btnH1.setOnClickListener { presenter.toggleHeading(Heading.H1); refreshSelected() }
-        btnH2.setOnClickListener { presenter.toggleHeading(Heading.H2); refreshSelected() }
+        // Row 5 - headings
+        for (i in headingViews.indices) {
+            headingViews[i].setOnClickListener {
+                presenter.toggleHeading(headingValues[i])
+                refreshSelected()
+            }
+        }
+
+        // Row 6 - background textures
+        for (i in bgViews.indices) {
+            bgViews[i].setOnClickListener {
+                currentBackground = bgNames[i]
+                onBackgroundPicked(bgNames[i])
+                refreshSelected()
+            }
+        }
     }
 
     private fun refreshSelected() {
-        val pendingInline = presenter.pendingInlineSet()
-        btnBold.isSelected = SpanType.BOLD in pendingInline
-        btnItalic.isSelected = SpanType.ITALIC in pendingInline
-        btnUnderline.isSelected = SpanType.UNDERLINE in pendingInline
-        btnStrike.isSelected = SpanType.STRIKETHROUGH in pendingInline
+        // Row 1 - inline
+        val pending = presenter.pendingInlineSet()
+        btnBold.isSelected = SpanType.BOLD in pending
+        btnItalic.isSelected = SpanType.ITALIC in pending
+        btnUnderline.isSelected = SpanType.UNDERLINE in pending
+        btnStrike.isSelected = SpanType.STRIKETHROUGH in pending
 
-        val pendingSize = presenter.pendingSize()
-        btnSizeSmall.isSelected = pendingSize == "small"
-        btnSizeNormal.isSelected = pendingSize == "medium"
-        btnSizeLarge.isSelected = pendingSize == "large"
+        // Row 1 - alignment
+        val focused = presenter.currentFocusedTextBlock()
+        val alignment = (focused as? TextBlockView)?.currentAlignment()
+        btnAlignLeft.isSelected = alignment == Alignment.START
+        btnAlignCenter.isSelected = alignment == Alignment.CENTER
+        btnAlignRight.isSelected = alignment == Alignment.END
 
-        val pendingColor = presenter.pendingColor()
-        for ((view, hex) in colorButtons) view.isSelected = pendingColor == hex
-        // H1/H2 没有 pending 概念（块级），不做高亮
+        // Row 2 - lists
+        val listType = (focused as? TextBlockView)?.currentListType()
+        btnListNumbered.isSelected = listType == ListType.NUMBERED
+        btnListLettered.isSelected = listType == ListType.LETTERED
+        btnListBullet.isSelected = listType == ListType.BULLET
+        btnListHollow.isSelected = listType == ListType.HOLLOW_BULLET
+
+        // Row 3 - font size slider
+        val size = presenter.pendingSize()
+        seekFontSize.progress = when (size) {
+            "xs" -> 0; "small" -> 1; "large" -> 3; "xl" -> 4; else -> 2
+        }
+
+        // Row 4 - colors
+        val pc = presenter.pendingColor()
+        for (i in colorViews.indices) {
+            colorViews[i].isSelected = pc != null && pc.equals(colorHexes[i], ignoreCase = true)
+        }
+
+        // Row 5 - headings
+        val heading = presenter.pendingHeading()
+        for (i in headingViews.indices) {
+            headingViews[i].isSelected = heading == headingValues[i]
+        }
+
+        // Row 6 - backgrounds
+        for (i in bgViews.indices) {
+            bgViews[i].isSelected = currentBackground == bgNames[i]
+        }
     }
 }
