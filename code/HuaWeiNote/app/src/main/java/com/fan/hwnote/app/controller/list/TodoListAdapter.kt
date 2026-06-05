@@ -20,7 +20,7 @@ import java.util.Calendar
 import java.util.Locale
 
 class TodoListAdapter(
-    private val onCheckToggle: (Todo) -> Unit,
+    private val onCheckToggle: (Todo, View) -> Unit,
     private val onClick: (Todo) -> Unit,
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
@@ -78,11 +78,13 @@ class TodoListAdapter(
         private val subtitle: TextView = v.findViewById(R.id.todo_subtitle)
 
         fun bind(todo: Todo) {
+            itemView.alpha = 1f
+            itemView.translationX = 0f
             checkbox.setImageResource(
                 if (todo.isCompleted) R.drawable.ic_todo_checkbox_checked
                 else R.drawable.ic_todo_checkbox,
             )
-            checkbox.setOnClickListener { onCheckToggle(todo) }
+            checkbox.setOnClickListener { onCheckToggle(todo, itemView) }
 
             if (todo.isImportant && !todo.isCompleted) {
                 val sp = SpannableString("❗${todo.title}")

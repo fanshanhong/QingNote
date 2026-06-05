@@ -8,6 +8,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="top"
+        android:button="@drawable/selector_todo_checkbox"
         android:contentDescription="@string/checklist_item_checkbox_cd"
         android:minWidth="0dp"
         android:minHeight="0dp"

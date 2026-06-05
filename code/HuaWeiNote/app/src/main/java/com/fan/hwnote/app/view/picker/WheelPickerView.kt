@@ -50,6 +50,7 @@ class WheelPickerView @JvmOverloads constructor(
             this.adapter = this@WheelPickerView.adapter
             clipToPadding = false
             overScrollMode = OVER_SCROLL_NEVER
+            isNestedScrollingEnabled = false
             setPadding(0, sidePadding, 0, sidePadding)
             layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, totalHeight)
         }

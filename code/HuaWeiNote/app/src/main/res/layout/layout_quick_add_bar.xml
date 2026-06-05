@@ -53,6 +53,17 @@
             android:focusable="true"
             android:contentDescription="@string/todo_section_today" />
 
+        <ImageView
+            android:id="@+id/quick_add_important"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:padding="6dp"
+            android:src="@drawable/ic_important"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:clickable="true"
+            android:focusable="true"
+            android:contentDescription="@string/todo_quick_add_hint" />
+
         <TextView
             android:id="@+id/quick_add_repeat"
             android:layout_width="wrap_content"
@@ -69,17 +80,6 @@
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_weight="1" />
-
-        <ImageView
-            android:id="@+id/quick_add_important"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:padding="6dp"
-            android:src="@drawable/ic_important"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:clickable="true"
-            android:focusable="true"
-            android:contentDescription="@string/todo_quick_add_hint" />
 
         <TextView
             android:id="@+id/quick_add_save"

@@ -81,14 +81,20 @@ class TodoListFragment : Fragment() {
         quickAddRepeat = view.findViewById(R.id.quick_add_repeat)
 
         adapter = TodoListAdapter(
-            onCheckToggle = { todo ->
+            onCheckToggle = { todo, itemView ->
                 lifecycleScope.launch {
                     if (todo.isCompleted) {
                         TodoRepository.uncompleteTodo(todo.id)
+                        reload()
                     } else {
                         TodoRepository.completeTodo(todo.id)
+                        itemView.animate()
+                            .alpha(0f)
+                            .translationX(itemView.width * 0.3f)
+                            .setDuration(300)
+                            .withEndAction { reload() }
+                            .start()
                     }
-                    reload()
                 }
             },
             onClick = { todo ->
