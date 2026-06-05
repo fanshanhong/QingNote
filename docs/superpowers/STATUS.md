@@ -809,3 +809,38 @@ e7cbd44 feat(m13a): 新建底部导航+筛选面板 vector 图标
 - 白色状态栏 + 顶栏无蓝色
 
 **执行模式：** Subagent-Driven Development，严格串行 11 任务。T1-T4 为资源任务，T5-T7 为 BlockView 基础设施，T8 布局重写，T9 核心双模式逻辑（最大任务），T10 清理+全量测试。
+
+## M13c 样式增强（2026-06-05）
+
+**范围：** StylePickerBottomSheet 从 4 行升级为 7 行完整样式面板，对齐华为备忘录参考。
+
+**新增功能：**
+- 文本对齐（左/居中/右）
+- 列表+缩进（数字/字母/实心圆点/空心圆点 + 3 级缩进）
+- 字号滑块（5 档：xs/small/medium/large/xl）
+- 颜色扩充（5 色→7 色，加浅蓝/紫）
+- H1-H6 六级标题
+- 背景纹理（白纸/亚麻/牛皮纸/网点）
+
+**涉及文件：** Block.kt / Note.kt / NoteDbHelper(v4) / NoteRepository / NoteJson / SpanConverter / EditorPresenter / TextBlockView / StylePickerBottomSheet / NoteEditorActivity / NoteListAdapter / ParagraphCommands.kt / 资源文件（strings/dimens/colors/9 图标/7 纹理 drawable）
+
+**M13c commit 列表（共 14 个）：**
+```
+be1c1e3 feat(m13c): TextBlock 加 alignment/listType/indentLevel + Heading 扩 H1-H6 + Alignment/ListType 枚举
+c525d04 feat(m13c): Note 加 background 字段 + DB v4 迁移 + Repository 读写
+3b2b363 feat(m13c): NoteJson 序列化/反序列化 alignment/listType/indentLevel
+1388e94 feat(m13c): SpanConverter FONT_SIZE 3 档扩展为 5 档
+21d8e0e feat(m13c): 新增样式面板资源（strings/dimens/colors/9 图标/7 纹理 drawable）
+480af2d feat(m13c): 新增 ApplyAlignment/ApplyListType/ApplyIndent Command + StyleMutator 扩展
+21eed45 feat(m13c): TextBlockView 加 listMarker + 缩进 + 对齐 + H1-H6 字号
+0e93fc8 feat(m13c): EditorPresenter 加 toggleAlignment/toggleListType/indent/outdent/refreshListNumbers + StyleMutator 实现
+7bb9d3a feat(m13c): NoteEditorActivity 背景纹理渲染 + pendingBackground 保存
+3cc4128 feat(m13c): dialog_style_picker.xml 重写为 7 行样式面板
+cd8eee2 feat(m13c): StylePickerBottomSheet 重写为 7 行完整样式面板
+c91ac6c feat(m13c): NoteListAdapter 卡片背景纹理渲染
+40abd8e test(m13c): 新增 alignment/listType/indentLevel 序列化 + DB v4 + 5 档字号测试
+```
+
+**测试统计：** `:app:clean :app:assembleDebug :app:test` 全绿，**158 项 PASSED**（140 项旧 + 18 项新），0 failures / 0 errors / 0 skipped。
+
+**执行模式：** Subagent-Driven Development，严格串行 15 任务。T1-T4 数据模型，T5 资源，T6-T8 核心逻辑（TextBlockView/EditorPresenter），T9 背景纹理，T10-T11 面板 UI 重写，T12 列表卡片，T13-T14 测试+构建验证。
