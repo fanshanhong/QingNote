@@ -844,3 +844,23 @@ c91ac6c feat(m13c): NoteListAdapter 卡片背景纹理渲染
 **测试统计：** `:app:clean :app:assembleDebug :app:test` 全绿，**158 项 PASSED**（140 项旧 + 18 项新），0 failures / 0 errors / 0 skipped。
 
 **执行模式：** Subagent-Driven Development，严格串行 15 任务。T1-T4 数据模型，T5 资源，T6-T8 核心逻辑（TextBlockView/EditorPresenter），T9 背景纹理，T10-T11 面板 UI 重写，T12 列表卡片，T13-T14 测试+构建验证。
+
+## 编辑器 Bug/UX 修复（2026-06-05）
+
+**范围：** M13c 完成后真机走查暴露的 3 个问题修复。
+
+**修复内容：**
+- 空白点击聚焦兼容 ChecklistBlockView（末尾是清单时也能聚焦）
+- 手写模式下顶栏 ↩↪ 控制笔画撤销/重做（退出手写恢复笔记级）；✓ 直接保存退出编辑模式
+- 手写工具栏重排：颜色圆点(→8色弹窗) + 4笔种 + 橡皮擦 + 加号(占位)
+
+**commit 列表：**
+```
+989976e fix: focusLastEditableBlock 兼容 ChecklistBlockView 末尾聚焦
+7411475 fix: 手写模式下顶栏 undo/redo 控制笔画 + ✓ 直接退出编辑模式
+443970b refactor: 手写工具栏重排为颜色+4笔种+橡皮+加号
+```
+
+**涉及文件：** EditorPresenter.kt / ChecklistBlockView.kt / NoteEditorActivity.kt / HandwritingToolbarView.kt / toolbar_handwriting.xml / strings.xml
+
+**测试：** 158 项 PASSED，0 failures。
