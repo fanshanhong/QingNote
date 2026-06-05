@@ -142,17 +142,17 @@ class NoteListActivity : AppCompatActivity() {
 
     private suspend fun updateHeader() {
         val f = currentFilter
-        when (f) {
+        val _ensureValid = when (f) {
             is NoteRepository.ListFilter.Folder ->
                 if (FolderRepository.get(f.folderId) == null) {
                     currentFilter = NoteRepository.ListFilter.All
                     saveFilter(NoteRepository.ListFilter.All)
-                }
+                } else Unit
             is NoteRepository.ListFilter.Notebook ->
                 if (NotebookRepository.get(f.notebookId) == null) {
                     currentFilter = NoteRepository.ListFilter.All
                     saveFilter(NoteRepository.ListFilter.All)
-                }
+                } else Unit
             NoteRepository.ListFilter.All,
             NoteRepository.ListFilter.Uncategorized,
             NoteRepository.ListFilter.Favorite,
@@ -428,7 +428,7 @@ class NoteListActivity : AppCompatActivity() {
     private fun saveFilter(filter: NoteRepository.ListFilter) {
         val editor = getSharedPreferences(PREFS, MODE_PRIVATE).edit()
             .remove(KEY_FILTER_FOLDER_ID).remove(KEY_FILTER_NOTEBOOK_ID)
-        when (filter) {
+        val _save = when (filter) {
             NoteRepository.ListFilter.All -> editor.putString(KEY_FILTER_TYPE, "ALL")
             NoteRepository.ListFilter.Uncategorized -> editor.putString(KEY_FILTER_TYPE, "UNCATEGORIZED")
             NoteRepository.ListFilter.Favorite -> editor.putString(KEY_FILTER_TYPE, "FAVORITE")
