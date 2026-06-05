@@ -80,7 +80,6 @@ class AudioBlockView @JvmOverloads constructor(
     private fun showDeleteDialog() {
         DeleteConfirmBottomSheet(
             context,
-            title = context.getString(R.string.audio_delete_title),
             message = context.getString(R.string.audio_delete_message),
             confirmLabel = context.getString(R.string.action_delete),
             onConfirm = { callback?.onRequestDelete(this) },

@@ -136,7 +136,6 @@ class NoteListActivity : AppCompatActivity() {
                 R.id.action_delete -> {
                     DeleteConfirmBottomSheet(
                         this,
-                        title = getString(R.string.dialog_delete_title),
                         message = getString(R.string.dialog_soft_delete_message),
                         confirmLabel = getString(R.string.action_delete),
                         onConfirm = {
@@ -152,7 +151,6 @@ class NoteListActivity : AppCompatActivity() {
                 R.id.action_delete_permanently -> {
                     DeleteConfirmBottomSheet(
                         this,
-                        title = getString(R.string.dialog_delete_permanently_title),
                         message = getString(R.string.dialog_delete_permanently_message),
                         confirmLabel = getString(R.string.action_delete_permanently),
                         onConfirm = {
