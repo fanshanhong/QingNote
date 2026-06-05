@@ -61,4 +61,13 @@
     <color name="nb_color_cyan">#00ACC1</color>
     <color name="nb_color_blue">#1E88E5</color>
     <color name="nb_color_purple">#8E24AA</color>
+
+    <!-- M13c 样式面板 7 色 -->
+    <color name="style_color_red">#E53935</color>
+    <color name="style_color_orange">#FB8C00</color>
+    <color name="style_color_green">#43A047</color>
+    <color name="style_color_light_blue">#29B6F6</color>
+    <color name="style_color_blue">#1E88E5</color>
+    <color name="style_color_purple">#AB47BC</color>
+    <color name="style_color_black">#212121</color>
 </resources>

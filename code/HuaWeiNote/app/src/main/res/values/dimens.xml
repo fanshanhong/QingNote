@@ -35,4 +35,22 @@
     <dimen name="search_bar_height">40dp</dimen>
     <dimen name="bottom_nav_height">56dp</dimen>
     <dimen name="filter_selected_bar_width">4dp</dimen>
+
+    <!-- M13c 编辑器字号 H3-H6（H1 28sp / H2 24sp 用新 dimen 名，旧 H1=22sp/H2=18sp 保留兼容） -->
+    <dimen name="editor_text_h1_v2">28sp</dimen>
+    <dimen name="editor_text_h2_v2">24sp</dimen>
+    <dimen name="editor_text_h3">20sp</dimen>
+    <dimen name="editor_text_h4">18sp</dimen>
+    <dimen name="editor_text_h5">16sp</dimen>
+    <dimen name="editor_text_h6">14sp</dimen>
+
+    <!-- M13c 列表缩进 -->
+    <dimen name="editor_indent_unit">24dp</dimen>
+    <dimen name="editor_list_marker_width">24dp</dimen>
+
+    <!-- M13c 样式面板 -->
+    <dimen name="style_row_height">48dp</dimen>
+    <dimen name="style_color_dot_size">28dp</dimen>
+    <dimen name="style_texture_thumb_size">52dp</dimen>
+    <dimen name="style_texture_thumb_radius">8dp</dimen>
 </resources>

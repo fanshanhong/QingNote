@@ -183,4 +183,28 @@
     <string name="tb_image_label">图片</string>
     <string name="tb_record_label">语音</string>
     <string name="tb_handwriting_label">手写</string>
+
+    <!-- M13c 样式面板 -->
+    <string name="style_panel_title">样式</string>
+    <string name="tb_align_left_cd">左对齐</string>
+    <string name="tb_align_center_cd">居中</string>
+    <string name="tb_align_right_cd">右对齐</string>
+    <string name="tb_indent_increase_cd">增加缩进</string>
+    <string name="tb_indent_decrease_cd">减少缩进</string>
+    <string name="tb_list_numbered_cd">数字列表</string>
+    <string name="tb_list_lettered_cd">字母列表</string>
+    <string name="tb_list_bullet_cd">圆点列表</string>
+    <string name="tb_list_hollow_cd">空心圆点列表</string>
+    <string name="tb_font_size_small_label">Aa</string>
+    <string name="tb_font_size_large_label">Aa</string>
+    <string name="tb_h3">H3</string>
+    <string name="tb_h4">H4</string>
+    <string name="tb_h5">H5</string>
+    <string name="tb_h6">H6</string>
+    <string name="color_light_blue">浅蓝</string>
+    <string name="color_purple">紫</string>
+    <string name="bg_plain">白纸</string>
+    <string name="bg_linen">亚麻</string>
+    <string name="bg_kraft">牛皮纸</string>
+    <string name="bg_grid">网点</string>
 </resources>
