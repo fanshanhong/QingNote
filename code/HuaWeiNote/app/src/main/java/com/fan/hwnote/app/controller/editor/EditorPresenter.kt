@@ -61,6 +61,9 @@ class EditorPresenter(
     /** 当前正在编辑的 noteId（>0 表示已落库）；ImageBlockView 用它定位本地文件目录。 */
     var noteId: Long = 0L
 
+    var isReadOnly: Boolean = false
+        private set
+
     /** 编辑器内共享 AudioPlayer（多块共用，新点播放会停旧的）。 */
     val audioPlayer = com.fan.hwnote.app.model.audio.AudioPlayer()
 
@@ -221,6 +224,18 @@ class EditorPresenter(
         imm.showSoftInput(target.edit, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
     }
 
+    fun setReadOnly(readOnly: Boolean) {
+        isReadOnly = readOnly
+        for (view in currentBlocks) {
+            when (view) {
+                is TextBlockView -> view.setEditable(!readOnly)
+                is ImageBlockView -> view.setDeleteVisible(!readOnly)
+                is ChecklistBlockView -> view.setEditable(!readOnly)
+                is com.fan.hwnote.app.view.block.AudioBlockView -> view.setDeleteEnabled(!readOnly)
+            }
+        }
+    }
+
     /**
      * 把 UI 当前内容收集成一份新 Note（保留原 id / createdAt / isFavorite，更新 title / content）。
      * 调用方负责 save 到 Repository。
@@ -337,6 +352,7 @@ class EditorPresenter(
             container.addView(v, insertAt)
             currentBlocks.add(insertAt, v)
         }
+        if (isReadOnly) v.setEditable(false)
     }
 
     private fun addImageBlockView(block: Block.ImageBlock, insertAt: Int = -1) {
@@ -354,6 +370,7 @@ class EditorPresenter(
         } else {
             container.addView(v, insertAt); currentBlocks.add(insertAt, v)
         }
+        if (isReadOnly) v.setDeleteVisible(false)
     }
 
     private fun addChecklistBlockView(block: Block.ChecklistBlock, insertAt: Int = -1) {
@@ -370,6 +387,7 @@ class EditorPresenter(
         } else {
             container.addView(v, insertAt); currentBlocks.add(insertAt, v)
         }
+        if (isReadOnly) v.setEditable(false)
     }
 
     private fun addAudioBlockView(block: Block.AudioBlock, insertAt: Int = -1) {
@@ -388,6 +406,7 @@ class EditorPresenter(
         } else {
             container.addView(v, insertAt); currentBlocks.add(insertAt, v)
         }
+        if (isReadOnly) v.setDeleteEnabled(false)
     }
 
     /** Task 10 H1/H2 用：对当前焦点 TextBlock 切 heading。 */
