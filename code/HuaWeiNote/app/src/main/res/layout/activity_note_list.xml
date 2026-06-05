@@ -1,180 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/root_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="@color/bg_window"
     android:fitsSystemWindows="true">
 
-    <!-- header 区 -->
-    <LinearLayout
-        android:id="@+id/header"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingHorizontal="@dimen/spacing_l"
-        android:paddingTop="@dimen/spacing_l"
-        android:paddingBottom="@dimen/spacing_s">
-
-        <LinearLayout
-            android:id="@+id/header_title_area"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:clickable="true"
-            android:focusable="true">
-
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
-
-                <TextView
-                    android:id="@+id/header_title"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/filter_all_notes"
-                    android:textColor="@color/text_primary"
-                    android:textSize="@dimen/header_title_size"
-                    android:textStyle="bold" />
-
-                <ImageView
-                    android:id="@+id/header_arrow"
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:layout_marginStart="@dimen/spacing_xs"
-                    android:src="@drawable/ic_arrow_drop_down"
-                    app:tint="@color/text_primary" />
-            </LinearLayout>
-
-            <TextView
-                android:id="@+id/header_subtitle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:textColor="@color/text_hint"
-                android:textSize="@dimen/header_subtitle_size" />
-        </LinearLayout>
-
-        <ImageView
-            android:id="@+id/btn_overflow"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:clickable="true"
-            android:focusable="true"
-            android:padding="@dimen/spacing_s"
-            android:src="@drawable/ic_more_vert"
-            app:tint="@color/text_primary"
-            android:contentDescription="@string/editor_more_cd" />
-    </LinearLayout>
-
-    <!-- 搜索栏 -->
-    <LinearLayout
-        android:id="@+id/search_bar"
-        android:layout_width="match_parent"
-        android:layout_height="@dimen/search_bar_height"
-        android:layout_marginHorizontal="@dimen/spacing_l"
-        android:layout_marginBottom="@dimen/spacing_s"
-        android:background="@drawable/shape_search_bar_bg"
-        android:gravity="center_vertical"
-        android:orientation="horizontal"
-        android:paddingHorizontal="@dimen/spacing_m">
-
-        <ImageView
-            android:layout_width="20dp"
-            android:layout_height="20dp"
-            android:src="@drawable/ic_search"
-            app:tint="@color/text_hint" />
-
-        <EditText
-            android:id="@+id/search_input"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:background="@null"
-            android:hint="@string/list_search_hint"
-            android:imeOptions="actionSearch"
-            android:inputType="text"
-            android:maxLines="1"
-            android:paddingStart="@dimen/spacing_s"
-            android:paddingEnd="0dp"
-            android:textColor="@color/text_primary"
-            android:textColorHint="@color/text_hint"
-            android:textSize="@dimen/text_body" />
-    </LinearLayout>
-
-    <!-- 内容区：筛选面板 / 列表 / 空状态 / FAB -->
     <FrameLayout
-        android:id="@+id/content_area"
+        android:id="@+id/fragment_container"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1">
+        android:layout_weight="1" />
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/filter_panel"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:overScrollMode="never"
-            android:visibility="gone" />
-
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/recycler_notes"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:clipToPadding="false"
-            android:paddingHorizontal="@dimen/spacing_m"
-            android:paddingVertical="@dimen/spacing_s"
-            android:scrollbars="vertical" />
-
-        <LinearLayout
-            android:id="@+id/empty_state"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:gravity="center"
-            android:orientation="vertical"
-            android:visibility="gone">
-
-            <ImageView
-                android:layout_width="60dp"
-                android:layout_height="60dp"
-                android:src="@drawable/ic_empty_note" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/spacing_m"
-                android:text="@string/list_empty_title"
-                android:textColor="@color/text_secondary"
-                android:textSize="@dimen/text_body" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/spacing_xs"
-                android:text="@string/list_empty_subtitle"
-                android:textColor="@color/text_hint"
-                android:textSize="@dimen/text_caption" />
-        </LinearLayout>
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-            android:id="@+id/fab_new_note"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="bottom|end"
-            android:layout_margin="@dimen/spacing_l"
-            android:contentDescription="@string/fab_new_note_cd"
-            android:src="@drawable/ic_add"
-            app:backgroundTint="@color/primary"
-            app:tint="@color/white" />
-    </FrameLayout>
-
-    <!-- 底部导航栏 -->
     <LinearLayout
         android:id="@+id/bottom_nav"
         android:layout_width="match_parent"
@@ -192,12 +30,14 @@
             android:orientation="vertical">
 
             <ImageView
+                android:id="@+id/nav_notes_icon"
                 android:layout_width="24dp"
                 android:layout_height="24dp"
                 android:src="@drawable/ic_note_tab"
                 app:tint="@color/primary" />
 
             <TextView
+                android:id="@+id/nav_notes_label"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/bottom_nav_notes"
@@ -214,12 +54,14 @@
             android:orientation="vertical">
 
             <ImageView
+                android:id="@+id/nav_todo_icon"
                 android:layout_width="24dp"
                 android:layout_height="24dp"
                 android:src="@drawable/ic_todo_tab"
                 app:tint="@color/text_hint" />
 
             <TextView
+                android:id="@+id/nav_todo_label"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/bottom_nav_todo"
@@ -227,5 +69,4 @@
                 android:textSize="@dimen/text_hint" />
         </LinearLayout>
     </LinearLayout>
-
 </LinearLayout>

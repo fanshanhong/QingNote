@@ -209,4 +209,25 @@
     <string name="bg_linen">亚麻</string>
     <string name="bg_kraft">牛皮纸</string>
     <string name="bg_grid">网点</string>
+    <!-- M14a: 待办 -->
+    <string name="filter_all_todos">全部待办</string>
+    <string name="todo_count_format">%d 条待办</string>
+    <string name="todo_section_overdue">已过期</string>
+    <string name="todo_section_today">今天</string>
+    <string name="todo_section_tomorrow">明天</string>
+    <string name="todo_section_later">更晚</string>
+    <string name="todo_section_no_date">无日期</string>
+    <string name="todo_section_completed">已完成</string>
+    <string name="todo_quick_add_hint">待办事项</string>
+    <string name="todo_quick_add_save">保存</string>
+    <string name="todo_empty_title">还没有待办</string>
+    <string name="todo_empty_subtitle">点 + 新建一条</string>
+    <string name="todo_repeat_daily">每天</string>
+    <string name="todo_repeat_weekly">每周</string>
+    <string name="todo_repeat_monthly">每月</string>
+    <string name="todo_repeat_yearly">每年</string>
+    <string name="todo_time_format">%1$s %2$s</string>
+    <string name="todo_menu_hide_completed">隐藏已完成待办</string>
+    <string name="todo_menu_show_completed">显示已完成待办</string>
+    <string name="todo_menu_batch_delete">批量删除</string>
 </resources>
