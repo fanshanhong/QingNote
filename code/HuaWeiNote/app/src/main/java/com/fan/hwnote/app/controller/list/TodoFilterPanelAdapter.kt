@@ -147,3 +147,4 @@ class TodoFilterPanelAdapter(
         private fun dpToPx(ctx: Context, dp: Int): Int =
             (dp * ctx.resources.displayMetrics.density + 0.5f).toInt()
     }
+}
