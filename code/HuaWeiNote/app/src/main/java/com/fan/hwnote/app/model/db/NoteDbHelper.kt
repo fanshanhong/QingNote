@@ -14,7 +14,7 @@ import android.database.sqlite.SQLiteOpenHelper
 class NoteDbHelper(ctx: Context) : SQLiteOpenHelper(ctx, DB_NAME, null, DB_VERSION) {
 
     override fun onCreate(db: SQLiteDatabase) {
-        db.execSQL(SQL_CREATE_NOTES_V3)
+        db.execSQL(SQL_CREATE_NOTES)
         db.execSQL(SQL_INDEX_UPDATED)
         db.execSQL(SQL_INDEX_FAVORITE)
         db.execSQL(SQL_INDEX_CATEGORY)
@@ -45,6 +45,9 @@ class NoteDbHelper(ctx: Context) : SQLiteOpenHelper(ctx, DB_NAME, null, DB_VERSI
                 db.endTransaction()
             }
         }
+        if (oldVersion < 4) {
+            db.execSQL("ALTER TABLE notes ADD COLUMN background TEXT NOT NULL DEFAULT 'plain'")
+        }
     }
 
     private fun applyV3Tables(db: SQLiteDatabase) {
@@ -71,10 +74,10 @@ class NoteDbHelper(ctx: Context) : SQLiteOpenHelper(ctx, DB_NAME, null, DB_VERSI
 
     companion object {
         const val DB_NAME = "hwnote.db"
-        const val DB_VERSION = 3
+        const val DB_VERSION = 4
 
-        // v3 全新建表 —— notes 自带 notebook_id 列
-        private const val SQL_CREATE_NOTES_V3 = """
+        // v4 全新建表 —— notes 自带 notebook_id + background 列
+        private const val SQL_CREATE_NOTES = """
             CREATE TABLE notes (
               id INTEGER PRIMARY KEY AUTOINCREMENT,
               title TEXT NOT NULL DEFAULT '',
@@ -85,7 +88,8 @@ class NoteDbHelper(ctx: Context) : SQLiteOpenHelper(ctx, DB_NAME, null, DB_VERSI
               updated_at INTEGER NOT NULL,
               category_id INTEGER,
               deleted_at INTEGER NOT NULL DEFAULT 0,
-              notebook_id INTEGER
+              notebook_id INTEGER,
+              background TEXT NOT NULL DEFAULT 'plain'
             )
         """
 

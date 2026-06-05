@@ -18,6 +18,7 @@ data class Note(
     val categoryId: Long? = null,     // null = 未分类
     val deletedAt: Long = 0L,         // 0 = 未删除；>0 = 删除时间戳
     val notebookId: Long? = null,     // M12：null = "未分类"
+    val background: String = "plain",
 ) {
     companion object {
         /** 新建一条笔记的内存对象。createdAt/updatedAt 都填 now，等待 save 时入库。 */

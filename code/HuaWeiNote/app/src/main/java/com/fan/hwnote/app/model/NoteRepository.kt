@@ -93,6 +93,7 @@ object NoteRepository {
             if (note.categoryId == null) putNull("category_id") else put("category_id", note.categoryId)
             put("deleted_at", note.deletedAt)
             if (note.notebookId == null) putNull("notebook_id") else put("notebook_id", note.notebookId)
+            put("background", note.background)
         }
         val db = dbHelper.writableDatabase
         if (note.id == 0L) {
@@ -248,6 +249,7 @@ object NoteRepository {
             notebookId = c.getColumnIndex("notebook_id").let { idx ->
                 if (idx < 0 || c.isNull(idx)) null else c.getLong(idx)
             },
+            background = c.getString(c.getColumnIndexOrThrow("background")) ?: "plain",
         )
     }
 }
