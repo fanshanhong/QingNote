@@ -208,6 +208,9 @@ class NoteListActivity : AppCompatActivity() {
             reload()
             sheet.dismiss()
         }
+        view.findViewById<TextView>(R.id.btn_sort_cancel).setOnClickListener {
+            sheet.dismiss()
+        }
         sheet.setContentView(view)
         sheet.show()
     }
