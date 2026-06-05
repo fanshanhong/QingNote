@@ -49,6 +49,7 @@ class NoteEditorActivity : AppCompatActivity() {
     private var noteId: Long = -1L
     private var loadedNote: Note? = null
     private var pendingNotebookId: Long? = null
+    private var pendingBackground: String? = null
     @Volatile private var saveInFlight: Boolean = false
 
     private val galleryLauncher = registerForActivityResult(
@@ -172,7 +173,10 @@ class NoteEditorActivity : AppCompatActivity() {
             override fun onStyleClicked() {
                 com.fan.hwnote.app.view.toolbar.StylePickerBottomSheet(
                     this@NoteEditorActivity, presenter
-                ).show()
+                ) { bg ->
+                    pendingBackground = bg
+                    applyEditorBackground(bg)
+                }.show()
             }
             override fun onImageClicked() {
                 ensureNoteSavedAndThen { showImageSourceDialog() }
@@ -276,6 +280,7 @@ class NoteEditorActivity : AppCompatActivity() {
             presenter.noteId = note.id // 0L for 新笔记，正数 for 已落库
             titleInput.setText(note.title)
             presenter.bind(note)
+            applyEditorBackground(note.background)
             refreshMetadataStrip()
             refreshIndicator(note.notebookId)
             if (noteId == -1L) {
@@ -310,6 +315,16 @@ class NoteEditorActivity : AppCompatActivity() {
                     indicatorDot.background = it
                 }
             gd.setColor(android.graphics.Color.parseColor("#CCCCCC"))
+        }
+    }
+
+    private fun applyEditorBackground(background: String) {
+        val editorRoot = findViewById<android.view.View>(R.id.editor_root)
+        when (background) {
+            "plain" -> editorRoot.setBackgroundResource(R.color.bg_card)
+            "linen" -> editorRoot.setBackgroundResource(R.drawable.bg_linen_tile)
+            "kraft" -> editorRoot.setBackgroundResource(R.drawable.bg_kraft_tile)
+            "grid" -> editorRoot.setBackgroundResource(R.drawable.bg_grid_tile)
         }
     }
 
@@ -547,6 +562,7 @@ class NoteEditorActivity : AppCompatActivity() {
             .copy(
                 categoryId = loadedNote?.categoryId,
                 notebookId = pendingNotebookId ?: loadedNote?.notebookId,
+                background = pendingBackground ?: loadedNote?.background ?: "plain",
             )
         lifecycleScope.launch(Dispatchers.IO) {
             val newId = NoteRepository.save(toSave)
@@ -575,6 +591,7 @@ class NoteEditorActivity : AppCompatActivity() {
                 id = loaded.id,
                 categoryId = loaded.categoryId,
                 notebookId = pendingNotebookId ?: loaded.notebookId,
+                background = pendingBackground ?: loaded.background,
             )
         // 全空且是新笔记则不存
         val isAllEmpty = title.isEmpty() && toSave.plainText.isEmpty()
