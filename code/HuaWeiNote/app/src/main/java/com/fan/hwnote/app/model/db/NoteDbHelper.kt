@@ -10,6 +10,7 @@ import android.database.sqlite.SQLiteOpenHelper
  * v2 → v3（2026-06-04）：新增 folders / notebooks 表，notes 加 notebook_id 列，
  *                       预置默认文件夹/笔记本（id=1, is_default=1），老 notes.notebook_id 全填 1。
  *                       老 categories 表 + notes.category_id 列保留作"数据墓地"，业务层不再读写。
+ * v4 → v5（2026-06-05）：新增 todos 表 + remind_at / deleted_at 索引。
  */
 class NoteDbHelper(ctx: Context) : SQLiteOpenHelper(ctx, DB_NAME, null, DB_VERSION) {
 
@@ -23,6 +24,9 @@ class NoteDbHelper(ctx: Context) : SQLiteOpenHelper(ctx, DB_NAME, null, DB_VERSI
         db.execSQL(SQL_CREATE_CATEGORIES)
         applyV3Tables(db)
         seedDefaults(db, allNotesAlreadyExist = false)
+        db.execSQL(SQL_CREATE_TODOS)
+        db.execSQL(SQL_INDEX_TODOS_REMIND)
+        db.execSQL(SQL_INDEX_TODOS_DELETED)
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
@@ -47,6 +51,11 @@ class NoteDbHelper(ctx: Context) : SQLiteOpenHelper(ctx, DB_NAME, null, DB_VERSI
         }
         if (oldVersion < 4) {
             db.execSQL("ALTER TABLE notes ADD COLUMN background TEXT NOT NULL DEFAULT 'plain'")
+        }
+        if (oldVersion < 5) {
+            db.execSQL(SQL_CREATE_TODOS)
+            db.execSQL(SQL_INDEX_TODOS_REMIND)
+            db.execSQL(SQL_INDEX_TODOS_DELETED)
         }
     }
 
@@ -74,7 +83,7 @@ class NoteDbHelper(ctx: Context) : SQLiteOpenHelper(ctx, DB_NAME, null, DB_VERSI
 
     companion object {
         const val DB_NAME = "hwnote.db"
-        const val DB_VERSION = 4
+        const val DB_VERSION = 5
 
         // v4 全新建表 —— notes 自带 notebook_id + background 列
         private const val SQL_CREATE_NOTES = """
@@ -140,5 +149,25 @@ class NoteDbHelper(ctx: Context) : SQLiteOpenHelper(ctx, DB_NAME, null, DB_VERSI
             "CREATE INDEX idx_notebooks_folder ON notebooks(folder_id)"
         private const val SQL_INDEX_NOTEBOOK_DELETED =
             "CREATE INDEX idx_notebooks_deleted ON notebooks(deleted_at)"
+
+        private const val SQL_CREATE_TODOS = """
+            CREATE TABLE todos (
+              id           INTEGER PRIMARY KEY AUTOINCREMENT,
+              title        TEXT    NOT NULL DEFAULT '',
+              memo         TEXT    NOT NULL DEFAULT '',
+              is_completed INTEGER NOT NULL DEFAULT 0,
+              is_important INTEGER NOT NULL DEFAULT 0,
+              remind_at    INTEGER NOT NULL DEFAULT 0,
+              repeat_type  INTEGER NOT NULL DEFAULT 0,
+              folder_id    INTEGER,
+              deleted_at   INTEGER NOT NULL DEFAULT 0,
+              created_at   INTEGER NOT NULL,
+              updated_at   INTEGER NOT NULL
+            )
+        """
+        private const val SQL_INDEX_TODOS_REMIND =
+            "CREATE INDEX idx_todos_remind_at ON todos(remind_at)"
+        private const val SQL_INDEX_TODOS_DELETED =
+            "CREATE INDEX idx_todos_deleted_at ON todos(deleted_at)"
     }
 }
