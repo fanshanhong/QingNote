@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/action_move_notebook"
+        android:title="@string/editor_move_notebook" />
+    <item
+        android:id="@+id/action_set_category"
+        android:title="@string/editor_set_category" />
+</menu>
