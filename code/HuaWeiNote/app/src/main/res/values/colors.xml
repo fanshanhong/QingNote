@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- 主色（PRD §5.1） -->
-    <color name="primary">#00897B</color>
-    <color name="primary_dark">#00695C</color>
-    <color name="primary_light">#E0F2F1</color>
+    <color name="primary">#007DFF</color>
+    <color name="primary_dark">#0056B3</color>
+    <color name="primary_light">#E3F2FD</color>
 
     <!-- 强调与状态 -->
     <color name="accent_star">#FFB300</color>

@@ -10,8 +10,8 @@
         <item name="android:textColorSecondary">@color/text_secondary</item>
 
         <!-- 状态栏 -->
-        <item name="android:statusBarColor">@color/primary_dark</item>
-        <item name="android:windowLightStatusBar" tools:targetApi="m">false</item>
+        <item name="android:statusBarColor">@android:color/white</item>
+        <item name="android:windowLightStatusBar" tools:targetApi="m">true</item>
     </style>
 
     <style name="EditorToolbarBtn">
