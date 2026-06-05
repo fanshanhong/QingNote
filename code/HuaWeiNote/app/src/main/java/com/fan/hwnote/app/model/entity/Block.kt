@@ -15,6 +15,9 @@ sealed class Block {
         var heading: Heading? = null,
         var text: String = "",
         var spans: List<TextSpan> = emptyList(),
+        var alignment: Alignment? = null,
+        var listType: ListType? = null,
+        var indentLevel: Int = 0,
     ) : Block()
 
     data class ImageBlock(
@@ -40,4 +43,8 @@ sealed class Block {
 data class ChecklistItem(var checked: Boolean, var text: String)
 
 /** 文本块的标题级别（块级属性，不写在 spans 里）。 */
-enum class Heading { H1, H2 }
+enum class Heading { H1, H2, H3, H4, H5, H6 }
+
+enum class Alignment { START, CENTER, END }
+
+enum class ListType { BULLET, HOLLOW_BULLET, NUMBERED, LETTERED }
