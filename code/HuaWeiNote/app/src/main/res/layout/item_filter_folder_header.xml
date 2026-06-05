@@ -23,6 +23,14 @@
         android:textAppearance="?attr/textAppearanceBodyMedium"
         android:textStyle="bold"/>
 
+    <TextView
+            android:id="@+id/folder_count"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="@dimen/spacing_s"
+            android:textSize="@dimen/text_caption"
+            android:textColor="@color/text_hint" />
+
     <ImageView
         android:id="@+id/expand_chevron"
         android:layout_width="20dp"

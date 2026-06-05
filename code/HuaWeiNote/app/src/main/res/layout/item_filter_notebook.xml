@@ -21,10 +21,10 @@
         android:layout_weight="1"
         android:textAppearance="?attr/textAppearanceBodyMedium"/>
 
-    <ImageView
-        android:id="@+id/check"
-        android:layout_width="20dp"
-        android:layout_height="20dp"
-        android:visibility="gone"
-        android:src="@android:drawable/checkbox_on_background"/>
+    <TextView
+        android:id="@+id/notebook_count"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="@dimen/text_caption"
+        android:textColor="@color/text_hint" />
 </LinearLayout>
