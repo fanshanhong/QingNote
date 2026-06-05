@@ -252,7 +252,8 @@ class NoteListActivity : AppCompatActivity() {
                 val id = prefs.getLong(KEY_FILTER_NOTEBOOK_ID, -1L)
                 if (id > 0) NoteRepository.ListFilter.Notebook(id) else NoteRepository.ListFilter.All
             }
-            "CATEGORY", "UNCATEGORIZED" -> NoteRepository.ListFilter.All
+            "UNCATEGORIZED" -> NoteRepository.ListFilter.Uncategorized
+            "CATEGORY" -> NoteRepository.ListFilter.All
             else -> NoteRepository.ListFilter.All
         }
     }
@@ -262,6 +263,7 @@ class NoteListActivity : AppCompatActivity() {
             .remove(KEY_FILTER_FOLDER_ID).remove(KEY_FILTER_NOTEBOOK_ID)
         when (filter) {
             NoteRepository.ListFilter.All -> editor.putString(KEY_FILTER_TYPE, "ALL")
+            NoteRepository.ListFilter.Uncategorized -> editor.putString(KEY_FILTER_TYPE, "UNCATEGORIZED")
             NoteRepository.ListFilter.Favorite -> editor.putString(KEY_FILTER_TYPE, "FAVORITE")
             NoteRepository.ListFilter.Deleted -> editor.putString(KEY_FILTER_TYPE, "DELETED")
             is NoteRepository.ListFilter.Folder ->
@@ -286,11 +288,13 @@ class NoteListActivity : AppCompatActivity() {
                     saveFilter(NoteRepository.ListFilter.All)
                 }
             NoteRepository.ListFilter.All,
+            NoteRepository.ListFilter.Uncategorized,
             NoteRepository.ListFilter.Favorite,
             NoteRepository.ListFilter.Deleted -> Unit
         }
         val label = when (val cur = currentFilter) {
             NoteRepository.ListFilter.All -> getString(R.string.filter_all)
+            NoteRepository.ListFilter.Uncategorized -> getString(R.string.filter_uncategorized)
             NoteRepository.ListFilter.Favorite -> getString(R.string.filter_favorite)
             NoteRepository.ListFilter.Deleted -> getString(R.string.filter_deleted)
             is NoteRepository.ListFilter.Folder ->

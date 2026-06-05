@@ -42,6 +42,7 @@ object NoteRepository {
         val args = mutableListOf<String>()
         when (filter) {
             ListFilter.All -> where += "deleted_at = 0"
+            ListFilter.Uncategorized -> where += "deleted_at = 0 AND notebook_id IS NULL"
             ListFilter.Favorite -> where += "deleted_at = 0 AND is_favorite = 1"
             ListFilter.Deleted -> where += "deleted_at != 0"
             is ListFilter.Folder -> {
@@ -176,6 +177,31 @@ object NoteRepository {
             }.onFailure { android.util.Log.w("NoteRepository", "cleanOrphan audio failed", it) }
         }
 
+    suspend fun count(filter: ListFilter): Int = withContext(Dispatchers.IO) {
+        val where = mutableListOf<String>()
+        val args = mutableListOf<String>()
+        when (filter) {
+            ListFilter.All -> where += "deleted_at = 0"
+            ListFilter.Uncategorized -> where += "deleted_at = 0 AND notebook_id IS NULL"
+            ListFilter.Favorite -> where += "deleted_at = 0 AND is_favorite = 1"
+            ListFilter.Deleted -> where += "deleted_at != 0"
+            is ListFilter.Folder -> {
+                where += "deleted_at = 0 AND notebook_id IN (SELECT id FROM notebooks WHERE folder_id = ? AND deleted_at = 0)"
+                args += filter.folderId.toString()
+            }
+            is ListFilter.Notebook -> {
+                where += "deleted_at = 0 AND notebook_id = ?"
+                args += filter.notebookId.toString()
+            }
+        }
+        val selection = where.joinToString(" AND ")
+        val cursor = dbHelper.readableDatabase.rawQuery(
+            "SELECT COUNT(*) FROM notes WHERE $selection",
+            args.toTypedArray(),
+        )
+        cursor.use { c -> if (c.moveToFirst()) c.getInt(0) else 0 }
+    }
+
     suspend fun setFavorite(id: Long, favorite: Boolean) = withContext(Dispatchers.IO) {
         val cv = ContentValues().apply {
             put("is_favorite", if (favorite) 1 else 0)
@@ -197,6 +223,7 @@ object NoteRepository {
 
     sealed class ListFilter {
         object All : ListFilter()
+        object Uncategorized : ListFilter()
         object Favorite : ListFilter()
         object Deleted : ListFilter()
         data class Folder(val folderId: Long) : ListFilter()

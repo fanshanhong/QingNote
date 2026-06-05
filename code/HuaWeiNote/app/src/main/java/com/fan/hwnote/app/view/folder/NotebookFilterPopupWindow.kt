@@ -55,6 +55,7 @@ class NotebookFilterPopupWindow(
                 }
             }
             NoteRepository.ListFilter.All,
+            NoteRepository.ListFilter.Uncategorized,
             NoteRepository.ListFilter.Favorite,
             NoteRepository.ListFilter.Deleted -> Unit
         }
