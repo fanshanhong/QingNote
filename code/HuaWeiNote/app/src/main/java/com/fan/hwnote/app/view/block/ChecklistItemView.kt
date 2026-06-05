@@ -93,6 +93,14 @@ class ChecklistItemView @JvmOverloads constructor(
         edit.setSelection(edit.text.length)
     }
 
+    fun setEditable(editable: Boolean) {
+        edit.isFocusableInTouchMode = editable
+        edit.isFocusable = editable
+        edit.isCursorVisible = editable
+        edit.isClickable = editable
+        edit.isLongClickable = editable
+    }
+
     private fun applyCheckedStyle(checked: Boolean) {
         val flags = edit.paintFlags
         edit.paintFlags = if (checked) flags or Paint.STRIKE_THRU_TEXT_FLAG

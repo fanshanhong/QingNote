@@ -77,6 +77,11 @@ class AudioBlockView @JvmOverloads constructor(
         btnPlayPause.setImageResource(R.drawable.ic_pause)
     }
 
+    fun setDeleteEnabled(enabled: Boolean) {
+        setOnLongClickListener(if (enabled) { { showDeleteDialog(); true } } else null)
+        isLongClickable = enabled
+    }
+
     private fun showDeleteDialog() {
         DeleteConfirmBottomSheet(
             context,

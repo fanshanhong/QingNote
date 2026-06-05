@@ -97,6 +97,10 @@ class ChecklistBlockView @JvmOverloads constructor(
         }
     }
 
+    fun setEditable(editable: Boolean) {
+        for (item in items) item.setEditable(editable)
+    }
+
     fun focusLastItemEnd() {
         items.lastOrNull()?.focusEditEnd()
     }

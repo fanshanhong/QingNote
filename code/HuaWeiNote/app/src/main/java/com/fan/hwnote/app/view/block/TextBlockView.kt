@@ -87,6 +87,14 @@ class TextBlockView @JvmOverloads constructor(
         edit.setSelection(edit.text.length)
     }
 
+    fun setEditable(editable: Boolean) {
+        edit.isFocusableInTouchMode = editable
+        edit.isFocusable = editable
+        edit.isCursorVisible = editable
+        edit.isClickable = editable
+        edit.isLongClickable = editable
+    }
+
     private fun applyHeadingSize() {
         val sp = when (heading) {
             Heading.H1 -> resources.getDimension(R.dimen.editor_text_h1)
