@@ -264,6 +264,7 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
       return TextToolbar(
         editorState: notifier.editorState,
         onStyleTap: () => _showStylePicker(notifier),
+        onImageTap: () => notifier.insertImage(),
       );
     }
     final note = state.loadedNote;
