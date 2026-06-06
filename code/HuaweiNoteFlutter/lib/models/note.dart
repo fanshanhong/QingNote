@@ -13,7 +13,7 @@ class Note {
   final int? notebookId;
   final String background;
 
-  const Note({
+  Note({
     required this.id,
     this.title = '',
     this.plainText = '',
@@ -25,7 +25,7 @@ class Note {
     this.deletedAt = 0,
     this.notebookId,
     this.background = 'plain',
-  }) : content = content ?? const NoteContent(blocks: [], handwriting: []);
+  }) : content = content ?? NoteContent.empty();
 
   factory Note.newNote({int? now}) {
     final ts = now ?? DateTime.now().millisecondsSinceEpoch;

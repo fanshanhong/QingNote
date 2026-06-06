@@ -1,61 +1,94 @@
 import 'dart:convert';
-import 'block.dart';
 import 'stroke.dart';
 
 class NoteContent {
-  final List<Block> blocks;
+  final Map<String, dynamic> documentJson;
   final List<Stroke> handwriting;
 
-  const NoteContent({required this.blocks, required this.handwriting});
+  const NoteContent({required this.documentJson, required this.handwriting});
 
-  factory NoteContent.empty() => const NoteContent(blocks: [], handwriting: []);
+  factory NoteContent.empty() => NoteContent(
+    documentJson: _emptyDocument(),
+    handwriting: const [],
+  );
+
+  static Map<String, dynamic> _emptyDocument() => {
+    'document': {
+      'type': 'page',
+      'children': [
+        {
+          'type': 'paragraph',
+          'data': {'delta': []},
+        },
+      ],
+    },
+  };
 
   String toPlainText() {
-    final parts = <String>[];
-    for (final b in blocks) {
-      switch (b) {
-        case TextBlock():
-          if (b.text.isNotEmpty) parts.add(b.text);
-        case ChecklistBlock():
-          for (final item in b.items) {
-            if (item.text.isNotEmpty) parts.add(item.text);
-          }
-        case ImageBlock():
-          break;
-        case AudioBlock():
-          break;
-      }
+    final buf = StringBuffer();
+    final doc = documentJson['document'] as Map<String, dynamic>?;
+    if (doc == null) return '';
+    final children = doc['children'] as List<dynamic>? ?? [];
+    for (final node in children) {
+      _extractText(node as Map<String, dynamic>, buf);
     }
-    return parts.join('\n');
+    return buf.toString().trim();
   }
 
-  String toJson() {
-    final root = <String, dynamic>{
-      'blocks': blocks.map((b) => b.toJson()).toList(),
-      'handwriting': {
-        'strokes': handwriting.map((s) => s.toJson()).toList(),
-      },
-    };
-    return jsonEncode(root);
+  static void _extractText(Map<String, dynamic> node, StringBuffer buf) {
+    final data = node['data'] as Map<String, dynamic>?;
+    if (data != null) {
+      final delta = data['delta'] as List<dynamic>?;
+      if (delta != null) {
+        for (final op in delta) {
+          final insert = (op as Map<String, dynamic>)['insert'];
+          if (insert is String) buf.write(insert);
+        }
+        if (buf.isNotEmpty && !buf.toString().endsWith('\n')) {
+          buf.write('\n');
+        }
+      }
+    }
+    final children = node['children'] as List<dynamic>?;
+    if (children != null) {
+      for (final child in children) {
+        _extractText(child as Map<String, dynamic>, buf);
+      }
+    }
   }
+
+  String toJson() => jsonEncode({
+    ...documentJson,
+    'handwriting': {
+      'strokes': handwriting.map((s) => s.toJson()).toList(),
+    },
+  });
 
   static NoteContent fromJson(String s) {
     try {
       final root = jsonDecode(s) as Map<String, dynamic>;
-      final blocksJson = root['blocks'] as List<dynamic>? ?? [];
-      final blocks = blocksJson
-          .map((b) => Block.fromJson(b as Map<String, dynamic>))
-          .whereType<Block>()
-          .toList();
-      final hw = root['handwriting'] as Map<String, dynamic>? ?? {};
+      final hw = root.remove('handwriting') as Map<String, dynamic>? ?? {};
       final strokesJson = hw['strokes'] as List<dynamic>? ?? [];
       final strokes = strokesJson
           .map((s) => Stroke.fromJson(s as Map<String, dynamic>))
           .whereType<Stroke>()
           .toList();
-      return NoteContent(blocks: blocks, handwriting: strokes);
+
+      final docJson = root.containsKey('document')
+          ? root
+          : _emptyDocument();
+
+      return NoteContent(documentJson: docJson, handwriting: strokes);
     } catch (_) {
       return NoteContent.empty();
     }
+  }
+
+  bool get isDocumentEmpty {
+    final doc = documentJson['document'] as Map<String, dynamic>?;
+    if (doc == null) return true;
+    final children = doc['children'] as List<dynamic>? ?? [];
+    if (children.isEmpty) return true;
+    return toPlainText().isEmpty;
   }
 }

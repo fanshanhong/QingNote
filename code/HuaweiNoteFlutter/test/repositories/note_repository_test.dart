@@ -4,7 +4,6 @@ import 'package:hwnote/db/database_helper.dart';
 import 'package:hwnote/repositories/note_repository.dart';
 import 'package:hwnote/models/note.dart';
 import 'package:hwnote/models/note_content.dart';
-import 'package:hwnote/models/block.dart';
 
 void main() {
   sqfliteFfiInit();
@@ -80,7 +79,14 @@ void main() {
       await repo.save(Note.newNote().copyWith(
         title: 'Shopping',
         content: NoteContent(
-          blocks: [TextBlock(id: '1', text: 'Buy apples')],
+          documentJson: {
+            'document': {
+              'type': 'page',
+              'children': [
+                {'type': 'paragraph', 'data': {'delta': [{'insert': 'Buy apples'}]}},
+              ],
+            },
+          },
           handwriting: [],
         ),
       ));
