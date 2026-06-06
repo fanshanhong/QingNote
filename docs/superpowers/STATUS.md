@@ -1,6 +1,6 @@
 # HwNote · 项目进度
 
-最后更新：2026-06-06（Flutter Phase 1 数据层完成，79 测试全绿）
+最后更新：2026-06-06（Flutter Phase 2A App Shell + 笔记列表页完成，59 测试全绿）
 
 ## 项目概况
 
@@ -12,7 +12,7 @@
 - **Android 已完成里程碑：** M1-M14c + M13d-e（共 22 轮 + Phase C 修复），181 项自动化测试全绿
 - **计划归档：** `docs/superpowers/plans/archived/`（20 份已完成计划）
 - **DB 版本：** v5（M14a 新增 todos 表）
-- **跨平台状态：** Flutter Phase 1（项目搭建 + 数据层）已完成，79 测试全绿，代码在 `code/HuaweiNoteFlutter/`
+- **跨平台状态：** Flutter Phase 2A（App Shell + 笔记列表页）已完成，59 测试全绿，代码在 `code/HuaweiNoteFlutter/`
 
 ## 里程碑进度
 
@@ -42,6 +42,7 @@
 | **--- 跨平台 Flutter 重写 ---** | | |
 | 跨平台架构设计 | ✅ 完成（2026-06-06） | 全 Flutter 5 端方案（v3），5 层分层架构，Dart 优先 + Rust 按需，appflowy_editor(MPL-2.0) |
 | Flutter Phase 1：项目搭建+数据层 | ✅ 完成（2026-06-06） | 10 任务，9 模型 + DatabaseHelper(v5) + 5 Repository，79 测试全绿，`code/HuaweiNoteFlutter/` |
+| Flutter Phase 2A：App Shell+笔记列表页 | ✅ 完成（2026-06-06） | 10 任务，go_router 2-tab + NoteListNotifier(16方法) + 6 组件 + 筛选面板 + 排序/删除 Sheet + 空状态/FAB/批量模式，59 测试全绿 |
 
 ## 跨平台转型（2026-06-06）
 
@@ -1018,3 +1019,77 @@ eddf61f fix(m14a): 修复 TodoFilterPanelAdapter 缺失类闭合大括号
 11. 到达提醒时间 → 弹出通知（标记完成/10分钟后提醒）
 
 **执行模式：** Subagent-Driven Development，严格串行 13 任务。T8 实施者合并了 Task 8+9（TodoDetailActivity 骨架+事件处理）为一次提交。T11 实施者额外修复了缺失的 drawable/color 资源（surface/danger/bg_bottom_sheet/selector_todo_checkbox）。
+
+## Flutter Phase 2A 完成详情（2026-06-06）
+
+**目标：** 实现 Flutter 跨平台 App 的第一个可见画面——底部导航 2-tab 容器 + 完整笔记列表页，UI/UX/交互/功能与 Android 原生版 NoteListActivity + NoteListFragment 完全一致。
+
+**前置：** Phase 1（数据层）已完成，9 models + DatabaseHelper(v5) + 5 Repositories + 79 tests。
+
+**新增依赖：** shared_preferences ^2.3.4 + flutter_staggered_grid_view ^0.7.0
+
+**产出：**
+
+| 层 | 文件 | 说明 |
+|---|---|---|
+| 主题 | `theme.dart` | AppColors(13 常量) + AppDimens(12 常量) + buildAppTheme() |
+| 工具 | `utils/date_utils.dart` | AppDateUtils.formatRelative 4 级相对时间 |
+| 工具 | `utils/text_utils.dart` | isBlankTitle + summary(maxLen=60) |
+| 工具 | `utils/color_utils.dart` | parseHex + tint 共享颜色转换 |
+| Provider | `providers/database_provider.dart` | DatabaseHelper singleton provider |
+| Provider | `providers/repository_providers.dart` | 5 个 Repository provider |
+| Provider | `providers/note_list_provider.dart` | NoteListState(13字段) + NoteListNotifier(16方法) + provider |
+| 路由 | `router.dart` | go_router StatefulShellRoute 2-tab + tab 持久化 |
+| 入口 | `main.dart` | ProviderScope + MaterialApp.router + SharedPreferences 预加载 |
+| 页面 | `pages/app_shell.dart` | 底部导航 2-tab（笔记/待办），批量模式隐藏 |
+| 页面 | `pages/note_list_page.dart` | 主页面集成（header/搜索/筛选/卡片/空状态/FAB/批量/菜单） |
+| 页面 | `pages/todo_placeholder_page.dart` | 待办占位页 |
+| 组件 | `widgets/note_list_header.dart` | 双模式 header（正常/批量） |
+| 组件 | `widgets/note_search_bar.dart` | 200ms debounce 搜索框 |
+| 组件 | `widgets/note_card.dart` | 笔记卡片（背景色规则/批量 checkbox/星标） |
+| 组件 | `widgets/filter_panel.dart` | 筛选面板（4 伪项 + 文件夹树 + 选中态蓝条） |
+| 组件 | `widgets/sort_sheet.dart` | 排序 BottomSheet（RadioGroup 2 选项 + 取消） |
+| 组件 | `widgets/delete_confirm_sheet.dart` | 通用删除确认 Sheet |
+
+**修改文件：**
+- `repositories/note_repository.dart`（NoteListFilter 子类公开化）
+
+**Commit 列表（14 个，不含 spec/plan docs）：**
+```
+d3286ba feat(phase2a): 添加依赖 + 工具函数 + NoteListFilter 公开化
+e5ed3df fix(phase2a): 修复 formatRelative 跨年日期显示与 Android 不一致
+eeb15ed feat(phase2a): 添加主题 + AppColors/AppDimens 常量
+681be44 feat(phase2a): Provider 层 — DatabaseHelper/Repository/NoteListNotifier
+99a29ab fix(phase2a): _validateFilter 显式枚举 + toggleFavorite 安全检查
+ca45a66 feat(phase2a): App Shell + go_router 底部导航 2-tab + main 改造
+ad0ddf4 feat(phase2a): 排序 Sheet + 删除确认 Sheet 组件
+6cfcd36 feat(phase2a): 笔记卡片组件 NoteCard
+01c8bea feat(phase2a): NoteListHeader + NoteSearchBar 组件
+4d769a5 feat(phase2a): 筛选面板 FilterPanel 组件
+43d9b2f feat(phase2a): 完整实现 NoteListPage 笔记列表页
+1bb8c7b refactor(phase2a): 提取共享颜色工具类 + NoteCard 添加 ValueKey + 移除多余 Stack
+81c2485 fix(phase2a): 修复颜色常量/搜索框同步/筛选面板重建/DB错误处理
+```
+
+**测试统计：** 59 项全部 PASSED（Phase 1 原有 40 + Phase 2A 新增 19），0 failures。增量明细：
+- `date_utils_test.dart`（6）：同一天/昨天/7天内/更早/跨年超7天/跨年7天内
+- `text_utils_test.dart`（9）：isBlankTitle 5 项 + summary 4 项
+- `note_list_provider_test.dart`（4）：默认状态/copyWith 字段/copyWith selectedIds/copyWith headerTitle
+
+**Flutter 3.44 API 适配：**
+- `RadioListTile` groupValue/onChanged 已弃用 → 使用 `RadioGroup` 包裹
+- `Color.red/green/blue` (int getter) 已弃用 → 使用 `c.r * 255.0` (double getter × 255)
+
+**最终审查修复（4 项 Important）：**
+1. 颜色常量对齐 spec（bgWindow #F5F5F5 / primaryLight #E8F0FE / textHint #999999）
+2. NoteSearchBar 增加 initialQuery 参数，解决 hide/show 后搜索框与状态不同步
+3. FilterPanel 改 ConsumerStatefulWidget 缓存 Future，解决每次 rebuild 重新执行 DB 查询
+4. NoteListNotifier 所有 DB 操作加 try/catch + dev.log，防止未处理异常导致 UI 卡死
+
+**执行模式：** Subagent-Driven Development，严格串行 10 任务。每任务 implementer → spec reviewer → code quality reviewer → fix（如需）→ 标完成。最终 dispatch 全量 code reviewer 覆盖 18 个文件，修复 4 项 Important 问题后合并。
+
+**边界处理（Phase 后续实现）：**
+- 点击笔记卡片 → Toast（Phase 2B 编辑器）
+- FAB 新建笔记 → Toast（Phase 2B 编辑器）
+- 长按菜单「移入笔记本」→ Toast（Phase 2E）
+- 筛选面板「管理」按钮 → Toast（Phase 2E）
