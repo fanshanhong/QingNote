@@ -24,28 +24,25 @@ Future<NoteSortBy?> showSortSheet(BuildContext context, {required NoteSortBy cur
                 color: AppColors.textPrimary,
               )),
             ),
-            RadioGroup<NoteSortBy>(
+            RadioListTile<NoteSortBy>(
+              title: const Text('按编辑时间', style: TextStyle(
+                fontSize: AppDimens.textBody, color: AppColors.textPrimary)),
+              value: NoteSortBy.updatedDesc,
               groupValue: current,
               onChanged: (v) {
                 if (v != null) Navigator.pop(context, v);
               },
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  RadioListTile<NoteSortBy>(
-                    title: const Text('按编辑时间', style: TextStyle(
-                      fontSize: AppDimens.textBody, color: AppColors.textPrimary)),
-                    value: NoteSortBy.updatedDesc,
-                    activeColor: AppColors.primary,
-                  ),
-                  RadioListTile<NoteSortBy>(
-                    title: const Text('按创建时间', style: TextStyle(
-                      fontSize: AppDimens.textBody, color: AppColors.textPrimary)),
-                    value: NoteSortBy.createdDesc,
-                    activeColor: AppColors.primary,
-                  ),
-                ],
-              ),
+              activeColor: AppColors.primary,
+            ),
+            RadioListTile<NoteSortBy>(
+              title: const Text('按创建时间', style: TextStyle(
+                fontSize: AppDimens.textBody, color: AppColors.textPrimary)),
+              value: NoteSortBy.createdDesc,
+              groupValue: current,
+              onChanged: (v) {
+                if (v != null) Navigator.pop(context, v);
+              },
+              activeColor: AppColors.primary,
             ),
             const Divider(height: 1),
             Center(child: TextButton(
