@@ -5,6 +5,7 @@ import '../models/note.dart';
 import '../providers/note_list_provider.dart';
 import '../repositories/note_repository.dart';
 import '../theme.dart';
+import '../utils/color_utils.dart';
 import '../widgets/delete_confirm_sheet.dart';
 import '../widgets/filter_panel.dart';
 import '../widgets/note_card.dart';
@@ -48,14 +49,13 @@ class _NoteListPageState extends ConsumerState<NoteListPage> {
             ),
           if (!s.isBatchMode && !s.filterPanelVisible)
             NoteSearchBar(onQueryChanged: (q) => notifier.setQuery(q)),
-          Expanded(child: Stack(children: [
-            if (s.filterPanelVisible)
-              const FilterPanel()
-            else if (s.notes.isEmpty && !s.isLoading)
-              _buildEmptyState()
-            else
-              _buildNoteList(s, notifier),
-          ])),
+          Expanded(
+            child: s.filterPanelVisible
+                ? const FilterPanel()
+                : (s.notes.isEmpty && !s.isLoading)
+                    ? _buildEmptyState()
+                    : _buildNoteList(s, notifier),
+          ),
           if (s.isBatchMode) _buildBatchBottomBar(s, notifier),
         ]),
       ),
@@ -73,17 +73,8 @@ class _NoteListPageState extends ConsumerState<NoteListPage> {
       final nbId = (s.filter as NotebookFilter).notebookId;
       final hex = s.notebookColorMap[nbId];
       if (hex != null) {
-        final cleaned = hex.replaceFirst('#', '');
-        final v = int.tryParse(cleaned, radix: 16);
-        if (v != null) {
-          final c = Color(0xFF000000 | v);
-          return Color.fromARGB(
-            25,
-            (c.r * 255.0).round().clamp(0, 255),
-            (c.g * 255.0).round().clamp(0, 255),
-            (c.b * 255.0).round().clamp(0, 255),
-          );
-        }
+        final c = AppColorUtils.parseHex(hex);
+        if (c != null) return AppColorUtils.tint(c, 25);
       }
     }
     return AppColors.bgWindow;
@@ -105,6 +96,7 @@ class _NoteListPageState extends ConsumerState<NoteListPage> {
 
   Widget _buildCard(NoteListState s, NoteListNotifier notifier, Note note) {
     return NoteCard(
+      key: ValueKey(note.id),
       note: note,
       isBatchMode: s.isBatchMode,
       isSelected: s.selectedIds.contains(note.id),
@@ -139,7 +131,7 @@ class _NoteListPageState extends ConsumerState<NoteListPage> {
           if (confirmed) await notifier.batchDelete();
         },
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFFFF4444), foregroundColor: Colors.white,
+          backgroundColor: AppColors.danger, foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 14),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),

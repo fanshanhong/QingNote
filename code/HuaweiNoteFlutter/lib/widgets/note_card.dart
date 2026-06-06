@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/note.dart';
 import '../theme.dart';
+import '../utils/color_utils.dart';
 import '../utils/date_utils.dart';
 import '../utils/text_utils.dart';
 
@@ -34,25 +35,10 @@ class NoteCard extends StatelessWidget {
       };
     }
     if (notebookColor != null) {
-      final c = _parseHexColor(notebookColor!);
-      if (c != null) {
-        return Color.fromARGB(
-          20,
-          (c.r * 255.0).round().clamp(0, 255),
-          (c.g * 255.0).round().clamp(0, 255),
-          (c.b * 255.0).round().clamp(0, 255),
-        );
-      }
+      final c = AppColorUtils.parseHex(notebookColor!);
+      if (c != null) return AppColorUtils.tint(c, 20);
     }
     return AppColors.bgCard;
-  }
-
-  static Color? _parseHexColor(String hex) {
-    final cleaned = hex.replaceFirst('#', '');
-    if (cleaned.length != 6) return null;
-    final value = int.tryParse(cleaned, radix: 16);
-    if (value == null) return null;
-    return Color(0xFF000000 | value);
   }
 
   @override

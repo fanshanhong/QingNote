@@ -14,6 +14,7 @@ class AppColors {
   static const bgLinen = Color(0xFFF5F0E8);
   static const bgKraft = Color(0xFFE8D5B7);
   static const bgGrid = Color(0xFFF8F8F8);
+  static const danger = Color(0xFFFF4444);
 }
 
 class AppDimens {
