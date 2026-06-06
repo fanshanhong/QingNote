@@ -178,7 +178,13 @@ class NoteListNotifier extends StateNotifier<NoteListState> {
           return NoteListFilter.all;
         }
         return filter;
-      default:
+      case AllFilter():
+        return filter;
+      case UncategorizedFilter():
+        return filter;
+      case FavoriteFilter():
+        return filter;
+      case DeletedFilter():
         return filter;
     }
   }
@@ -280,7 +286,8 @@ class NoteListNotifier extends StateNotifier<NoteListState> {
   }
 
   Future<void> toggleFavorite(int id) async {
-    final note = state.notes.firstWhere((n) => n.id == id);
+    final note = state.notes.where((n) => n.id == id).firstOrNull;
+    if (note == null) return;
     await _noteRepo.setFavorite(id, !note.isFavorite);
     await reload();
   }
