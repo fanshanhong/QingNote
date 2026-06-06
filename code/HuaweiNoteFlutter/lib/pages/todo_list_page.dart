@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../models/folder.dart';
 import '../models/todo.dart';
 import '../providers/todo_list_provider.dart';
@@ -241,7 +242,12 @@ class _TodoListPageState extends ConsumerState<TodoListPage> {
               });
             }
           },
-          onTap: () {},
+          onTap: () async {
+            final result = await context.push<bool>('/todo/${todo.id}');
+            if (result == true) {
+              ref.read(todoListProvider.notifier).reload();
+            }
+          },
           onBatchToggle: () => ref
               .read(todoListProvider.notifier)
               .toggleBatchSelection(todo.id),

@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'pages/app_shell.dart';
 import 'pages/note_editor_page.dart';
 import 'pages/note_list_page.dart';
+import 'pages/todo_detail_page.dart';
 import 'pages/todo_list_page.dart';
 import 'providers/todo_list_provider.dart';
 import 'providers/note_list_provider.dart';
@@ -20,6 +21,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final noteId = int.tryParse(state.pathParameters['noteId'] ?? '0') ?? 0;
           return NoteEditorPage(noteId: noteId);
+        },
+      ),
+      GoRoute(
+        path: '/todo/:todoId',
+        builder: (context, state) {
+          final todoId = int.tryParse(state.pathParameters['todoId'] ?? '0') ?? 0;
+          return TodoDetailPage(todoId: todoId);
         },
       ),
       StatefulShellRoute.indexedStack(
