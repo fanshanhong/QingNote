@@ -27,10 +27,16 @@ void main() {
       expect(AppDateUtils.formatRelative(target, now: now), '2026/05/01');
     });
 
-    test('跨年显示 yyyy/MM/dd', () {
-      final now = DateTime(2026, 1, 1, 0, 0).millisecondsSinceEpoch;
+    test('跨年超过7天显示 yyyy/MM/dd', () {
+      final now = DateTime(2026, 1, 10, 0, 0).millisecondsSinceEpoch;
       final target = DateTime(2025, 12, 25, 14, 0).millisecondsSinceEpoch;
       expect(AppDateUtils.formatRelative(target, now: now), '2025/12/25');
+    });
+
+    test('跨年但7天内显示 周X HH:mm', () {
+      final now = DateTime(2026, 1, 3, 15, 0).millisecondsSinceEpoch;
+      final target = DateTime(2025, 12, 31, 10, 0).millisecondsSinceEpoch;
+      expect(AppDateUtils.formatRelative(target, now: now), '周三 10:00');
     });
   });
 }

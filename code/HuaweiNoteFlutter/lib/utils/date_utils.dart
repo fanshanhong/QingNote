@@ -22,10 +22,6 @@ class AppDateUtils {
       return '昨天 $hhmm';
     }
 
-    if (target.year != current.year) {
-      return '${target.year}/${_pad2(target.month)}/${_pad2(target.day)}';
-    }
-
     final diffDays = (nowMs - timeMs) ~/ (24 * 60 * 60 * 1000);
     if (diffDays >= 0 && diffDays <= 6) {
       const weekdays = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
