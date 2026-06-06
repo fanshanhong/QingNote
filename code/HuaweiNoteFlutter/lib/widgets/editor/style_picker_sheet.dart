@@ -412,8 +412,7 @@ class _StylePickerContentState extends State<_StylePickerContent> {
     final es = widget.editorState;
     final selection = es.selection;
     if (selection == null) return;
-    final argb = color.toARGB32();
-    final hex = '#${argb.toRadixString(16).padLeft(8, '0')}';
+    final hex = '#${color.value.toRadixString(16).padLeft(8, '0')}';
     es.formatDelta(selection, {AppFlowyRichTextKeys.textColor: hex});
   }
 }

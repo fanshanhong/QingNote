@@ -15,7 +15,7 @@ dependencies:
   go_router: ^14.8.1
   shared_preferences: ^2.3.4
   flutter_staggered_grid_view: ^0.7.0
-  appflowy_editor: ">=6.0.0 <6.1.0"
+  appflowy_editor: ">=6.0.0 <7.0.0"
   share_plus: ^12.0.2
 
 dev_dependencies:
