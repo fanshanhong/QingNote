@@ -38,6 +38,7 @@ class TodoListFragment : Fragment() {
     private lateinit var btnOverflow: ImageView
     private lateinit var filterPanel: RecyclerView
     private lateinit var recycler: RecyclerView
+    private lateinit var contentArea: View
     private lateinit var emptyState: View
     private lateinit var fab: FloatingActionButton
 
@@ -68,6 +69,7 @@ class TodoListFragment : Fragment() {
         headerArrow = view.findViewById(R.id.header_arrow)
         headerSubtitle = view.findViewById(R.id.header_subtitle)
         btnOverflow = view.findViewById(R.id.btn_overflow)
+        contentArea = view.findViewById(R.id.content_area)
         filterPanel = view.findViewById(R.id.filter_panel)
         recycler = view.findViewById(R.id.recycler_todos)
         emptyState = view.findViewById(R.id.empty_state)
@@ -187,12 +189,16 @@ class TodoListFragment : Fragment() {
             emptyState.visibility = View.GONE
             fab.visibility = View.GONE
             quickAddBar.visibility = View.GONE
+            btnOverflow.visibility = View.GONE
             filterPanel.visibility = View.VISIBLE
             filterPanel.layoutManager = LinearLayoutManager(requireContext())
+            contentArea.setOnClickListener { if (filterPanelVisible) toggleFilterPanel() }
             rebuildFilterPanel()
         } else {
             filterPanel.visibility = View.GONE
             fab.visibility = View.VISIBLE
+            btnOverflow.visibility = View.VISIBLE
+            contentArea.setOnClickListener(null)
             reload()
         }
     }

@@ -46,6 +46,7 @@ class NoteListFragment : Fragment() {
     private lateinit var searchInput: EditText
     private lateinit var filterPanel: RecyclerView
     private lateinit var recycler: RecyclerView
+    private lateinit var contentArea: View
     private lateinit var emptyState: View
     private lateinit var fab: FloatingActionButton
 
@@ -74,6 +75,7 @@ class NoteListFragment : Fragment() {
         btnOverflow = view.findViewById(R.id.btn_overflow)
         searchBar = view.findViewById(R.id.search_bar)
         searchInput = view.findViewById(R.id.search_input)
+        contentArea = view.findViewById(R.id.content_area)
         filterPanel = view.findViewById(R.id.filter_panel)
         recycler = view.findViewById(R.id.recycler_notes)
         emptyState = view.findViewById(R.id.empty_state)
@@ -229,13 +231,17 @@ class NoteListFragment : Fragment() {
             recycler.visibility = View.GONE
             emptyState.visibility = View.GONE
             fab.visibility = View.GONE
+            btnOverflow.visibility = View.GONE
             filterPanel.visibility = View.VISIBLE
             filterPanel.layoutManager = LinearLayoutManager(requireContext())
+            contentArea.setOnClickListener { if (filterPanelVisible) toggleFilterPanel() }
             rebuildFilterPanel()
         } else {
             filterPanel.visibility = View.GONE
             searchBar.visibility = View.VISIBLE
             fab.visibility = View.VISIBLE
+            btnOverflow.visibility = View.VISIBLE
+            contentArea.setOnClickListener(null)
             reload()
         }
     }
