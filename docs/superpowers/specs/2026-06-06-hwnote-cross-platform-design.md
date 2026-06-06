@@ -82,7 +82,7 @@
 
 ### 4.1 Block Editor
 
-**策略选择**：基于 appflowy_editor 二次开发（需先确认许可证为 MPL-2.0 可选）。若许可证不可接受，则自建。
+**策略选择**：基于 appflowy_editor 二次开发。许可证已确认为 AGPL-3.0 + MPL-2.0 双许可可选，选择 MPL-2.0 即可商业闭源使用。
 
 **appflowy_editor 已提供**：
 
@@ -258,7 +258,7 @@
 | 分享 | share_plus | 鸿蒙已适配 |
 | 权限 | permission_handler | 鸿蒙已适配 |
 | 窗口管理（桌面） | window_manager | macOS + Windows |
-| 状态管理 | Riverpod 或 BLoC | 待定 |
+| 状态管理 | Riverpod | Flutter 社区主流方案 |
 | 路由 | go_router | 跨平台统一 |
 | JSON 序列化 | dart:convert + json_serializable | 标准方案 |
 | Rust FFI（预留） | flutter_rust_bridge | 5.3k stars，Flutter Favorite |
@@ -343,7 +343,7 @@ APP 未上线，当前不需要考虑历史数据兼容，但保留迁移设计�
 
 | 风险 | 严重度 | 缓解措施 |
 |---|---|---|
-| appflowy_editor 许可证为 AGPL 不可选 MPL | 高 | 确认前先验证；若不可接受则自建编辑器或使用 super_editor（BSD） |
+| ~~appflowy_editor 许可证~~ | ~~高~~ | 已确认 AGPL+MPL 双许可可选，选 MPL-2.0，风险消除 |
 | CPF-Flutter 版本滞后于官方 Flutter | 中 | 选择 CPF 首推稳定线（3.27.x），不追最新特性 |
 | 鸿蒙端插件缺失（音频录制等） | 中 | 关键插件在开发前逐一确认；缺失的通过 Method Channel 桥接 ArkTS 原生 |
 | Flutter 自绘引擎的平台一致性问题 | 低 | Impeller 渲染已成熟，各端视觉一致是 Flutter 的核心优势 |
