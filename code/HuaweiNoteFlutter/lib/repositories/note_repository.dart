@@ -7,25 +7,25 @@ enum NoteSortBy { updatedDesc, createdDesc }
 
 sealed class NoteListFilter {
   const NoteListFilter();
-  static const all = _AllFilter();
-  static const uncategorized = _UncategorizedFilter();
-  static const favorite = _FavoriteFilter();
-  static const deleted = _DeletedFilter();
-  static NoteListFilter folder(int folderId) => _FolderFilter(folderId);
-  static NoteListFilter notebook(int notebookId) => _NotebookFilter(notebookId);
+  static const all = AllFilter();
+  static const uncategorized = UncategorizedFilter();
+  static const favorite = FavoriteFilter();
+  static const deleted = DeletedFilter();
+  static NoteListFilter folder(int folderId) => FolderFilter(folderId);
+  static NoteListFilter notebook(int notebookId) => NotebookFilter(notebookId);
 }
 
-class _AllFilter extends NoteListFilter { const _AllFilter(); }
-class _UncategorizedFilter extends NoteListFilter { const _UncategorizedFilter(); }
-class _FavoriteFilter extends NoteListFilter { const _FavoriteFilter(); }
-class _DeletedFilter extends NoteListFilter { const _DeletedFilter(); }
-class _FolderFilter extends NoteListFilter {
+class AllFilter extends NoteListFilter { const AllFilter(); }
+class UncategorizedFilter extends NoteListFilter { const UncategorizedFilter(); }
+class FavoriteFilter extends NoteListFilter { const FavoriteFilter(); }
+class DeletedFilter extends NoteListFilter { const DeletedFilter(); }
+class FolderFilter extends NoteListFilter {
   final int folderId;
-  const _FolderFilter(this.folderId);
+  const FolderFilter(this.folderId);
 }
-class _NotebookFilter extends NoteListFilter {
+class NotebookFilter extends NoteListFilter {
   final int notebookId;
-  const _NotebookFilter(this.notebookId);
+  const NotebookFilter(this.notebookId);
 }
 
 class NoteRepository {
@@ -34,7 +34,7 @@ class NoteRepository {
   NoteRepository(this._dbHelper);
 
   Future<List<Note>> list({
-    NoteListFilter filter = const _AllFilter(),
+    NoteListFilter filter = const AllFilter(),
     NoteSortBy sortBy = NoteSortBy.updatedDesc,
     String? query,
   }) async {
@@ -46,14 +46,14 @@ class NoteRepository {
     final where = <String>[];
     final args = <String>[];
     switch (filter) {
-      case _AllFilter(): where.add('deleted_at = 0');
-      case _UncategorizedFilter(): where.add('deleted_at = 0 AND notebook_id IS NULL');
-      case _FavoriteFilter(): where.add('deleted_at = 0 AND is_favorite = 1');
-      case _DeletedFilter(): where.add('deleted_at != 0');
-      case _FolderFilter(:final folderId):
+      case AllFilter(): where.add('deleted_at = 0');
+      case UncategorizedFilter(): where.add('deleted_at = 0 AND notebook_id IS NULL');
+      case FavoriteFilter(): where.add('deleted_at = 0 AND is_favorite = 1');
+      case DeletedFilter(): where.add('deleted_at != 0');
+      case FolderFilter(:final folderId):
         where.add('deleted_at = 0 AND notebook_id IN (SELECT id FROM notebooks WHERE folder_id = ? AND deleted_at = 0)');
         args.add(folderId.toString());
-      case _NotebookFilter(:final notebookId):
+      case NotebookFilter(:final notebookId):
         where.add('deleted_at = 0 AND notebook_id = ?');
         args.add(notebookId.toString());
     }
@@ -128,19 +128,19 @@ class NoteRepository {
     await db.delete('notes', where: 'id = ?', whereArgs: [id]);
   }
 
-  Future<int> count({NoteListFilter filter = const _AllFilter()}) async {
+  Future<int> count({NoteListFilter filter = const AllFilter()}) async {
     final db = await _dbHelper.database;
     final where = <String>[];
     final args = <String>[];
     switch (filter) {
-      case _AllFilter(): where.add('deleted_at = 0');
-      case _UncategorizedFilter(): where.add('deleted_at = 0 AND notebook_id IS NULL');
-      case _FavoriteFilter(): where.add('deleted_at = 0 AND is_favorite = 1');
-      case _DeletedFilter(): where.add('deleted_at != 0');
-      case _FolderFilter(:final folderId):
+      case AllFilter(): where.add('deleted_at = 0');
+      case UncategorizedFilter(): where.add('deleted_at = 0 AND notebook_id IS NULL');
+      case FavoriteFilter(): where.add('deleted_at = 0 AND is_favorite = 1');
+      case DeletedFilter(): where.add('deleted_at != 0');
+      case FolderFilter(:final folderId):
         where.add('deleted_at = 0 AND notebook_id IN (SELECT id FROM notebooks WHERE folder_id = ? AND deleted_at = 0)');
         args.add(folderId.toString());
-      case _NotebookFilter(:final notebookId):
+      case NotebookFilter(:final notebookId):
         where.add('deleted_at = 0 AND notebook_id = ?');
         args.add(notebookId.toString());
     }
