@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import '../editor/audio_block_component.dart';
 import '../models/note.dart';
 import '../models/note_content.dart';
+import '../models/stroke.dart';
 import '../repositories/note_repository.dart';
 import '../repositories/notebook_repository.dart';
 import '../repositories/category_repository.dart';
@@ -23,6 +24,11 @@ class NoteEditorState {
   final int? pendingNotebookId;
   final String pendingBackground;
   final bool documentHasContent;
+  final bool isHandwritingMode;
+  final BrushType currentBrush;
+  final String currentBrushColor;
+  final int currentBrushWidth;
+  final bool isErasing;
 
   const NoteEditorState({
     required this.noteId,
@@ -33,6 +39,11 @@ class NoteEditorState {
     this.pendingNotebookId,
     this.pendingBackground = 'plain',
     this.documentHasContent = false,
+    this.isHandwritingMode = false,
+    this.currentBrush = BrushType.pen,
+    this.currentBrushColor = '#212121',
+    this.currentBrushWidth = 3,
+    this.isErasing = false,
   });
 
   factory NoteEditorState.initial({required int noteId}) => NoteEditorState(
@@ -52,6 +63,11 @@ class NoteEditorState {
     bool clearPendingNotebookId = false,
     String? pendingBackground,
     bool? documentHasContent,
+    bool? isHandwritingMode,
+    BrushType? currentBrush,
+    String? currentBrushColor,
+    int? currentBrushWidth,
+    bool? isErasing,
   }) => NoteEditorState(
     noteId: noteId ?? this.noteId,
     isEditing: isEditing ?? this.isEditing,
@@ -61,6 +77,11 @@ class NoteEditorState {
     pendingNotebookId: clearPendingNotebookId ? null : (pendingNotebookId ?? this.pendingNotebookId),
     pendingBackground: pendingBackground ?? this.pendingBackground,
     documentHasContent: documentHasContent ?? this.documentHasContent,
+    isHandwritingMode: isHandwritingMode ?? this.isHandwritingMode,
+    currentBrush: currentBrush ?? this.currentBrush,
+    currentBrushColor: currentBrushColor ?? this.currentBrushColor,
+    currentBrushWidth: currentBrushWidth ?? this.currentBrushWidth,
+    isErasing: isErasing ?? this.isErasing,
   );
 }
 
@@ -106,6 +127,30 @@ class NoteEditorNotifier extends StateNotifier<NoteEditorState> {
     state = state.copyWith(isEditing: false);
   }
 
+  void enterHandwritingMode() {
+    state = state.copyWith(isHandwritingMode: true, isErasing: false);
+  }
+
+  void exitHandwritingMode() {
+    state = state.copyWith(isHandwritingMode: false, isErasing: false);
+  }
+
+  void setBrush(BrushType type) {
+    state = state.copyWith(currentBrush: type, isErasing: false);
+  }
+
+  void setBrushColor(String hex) {
+    state = state.copyWith(currentBrushColor: hex);
+  }
+
+  void setBrushWidth(int width) {
+    state = state.copyWith(currentBrushWidth: width);
+  }
+
+  void toggleEraser() {
+    state = state.copyWith(isErasing: !state.isErasing);
+  }
+
   void updateTitle(String title) {
     state = state.copyWith(title: title);
   }
@@ -133,7 +178,7 @@ class NoteEditorNotifier extends StateNotifier<NoteEditorState> {
     state = state.copyWith(loadedNote: updated);
   }
 
-  Future<bool> saveNote() async {
+  Future<bool> saveNote({List<Stroke>? handwritingStrokes}) async {
     if (state.isSaving) return false;
     if (state.noteId == 0 && state.isNoteEmpty) return false;
 
@@ -143,7 +188,7 @@ class NoteEditorNotifier extends StateNotifier<NoteEditorState> {
       final docJson = editorDoc?.toJson() ?? {};
       final content = NoteContent(
         documentJson: {'document': docJson},
-        handwriting: state.loadedNote?.content.handwriting ?? [],
+        handwriting: handwritingStrokes ?? state.loadedNote?.content.handwriting ?? [],
       );
       final now = DateTime.now().millisecondsSinceEpoch;
       final note = (state.loadedNote ?? Note.newNote(now: now)).copyWith(
