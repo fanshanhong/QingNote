@@ -23,6 +23,7 @@ class NoteEditorPage extends ConsumerStatefulWidget {
 
 class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
   final _titleController = TextEditingController();
+  final _titleFocusNode = FocusNode();
   EditorScrollController? _scrollController;
   StreamSubscription? _transactionSub;
   bool _editorReady = false;
@@ -36,6 +37,9 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
       final state = ref.read(noteEditorProvider(widget.noteId));
       _titleController.text = state.title;
       _setupEditor(notifier);
+      if (widget.noteId == 0) {
+        _titleFocusNode.requestFocus();
+      }
     });
   }
 
@@ -55,19 +59,41 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
   }
 
   @override
+  void deactivate() {
+    final state = ref.read(noteEditorProvider(widget.noteId));
+    if (state.isEditing && !state.isNoteEmpty) {
+      ref.read(noteEditorProvider(widget.noteId).notifier).saveNote();
+    }
+    super.deactivate();
+  }
+
+  @override
   void dispose() {
     _transactionSub?.cancel();
     _scrollController?.dispose();
+    _titleFocusNode.dispose();
     _titleController.dispose();
     super.dispose();
   }
 
   Future<void> _onBack() async {
     final state = ref.read(noteEditorProvider(widget.noteId));
-    if (state.isEditing) {
+    if (state.isEditing && !state.isNoteEmpty) {
       await ref.read(noteEditorProvider(widget.noteId).notifier).saveNote();
     }
     if (mounted) context.pop();
+  }
+
+  void _moveCursorToEnd() {
+    final es = ref.read(noteEditorProvider(widget.noteId).notifier).editorState;
+    if (es == null) return;
+    final lastNode = es.document.root.children.lastOrNull;
+    if (lastNode == null) return;
+    final offset = lastNode.delta?.toPlainText().length ?? 0;
+    es.updateSelectionWithReason(
+      Selection.collapsed(Position(path: lastNode.path, offset: offset)),
+      reason: SelectionUpdateReason.uiEvent,
+    );
   }
 
   @override
@@ -82,7 +108,10 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
       },
       child: GestureDetector(
         onTap: () {
-          if (!state.isEditing) notifier.enterEditMode();
+          if (!state.isEditing) {
+            notifier.enterEditMode();
+            WidgetsBinding.instance.addPostFrameCallback((_) => _moveCursorToEnd());
+          }
         },
         child: Scaffold(
           backgroundColor: Colors.white,
@@ -117,6 +146,7 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
                   ),
                   child: TextField(
                     controller: _titleController,
+                    focusNode: _titleFocusNode,
                     enabled: state.isEditing,
                     onChanged: notifier.updateTitle,
                     style: const TextStyle(
