@@ -7,6 +7,7 @@ class TextToolbar extends StatelessWidget {
   final VoidCallback? onStyleTap;
   final VoidCallback? onImageTap;
   final VoidCallback? onRecordTap;
+  final VoidCallback? onHandwritingTap;
 
   const TextToolbar({
     super.key,
@@ -14,6 +15,7 @@ class TextToolbar extends StatelessWidget {
     this.onStyleTap,
     this.onImageTap,
     this.onRecordTap,
+    this.onHandwritingTap,
   });
 
   @override
@@ -44,8 +46,8 @@ class TextToolbar extends StatelessWidget {
           ),
           _ToolbarButton(
             icon: Icons.draw_outlined,
-            color: AppColors.editorIconInactive,
-            onTap: () => _showSnackBar(context, '手写功能将在后续版本实现'),
+            color: AppColors.editorIconActive,
+            onTap: onHandwritingTap,
           ),
           _ToolbarButton(
             icon: Icons.mic_none,
@@ -100,11 +102,6 @@ class TextToolbar extends StatelessWidget {
     es.apply(transaction);
   }
 
-  void _showSnackBar(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
-  }
 }
 
 class _ToolbarButton extends StatelessWidget {

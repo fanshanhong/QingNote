@@ -15,6 +15,12 @@ import '../widgets/editor/text_toolbar.dart';
 import 'package:path_provider/path_provider.dart';
 import '../editor/audio_block_component.dart';
 import '../services/audio_player_service.dart';
+import '../editor/handwriting/handwriting_controller.dart';
+import '../editor/handwriting/handwriting_overlay.dart';
+import '../models/stroke.dart';
+import '../widgets/editor/handwriting_toolbar.dart';
+import '../widgets/editor/handwriting_style_picker_sheet.dart';
+import '../widgets/editor/brush_width_picker.dart';
 
 class NoteEditorPage extends ConsumerStatefulWidget {
   final int noteId;
@@ -31,6 +37,7 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
   StreamSubscription? _transactionSub;
   bool _editorReady = false;
   final _audioPlayer = AudioPlayerService();
+  final _handwritingController = HandwritingOverlayController();
   String _appDocPath = '';
 
   @override
@@ -44,6 +51,8 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
       final state = ref.read(noteEditorProvider(widget.noteId));
       _titleController.text = state.title;
       _setupEditor(notifier);
+      final loadedStrokes = ref.read(noteEditorProvider(widget.noteId)).loadedNote?.content.handwriting ?? [];
+      _handwritingController.setStrokes(loadedStrokes);
       if (widget.noteId == 0) {
         _titleFocusNode.requestFocus();
       }
@@ -69,7 +78,7 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
   void deactivate() {
     final state = ref.read(noteEditorProvider(widget.noteId));
     if (state.isEditing && !state.isNoteEmpty) {
-      ref.read(noteEditorProvider(widget.noteId).notifier).saveNote();
+      ref.read(noteEditorProvider(widget.noteId).notifier).saveNote(handwritingStrokes: _handwritingController.strokes);
     }
     super.deactivate();
   }
@@ -77,6 +86,7 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
   @override
   void dispose() {
     _audioPlayer.dispose();
+    _handwritingController.dispose();
     _transactionSub?.cancel();
     _scrollController?.dispose();
     _titleFocusNode.dispose();
@@ -87,7 +97,7 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
   Future<void> _onBack() async {
     final state = ref.read(noteEditorProvider(widget.noteId));
     if (state.isEditing && !state.isNoteEmpty) {
-      await ref.read(noteEditorProvider(widget.noteId).notifier).saveNote();
+      await ref.read(noteEditorProvider(widget.noteId).notifier).saveNote(handwritingStrokes: _handwritingController.strokes);
     }
     if (mounted) context.pop();
   }
@@ -129,11 +139,27 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
                 EditorTopBar(
                   isEditing: state.isEditing,
                   onBack: _onBack,
-                  onUndo: () => notifier.editorState?.undoManager.undo(),
-                  onRedo: () => notifier.editorState?.undoManager.redo(),
+                  onUndo: () {
+                    if (state.isHandwritingMode) {
+                      _handwritingController.undo();
+                    } else {
+                      notifier.editorState?.undoManager.undo();
+                    }
+                  },
+                  onRedo: () {
+                    if (state.isHandwritingMode) {
+                      _handwritingController.redo();
+                    } else {
+                      notifier.editorState?.undoManager.redo();
+                    }
+                  },
                   onDone: () async {
-                    await notifier.saveNote();
-                    notifier.exitEditMode();
+                    if (state.isHandwritingMode) {
+                      notifier.exitHandwritingMode();
+                    } else {
+                      await notifier.saveNote(handwritingStrokes: _handwritingController.strokes);
+                      notifier.exitEditMode();
+                    }
                   },
                 ),
                 NotebookIndicator(
@@ -174,7 +200,31 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
                     ),
                   ),
                 ),
-                Expanded(child: _buildEditor(notifier, state)),
+                Expanded(
+                  child: Stack(
+                    children: [
+                      IgnorePointer(
+                        ignoring: state.isHandwritingMode,
+                        child: Opacity(
+                          opacity: state.isHandwritingMode ? 0.5 : 1.0,
+                          child: _buildEditor(notifier, state),
+                        ),
+                      ),
+                      if (_editorReady)
+                        IgnorePointer(
+                          ignoring: !state.isHandwritingMode,
+                          child: HandwritingOverlay(
+                            controller: _handwritingController,
+                            isActive: state.isHandwritingMode,
+                            currentBrush: state.currentBrush,
+                            currentColor: state.currentBrushColor,
+                            currentWidth: state.currentBrushWidth,
+                            isErasing: state.isErasing,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
                 _buildBottomBar(notifier, state),
               ],
             ),
@@ -283,12 +333,25 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
   }
 
   Widget _buildBottomBar(NoteEditorNotifier notifier, NoteEditorState state) {
+    if (state.isHandwritingMode) {
+      return HandwritingToolbar(
+        currentBrush: state.currentBrush,
+        currentColor: state.currentBrushColor,
+        currentWidth: state.currentBrushWidth,
+        isErasing: state.isErasing,
+        onBrushSelected: notifier.setBrush,
+        onColorTap: () => _showHandwritingStylePicker(notifier, state),
+        onBrushWidthTap: (type) => _showBrushWidthPicker(notifier, state),
+        onEraserTap: notifier.toggleEraser,
+      );
+    }
     if (state.isEditing) {
       return TextToolbar(
         editorState: notifier.editorState,
         onStyleTap: () => _showStylePicker(notifier),
         onImageTap: () => notifier.insertImage(),
         onRecordTap: () => notifier.startRecording(context),
+        onHandwritingTap: () => notifier.enterHandwritingMode(),
       );
     }
     final note = state.loadedNote;
@@ -313,6 +376,35 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
       context,
       editorState: es,
       onBackgroundChanged: notifier.setBackground,
+    );
+  }
+
+  void _showHandwritingStylePicker(NoteEditorNotifier notifier, NoteEditorState state) {
+    showHandwritingStylePickerSheet(
+      context,
+      currentBrush: state.currentBrush,
+      currentColor: state.currentBrushColor,
+      currentWidth: state.currentBrushWidth,
+      onBrushSelected: notifier.setBrush,
+      onColorSelected: notifier.setBrushColor,
+      onWidthSelected: notifier.setBrushWidth,
+    );
+  }
+
+  void _showBrushWidthPicker(NoteEditorNotifier notifier, NoteEditorState state) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        contentPadding: const EdgeInsets.all(16),
+        content: BrushWidthPicker(
+          currentWidth: state.currentBrushWidth,
+          brushColor: state.currentBrushColor,
+          onWidthSelected: (w) {
+            notifier.setBrushWidth(w);
+            Navigator.pop(ctx);
+          },
+        ),
+      ),
     );
   }
 }
