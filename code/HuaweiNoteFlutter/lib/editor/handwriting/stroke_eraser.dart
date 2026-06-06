@@ -60,8 +60,11 @@ class StrokeEraser {
     final abLen2 = abx * abx + aby * aby;
     if (abLen2 == 0.0) return apx * apx + apy * apy;
     var t = (apx * abx + apy * aby) / abLen2;
-    if (t < 0.0) t = 0.0;
-    else if (t > 1.0) t = 1.0;
+    if (t < 0.0) {
+      t = 0.0;
+    } else if (t > 1.0) {
+      t = 1.0;
+    }
     final cx = ax + t * abx;
     final cy = ay + t * aby;
     final dx = px - cx;
