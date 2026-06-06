@@ -9,6 +9,7 @@ import '../utils/color_utils.dart';
 import '../widgets/editor/editor_top_bar.dart';
 import '../widgets/editor/metadata_strip.dart';
 import '../widgets/editor/notebook_indicator.dart';
+import '../widgets/editor/text_toolbar.dart';
 
 class NoteEditorPage extends ConsumerStatefulWidget {
   final int noteId;
@@ -134,7 +135,7 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
                   ),
                 ),
                 Expanded(child: _buildEditor(notifier, state)),
-                _buildBottomBar(state),
+                _buildBottomBar(notifier, state),
               ],
             ),
           ),
@@ -212,20 +213,11 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
     );
   }
 
-  Widget _buildBottomBar(NoteEditorState state) {
+  Widget _buildBottomBar(NoteEditorNotifier notifier, NoteEditorState state) {
     if (state.isEditing) {
-      return Container(
-        height: AppDimens.editorToolbarHeight,
-        decoration: const BoxDecoration(
-          color: AppColors.editorToolbarBg,
-          border: Border(top: BorderSide(color: AppColors.divider, width: 0.5)),
-        ),
-        child: Center(
-          child: Text(
-            '编辑工具栏占位',
-            style: TextStyle(color: AppColors.textHint, fontSize: AppDimens.textCaption),
-          ),
-        ),
+      return TextToolbar(
+        editorState: notifier.editorState,
+        onStyleTap: () => _showStylePicker(notifier),
       );
     }
     return Container(
@@ -240,6 +232,12 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
           style: TextStyle(color: AppColors.textHint, fontSize: AppDimens.textCaption),
         ),
       ),
+    );
+  }
+
+  void _showStylePicker(NoteEditorNotifier notifier) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('样式面板将在下一步实现')),
     );
   }
 }
