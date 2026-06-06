@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 class AppColors {
   AppColors._();
   static const primary = Color(0xFF007DFF);
-  static const primaryLight = Color(0xFFE3F2FD);
+  static const primaryLight = Color(0xFFE8F0FE);
   static const textPrimary = Color(0xFF212121);
   static const textSecondary = Color(0xFF666666);
-  static const textHint = Color(0xFF9E9E9E);
-  static const bgWindow = Color(0xFFFAFAFA);
+  static const textHint = Color(0xFF999999);
+  static const bgWindow = Color(0xFFF5F5F5);
   static const bgCard = Color(0xFFFFFFFF);
   static const divider = Color(0xFFEEEEEE);
   static const cardStroke = Color(0xFFE8E8E8);

@@ -48,7 +48,10 @@ class _NoteListPageState extends ConsumerState<NoteListPage> {
               onOverflowTap: () => _showOverflowMenu(context, s, notifier),
             ),
           if (!s.isBatchMode && !s.filterPanelVisible)
-            NoteSearchBar(onQueryChanged: (q) => notifier.setQuery(q)),
+            NoteSearchBar(
+              initialQuery: s.query,
+              onQueryChanged: (q) => notifier.setQuery(q),
+            ),
           Expanded(
             child: s.filterPanelVisible
                 ? const FilterPanel()

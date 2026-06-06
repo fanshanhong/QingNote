@@ -3,15 +3,16 @@ import 'package:flutter/material.dart';
 import '../theme.dart';
 
 class NoteSearchBar extends StatefulWidget {
+  final String initialQuery;
   final ValueChanged<String> onQueryChanged;
-  const NoteSearchBar({super.key, required this.onQueryChanged});
+  const NoteSearchBar({super.key, this.initialQuery = '', required this.onQueryChanged});
 
   @override
   State<NoteSearchBar> createState() => _NoteSearchBarState();
 }
 
 class _NoteSearchBarState extends State<NoteSearchBar> {
-  final _controller = TextEditingController();
+  late final _controller = TextEditingController(text: widget.initialQuery);
   Timer? _debounce;
 
   @override

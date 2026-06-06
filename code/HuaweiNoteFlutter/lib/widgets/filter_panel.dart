@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/folder.dart';
@@ -7,14 +8,36 @@ import '../providers/repository_providers.dart';
 import '../repositories/note_repository.dart';
 import '../theme.dart';
 
-class FilterPanel extends ConsumerWidget {
+class FilterPanel extends ConsumerStatefulWidget {
   const FilterPanel({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<FilterPanel> createState() => _FilterPanelState();
+}
+
+class _FilterPanelState extends ConsumerState<FilterPanel> {
+  Future<List<_FilterRow>>? _rowsFuture;
+  Set<int> _lastExpandedFolders = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _rowsFuture = _buildRows();
+  }
+
+  void _refreshIfNeeded(NoteListState s) {
+    if (!setEquals(s.expandedFolders, _lastExpandedFolders)) {
+      _lastExpandedFolders = Set.from(s.expandedFolders);
+      _rowsFuture = _buildRows();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final listState = ref.watch(noteListProvider);
+    _refreshIfNeeded(listState);
     return FutureBuilder<List<_FilterRow>>(
-      future: _buildRows(ref, listState),
+      future: _rowsFuture,
       builder: (context, snapshot) {
         if (!snapshot.hasData) return const SizedBox.shrink();
         return Container(
@@ -22,17 +45,18 @@ class FilterPanel extends ConsumerWidget {
           child: ListView.builder(
             itemCount: snapshot.data!.length,
             itemBuilder: (context, index) =>
-                _buildRowWidget(context, ref, snapshot.data![index], listState.filter),
+                _buildRowWidget(context, snapshot.data![index], listState.filter),
           ),
         );
       },
     );
   }
 
-  Future<List<_FilterRow>> _buildRows(WidgetRef ref, NoteListState s) async {
+  Future<List<_FilterRow>> _buildRows() async {
     final noteRepo = ref.read(noteRepositoryProvider);
     final folderRepo = ref.read(folderRepositoryProvider);
     final notebookRepo = ref.read(notebookRepositoryProvider);
+    final s = ref.read(noteListProvider);
     final rows = <_FilterRow>[];
 
     rows.add(_PseudoRow('全部笔记', Icons.note_outlined,
@@ -60,13 +84,13 @@ class FilterPanel extends ConsumerWidget {
     return rows;
   }
 
-  Widget _buildRowWidget(BuildContext ctx, WidgetRef ref, _FilterRow row, NoteListFilter current) {
+  Widget _buildRowWidget(BuildContext ctx, _FilterRow row, NoteListFilter current) {
     return switch (row) {
-      _PseudoRow r => _buildPseudoTile(ctx, ref, r, current),
+      _PseudoRow r => _buildPseudoTile(ctx, r, current),
       _DividerRow _ => const Divider(height: 1, indent: 16, endIndent: 16),
       _SectionHeaderRow _ => _buildSectionHeader(ctx),
-      _FolderHeadRow r => _buildFolderHead(ref, r),
-      _NotebookRow r => _buildNotebookTile(ctx, ref, r, current),
+      _FolderHeadRow r => _buildFolderHead(r),
+      _NotebookRow r => _buildNotebookTile(ctx, r, current),
     };
   }
 
@@ -80,7 +104,7 @@ class FilterPanel extends ConsumerWidget {
     return false;
   }
 
-  Widget _buildPseudoTile(BuildContext ctx, WidgetRef ref, _PseudoRow r, NoteListFilter current) {
+  Widget _buildPseudoTile(BuildContext ctx, _PseudoRow r, NoteListFilter current) {
     final sel = _filtersEqual(r.filter, current);
     return InkWell(
       onTap: () => ref.read(noteListProvider.notifier).setFilter(r.filter),
@@ -125,9 +149,14 @@ class FilterPanel extends ConsumerWidget {
     );
   }
 
-  Widget _buildFolderHead(WidgetRef ref, _FolderHeadRow r) {
+  Widget _buildFolderHead(_FolderHeadRow r) {
     return InkWell(
-      onTap: () => ref.read(noteListProvider.notifier).toggleFolderExpand(r.folder.id),
+      onTap: () {
+        ref.read(noteListProvider.notifier).toggleFolderExpand(r.folder.id);
+        setState(() {
+          _rowsFuture = _buildRows();
+        });
+      },
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: AppDimens.spacingL, vertical: AppDimens.spacingM),
         child: Row(children: [
@@ -150,7 +179,7 @@ class FilterPanel extends ConsumerWidget {
     );
   }
 
-  Widget _buildNotebookTile(BuildContext ctx, WidgetRef ref, _NotebookRow r, NoteListFilter current) {
+  Widget _buildNotebookTile(BuildContext ctx, _NotebookRow r, NoteListFilter current) {
     final filter = NoteListFilter.notebook(r.notebook.id);
     final sel = _filtersEqual(filter, current);
     final cleaned = r.notebook.color.replaceFirst('#', '');

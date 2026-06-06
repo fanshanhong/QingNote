@@ -1,3 +1,4 @@
+import 'dart:developer' as dev;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/note.dart';
@@ -140,28 +141,33 @@ class NoteListNotifier extends StateNotifier<NoteListState> {
 
   Future<void> reload() async {
     state = state.copyWith(isLoading: true);
-    final filter = await _validateFilter(state.filter);
-    final notes = await _noteRepo.list(
-      filter: filter,
-      sortBy: state.sortBy,
-      query: state.query.isEmpty ? null : state.query,
-    );
-    final colorMap = <int, String>{};
-    final nbIds = notes.map((n) => n.notebookId).whereType<int>().toSet();
-    for (final id in nbIds) {
-      final nb = await _notebookRepo.get(id);
-      if (nb != null) colorMap[id] = nb.color;
+    try {
+      final filter = await _validateFilter(state.filter);
+      final notes = await _noteRepo.list(
+        filter: filter,
+        sortBy: state.sortBy,
+        query: state.query.isEmpty ? null : state.query,
+      );
+      final colorMap = <int, String>{};
+      final nbIds = notes.map((n) => n.notebookId).whereType<int>().toSet();
+      for (final id in nbIds) {
+        final nb = await _notebookRepo.get(id);
+        if (nb != null) colorMap[id] = nb.color;
+      }
+      final title = await _computeHeaderTitle(filter);
+      final subtitle = await _computeHeaderSubtitle(filter, notes.length);
+      state = state.copyWith(
+        filter: filter,
+        notes: notes,
+        notebookColorMap: colorMap,
+        isLoading: false,
+        headerTitle: title,
+        headerSubtitle: subtitle,
+      );
+    } catch (e, st) {
+      dev.log('reload failed', error: e, stackTrace: st);
+      state = state.copyWith(isLoading: false);
     }
-    final title = await _computeHeaderTitle(filter);
-    final subtitle = await _computeHeaderSubtitle(filter, notes.length);
-    state = state.copyWith(
-      filter: filter,
-      notes: notes,
-      notebookColorMap: colorMap,
-      isLoading: false,
-      headerTitle: title,
-      headerSubtitle: subtitle,
-    );
   }
 
   Future<NoteListFilter> _validateFilter(NoteListFilter filter) async {
@@ -276,30 +282,50 @@ class NoteListNotifier extends StateNotifier<NoteListState> {
 
   Future<void> batchDelete() async {
     if (state.selectedIds.isEmpty) return;
-    await _noteRepo.softDeleteBatch(state.selectedIds.toList());
-    await exitBatchMode();
+    try {
+      await _noteRepo.softDeleteBatch(state.selectedIds.toList());
+      await exitBatchMode();
+    } catch (e, st) {
+      dev.log('batchDelete failed', error: e, stackTrace: st);
+    }
   }
 
   Future<void> softDelete(int id) async {
-    await _noteRepo.softDelete(id);
-    await reload();
+    try {
+      await _noteRepo.softDelete(id);
+      await reload();
+    } catch (e, st) {
+      dev.log('softDelete failed', error: e, stackTrace: st);
+    }
   }
 
   Future<void> toggleFavorite(int id) async {
     final note = state.notes.where((n) => n.id == id).firstOrNull;
     if (note == null) return;
-    await _noteRepo.setFavorite(id, !note.isFavorite);
-    await reload();
+    try {
+      await _noteRepo.setFavorite(id, !note.isFavorite);
+      await reload();
+    } catch (e, st) {
+      dev.log('toggleFavorite failed', error: e, stackTrace: st);
+    }
   }
 
   Future<void> restore(int id) async {
-    await _noteRepo.restore(id);
-    await reload();
+    try {
+      await _noteRepo.restore(id);
+      await reload();
+    } catch (e, st) {
+      dev.log('restore failed', error: e, stackTrace: st);
+    }
   }
 
   Future<void> deletePermanently(int id) async {
-    await _noteRepo.deletePermanently(id);
-    await reload();
+    try {
+      await _noteRepo.deletePermanently(id);
+      await reload();
+    } catch (e, st) {
+      dev.log('deletePermanently failed', error: e, stackTrace: st);
+    }
   }
 }
 
