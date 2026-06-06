@@ -4,7 +4,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'pages/app_shell.dart';
 import 'pages/note_editor_page.dart';
 import 'pages/note_list_page.dart';
-import 'pages/todo_placeholder_page.dart';
+import 'pages/todo_list_page.dart';
+import 'providers/todo_list_provider.dart';
 import 'providers/note_list_provider.dart';
 
 final initialTabProvider = StateProvider<int>((ref) => 0);
@@ -25,8 +26,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state, navigationShell) {
           return Consumer(
             builder: (context, ref, _) {
-              final isBatchMode =
+              final noteBatch =
                   ref.watch(noteListProvider.select((s) => s.isBatchMode));
+              final todoBatch =
+                  ref.watch(todoListProvider.select((s) => s.isBatchMode));
+              final todoQuickAdd =
+                  ref.watch(todoListProvider.select((s) => s.isQuickAddVisible));
               return AppShell(
                 currentIndex: navigationShell.currentIndex,
                 onTabChanged: (index) {
@@ -34,7 +39,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                   SharedPreferences.getInstance()
                       .then((prefs) => prefs.setInt('active_tab', index));
                 },
-                bottomNavVisible: !isBatchMode,
+                bottomNavVisible: !noteBatch && !todoBatch && !todoQuickAdd,
                 child: navigationShell,
               );
             },
@@ -50,7 +55,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
           StatefulShellBranch(routes: [
             GoRoute(
               path: '/todos',
-              builder: (context, state) => const TodoPlaceholderPage(),
+              builder: (context, state) => const TodoListPage(),
             ),
           ]),
         ],
