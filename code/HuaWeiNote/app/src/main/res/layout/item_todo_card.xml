@@ -18,6 +18,12 @@
         android:orientation="horizontal"
         android:padding="@dimen/spacing_m">
 
+        <CheckBox
+            android:id="@+id/batch_checkbox"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:visibility="gone" />
+
         <ImageView
             android:id="@+id/todo_checkbox"
             android:layout_width="24dp"
@@ -50,6 +56,35 @@
                 android:textSize="13sp"
                 android:maxLines="1"
                 android:visibility="gone" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/deleted_actions"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/btn_restore"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="8dp"
+                android:text="@string/action_restore"
+                android:textColor="@color/primary"
+                android:textSize="14sp" />
+
+            <TextView
+                android:id="@+id/btn_delete_permanently"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="8dp"
+                android:text="@string/action_delete_permanently"
+                android:textColor="#E53935"
+                android:textSize="14sp" />
         </LinearLayout>
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

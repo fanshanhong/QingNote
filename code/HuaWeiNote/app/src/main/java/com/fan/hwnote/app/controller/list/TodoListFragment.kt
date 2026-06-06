@@ -9,7 +9,6 @@ import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.TextView
-import android.widget.Toast
 import androidx.appcompat.widget.PopupMenu
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
@@ -24,6 +23,7 @@ import com.fan.hwnote.app.model.FolderRepository
 import com.fan.hwnote.app.model.TodoRepository
 import com.fan.hwnote.app.model.entity.Todo
 import com.fan.hwnote.app.model.entity.RepeatType
+import com.fan.hwnote.app.view.list.DeleteConfirmBottomSheet
 import com.fan.hwnote.app.view.picker.DateTimePickerDialog
 import com.fan.hwnote.app.view.picker.RepeatPickerBottomSheet
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -50,9 +50,12 @@ class TodoListFragment : Fragment() {
 
     private lateinit var adapter: TodoListAdapter
 
+    private lateinit var batchBottomBar: View
+
     private var currentFilter: TodoListFilter = TodoListFilter.All
     private var filterPanelVisible = false
     private var hideCompleted = false
+    private var isBatchMode = false
 
     private var quickAddRemindAt = 0L
     private var quickAddIsImportant = false
@@ -104,9 +107,33 @@ class TodoListFragment : Fragment() {
                 intent.putExtra(TodoDetailActivity.EXTRA_TODO_ID, todo.id)
                 startActivity(intent)
             },
+            onRestore = { todo ->
+                lifecycleScope.launch {
+                    TodoRepository.restore(todo.id)
+                    if (todo.remindAt > System.currentTimeMillis()) {
+                        TodoAlarmManager.scheduleAlarm(requireContext(), todo)
+                    }
+                    reload()
+                }
+            },
+            onDeletePermanently = { todo ->
+                DeleteConfirmBottomSheet(
+                    requireContext(),
+                    message = getString(R.string.todo_deleted_confirm_message),
+                    confirmLabel = getString(R.string.action_delete_permanently),
+                ) {
+                    lifecycleScope.launch {
+                        TodoRepository.deletePermanently(todo.id)
+                        reload()
+                    }
+                }.show()
+            },
         )
+        adapter.onBatchSelectionChanged = { updateBatchCount() }
         recycler.layoutManager = LinearLayoutManager(requireContext())
         recycler.adapter = adapter
+        batchBottomBar = view.findViewById(R.id.batch_delete_btn)
+        batchBottomBar.setOnClickListener { confirmBatchDelete() }
 
         currentFilter = loadFilter()
         hideCompleted = loadHideCompleted()
@@ -150,6 +177,7 @@ class TodoListFragment : Fragment() {
                     folderId = f.folderId, hideCompleted = hideCompleted,
                 )
             }
+            adapter.isDeletedView = currentFilter is TodoListFilter.Deleted
             adapter.submit(todos)
             renderEmpty(todos.isEmpty())
             updateHeader()
@@ -257,13 +285,68 @@ class TodoListFragment : Fragment() {
                     true
                 }
                 MENU_BATCH_DELETE -> {
-                    Toast.makeText(requireContext(), "批量删除（M14c 实现）", Toast.LENGTH_SHORT).show()
+                    enterBatchMode()
                     true
                 }
                 else -> false
             }
         }
         popup.show()
+    }
+
+    private fun enterBatchMode() {
+        isBatchMode = true
+        adapter.isBatchMode = true
+        headerSubtitle.visibility = View.GONE
+        headerArrow.setImageResource(R.drawable.ic_clear)
+        headerArrow.rotation = 0f
+        headerTitle.text = getString(R.string.todo_batch_selected_count, 0)
+        headerTitle.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, 18f)
+        headerTitleArea.setOnClickListener { exitBatchMode() }
+        btnOverflow.visibility = View.GONE
+        fab.visibility = View.GONE
+        quickAddBar.visibility = View.GONE
+        batchBottomBar.visibility = View.VISIBLE
+        (activity as? NoteListActivity)?.setBottomNavVisible(false)
+    }
+
+    private fun exitBatchMode() {
+        isBatchMode = false
+        adapter.isBatchMode = false
+        headerSubtitle.visibility = View.VISIBLE
+        headerArrow.setImageResource(R.drawable.ic_arrow_drop_down)
+        headerTitle.setTextSize(
+            android.util.TypedValue.COMPLEX_UNIT_PX,
+            resources.getDimension(R.dimen.header_title_size),
+        )
+        headerTitleArea.setOnClickListener { toggleFilterPanel() }
+        btnOverflow.visibility = View.VISIBLE
+        fab.visibility = View.VISIBLE
+        batchBottomBar.visibility = View.GONE
+        (activity as? NoteListActivity)?.setBottomNavVisible(true)
+        reload()
+    }
+
+    private fun updateBatchCount() {
+        headerTitle.text = getString(R.string.todo_batch_selected_count, adapter.selectedCount)
+    }
+
+    private fun confirmBatchDelete() {
+        val count = adapter.selectedCount
+        if (count == 0) return
+        DeleteConfirmBottomSheet(
+            requireContext(),
+            message = getString(R.string.todo_batch_confirm_message, count),
+            confirmLabel = getString(R.string.todo_batch_delete_action),
+        ) {
+            lifecycleScope.launch {
+                for (id in adapter.selectedIds) {
+                    TodoAlarmManager.cancelAlarm(requireContext(), id)
+                }
+                TodoRepository.softDeleteBatch(adapter.selectedIds.toList())
+                exitBatchMode()
+            }
+        }.show()
     }
 
     private fun showQuickAddBar() {

@@ -8,6 +8,7 @@ import android.text.style.ForegroundColorSpan
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.CheckBox
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.core.content.ContextCompat
@@ -22,6 +23,8 @@ import java.util.Locale
 class TodoListAdapter(
     private val onCheckToggle: (Todo, View) -> Unit,
     private val onClick: (Todo) -> Unit,
+    private val onRestore: ((Todo) -> Unit)? = null,
+    private val onDeletePermanently: ((Todo) -> Unit)? = null,
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     sealed class Item {
@@ -30,6 +33,21 @@ class TodoListAdapter(
     }
 
     private val items = mutableListOf<Item>()
+
+    var isBatchMode = false
+        set(value) {
+            field = value
+            selectedIds.clear()
+            notifyDataSetChanged()
+        }
+    var isDeletedView = false
+        set(value) {
+            field = value
+            notifyDataSetChanged()
+        }
+    val selectedIds = mutableSetOf<Long>()
+    val selectedCount: Int get() = selectedIds.size
+    var onBatchSelectionChanged: (() -> Unit)? = null
 
     fun submit(todos: List<Todo>) {
         items.clear()
@@ -74,17 +92,54 @@ class TodoListAdapter(
 
     private inner class TodoVH(v: View) : RecyclerView.ViewHolder(v) {
         private val checkbox: ImageView = v.findViewById(R.id.todo_checkbox)
+        private val batchCheckbox: CheckBox = v.findViewById(R.id.batch_checkbox)
+        private val deletedActions: View = v.findViewById(R.id.deleted_actions)
         private val titleTv: TextView = v.findViewById(R.id.todo_title)
         private val subtitle: TextView = v.findViewById(R.id.todo_subtitle)
 
         fun bind(todo: Todo) {
             itemView.alpha = 1f
             itemView.translationX = 0f
-            checkbox.setImageResource(
-                if (todo.isCompleted) R.drawable.ic_todo_checkbox_checked
-                else R.drawable.ic_todo_checkbox,
-            )
-            checkbox.setOnClickListener { onCheckToggle(todo, itemView) }
+
+            if (isBatchMode) {
+                batchCheckbox.visibility = View.VISIBLE
+                checkbox.visibility = View.GONE
+                deletedActions.visibility = View.GONE
+                batchCheckbox.setOnCheckedChangeListener(null)
+                batchCheckbox.isChecked = selectedIds.contains(todo.id)
+                batchCheckbox.setOnClickListener {
+                    if (selectedIds.contains(todo.id)) selectedIds.remove(todo.id)
+                    else selectedIds.add(todo.id)
+                    onBatchSelectionChanged?.invoke()
+                }
+                itemView.setOnClickListener {
+                    batchCheckbox.isChecked = !batchCheckbox.isChecked
+                    if (selectedIds.contains(todo.id)) selectedIds.remove(todo.id)
+                    else selectedIds.add(todo.id)
+                    onBatchSelectionChanged?.invoke()
+                }
+            } else if (isDeletedView) {
+                batchCheckbox.visibility = View.GONE
+                checkbox.visibility = View.GONE
+                deletedActions.visibility = View.VISIBLE
+                itemView.findViewById<View>(R.id.btn_restore).setOnClickListener {
+                    onRestore?.invoke(todo)
+                }
+                itemView.findViewById<View>(R.id.btn_delete_permanently).setOnClickListener {
+                    onDeletePermanently?.invoke(todo)
+                }
+                itemView.setOnClickListener(null)
+            } else {
+                batchCheckbox.visibility = View.GONE
+                checkbox.visibility = View.VISIBLE
+                deletedActions.visibility = View.GONE
+                checkbox.setImageResource(
+                    if (todo.isCompleted) R.drawable.ic_todo_checkbox_checked
+                    else R.drawable.ic_todo_checkbox,
+                )
+                checkbox.setOnClickListener { onCheckToggle(todo, itemView) }
+                itemView.setOnClickListener { onClick(todo) }
+            }
 
             if (todo.isImportant && !todo.isCompleted) {
                 val sp = SpannableString("❗${todo.title}")

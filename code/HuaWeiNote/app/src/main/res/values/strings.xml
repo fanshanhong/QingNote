@@ -231,6 +231,11 @@
     <string name="todo_menu_hide_completed">隐藏已完成待办</string>
     <string name="todo_menu_show_completed">显示已完成待办</string>
     <string name="todo_menu_batch_delete">批量删除</string>
+    <string name="todo_batch_selected_count">已选择 %d 项</string>
+    <string name="todo_batch_delete_action">删除</string>
+    <string name="todo_batch_confirm_title">删除待办</string>
+    <string name="todo_batch_confirm_message">确定删除选中的 %d 项待办？</string>
+    <string name="todo_deleted_confirm_message">彻底删除后不可恢复，确定删除？</string>
 
     <!-- M14b: 待办详情 -->
     <string name="todo_detail_title_hint">待办事项</string>
