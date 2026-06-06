@@ -1,10 +1,14 @@
+import 'dart:io';
 import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import '../models/note.dart';
 import '../models/note_content.dart';
 import '../repositories/note_repository.dart';
 import '../repositories/notebook_repository.dart';
 import '../repositories/category_repository.dart';
+import '../utils/image_compressor.dart';
+import '../utils/note_file_storage.dart';
 import 'repository_providers.dart';
 
 class NoteEditorState {
@@ -148,6 +152,12 @@ class NoteEditorNotifier extends StateNotifier<NoteEditorState> {
         updatedAt: now,
       );
       final id = await _noteRepo.save(note);
+      // 异步清理孤儿图片（不阻塞 UI）
+      if (editorDoc != null) {
+        final referencedPaths = _extractImagePaths(editorDoc);
+        final effectiveId = state.noteId == 0 ? id : state.noteId;
+        NoteFileStorage.cleanOrphanImages(effectiveId, referencedPaths);
+      }
       if (state.noteId == 0) {
         state = state.copyWith(
           noteId: id,
@@ -165,6 +175,56 @@ class NoteEditorNotifier extends StateNotifier<NoteEditorState> {
       state = state.copyWith(isSaving: false);
       return false;
     }
+  }
+
+  Future<int> ensureNoteSaved() async {
+    if (state.noteId != 0) return state.noteId;
+    await saveNote();
+    return state.noteId;
+  }
+
+  Future<void> insertImage() async {
+    final noteId = await ensureNoteSaved();
+    if (noteId == 0) return;
+
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: ImageSource.gallery);
+    if (picked == null) return;
+
+    final source = File(picked.path);
+    final compressed = await ImageCompressor.compress(source);
+    if (compressed == null) return;
+
+    final savedFile = await NoteFileStorage.saveImage(noteId, compressed);
+
+    final es = _editorState;
+    if (es == null) return;
+
+    final selection = es.selection;
+    final path = selection?.end.path ?? es.document.root.children.last.path;
+    final insertPath = path.next;
+
+    final transaction = es.transaction;
+    transaction.insertNode(insertPath, imageNode(url: savedFile.path));
+    transaction.afterSelection = Selection.collapsed(
+      Position(path: insertPath.next, offset: 0),
+    );
+    await es.apply(transaction);
+  }
+
+  Set<String> _extractImagePaths(Document document) {
+    final paths = <String>{};
+    void visit(Node node) {
+      if (node.type == ImageBlockKeys.type) {
+        final url = node.attributes[ImageBlockKeys.url] as String?;
+        if (url != null) paths.add(url);
+      }
+      for (final child in node.children) {
+        visit(child);
+      }
+    }
+    visit(document.root);
+    return paths;
   }
 
   Future<void> softDelete() async {
