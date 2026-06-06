@@ -1,15 +1,18 @@
 # HwNote · 项目进度
 
-最后更新：2026-06-06（M14c+M13d+M13e 全部完成 + Phase C bug 修复 7 项）
+最后更新：2026-06-06（跨平台架构设计完成，Flutter Phase 1 计划就绪）
 
 ## 项目概况
 
-- **架构：** Block 块组合 + 手写 Overlay 透明层，MVC + XML View，无 Compose/ViewModel/Room
-- **PRD：** `docs/superpowers/specs/2026-05-22-hwnote-design.md`
-- **已完成里程碑：** M1-M14c + M13d-e（共 22 轮 + Phase C 修复），181 项自动化测试全绿
-- **计划归档：** `docs/superpowers/plans/archived/`（18 份已完成计划）
+- **当前阶段：** Android 单端功能完成 → 全平台 Flutter 重写启动
+- **Android 端架构：** Block 块组合 + 手写 Overlay 透明层，MVC + XML View，无 Compose/ViewModel/Room
+- **跨平台架构：** Flutter(Dart) 5 端覆盖（Android/iOS/macOS/Windows/HarmonyOS NEXT），Rust 按需扩展
+- **PRD（Android）：** `docs/superpowers/specs/2026-05-22-hwnote-design.md`
+- **跨平台设计文档：** `docs/superpowers/specs/2026-06-06-hwnote-cross-platform-design.md`（v3）
+- **Android 已完成里程碑：** M1-M14c + M13d-e（共 22 轮 + Phase C 修复），181 项自动化测试全绿
+- **计划归档：** `docs/superpowers/plans/archived/`（20 份已完成计划）
 - **DB 版本：** v5（M14a 新增 todos 表）
-- **全部计划里程碑已完成**
+- **跨平台状态：** Flutter Phase 1（项目搭建 + 数据层）计划已完成，待用户审批后执行
 
 ## 里程碑进度
 
@@ -36,6 +39,28 @@
 | M14c 批量操作+软删除 | ✅ 完成（2026-06-06） | TodoListAdapter batch模式 + DeletedView恢复/彻底删除 + TodoListFragment enterBatchMode/exitBatchMode/confirmBatchDelete + TodoRepository.softDeleteBatch |
 | M13d 宫格+批量删除 | ✅ 完成（2026-06-06） | NoteListAdapter batch模式 + StaggeredGridLayoutManager(2列)宫格切换 + NoteListFragment enterBatchMode/exitBatchMode/confirmBatchDelete + NoteRepository.softDeleteBatch + overflow动态菜单 |
 | M13e 分享功能 | ✅ 完成（2026-06-06） | NoteEditorActivity.shareNote(Intent.ACTION_SEND标题+纯文本) + TodoDetailActivity.shareTodo(Intent.ACTION_SEND标题+备注) |
+| **--- 跨平台 Flutter 重写 ---** | | |
+| 跨平台架构设计 | ✅ 完成（2026-06-06） | 全 Flutter 5 端方案（v3），5 层分层架构，Dart 优先 + Rust 按需，appflowy_editor(MPL-2.0) |
+| Flutter Phase 1：项目搭建+数据层 | ⏳ 计划就绪 | 10 任务，迁移全部数据模型/DB/Repository 到 Dart+sqflite，待用户审批 |
+
+## 跨平台转型（2026-06-06）
+
+**决策：** Android 单端功能完成后，决定以 Flutter 全量重写方式扩展为 5 平台应用。
+
+**设计文档：** `docs/superpowers/specs/2026-06-06-hwnote-cross-platform-design.md`（v3）
+
+**分层架构：**
+- Layer 1 表现层：Flutter / Dart（appflowy_editor + 业务页面 + 平台适配）
+- Layer 2 业务逻辑层：Dart（Repository + Service）
+- Layer 3 本地持久化层：Dart（sqflite + path_provider）
+- Layer 4 Rust 扩展层：按需接入（全文检索 tantivy / 手写平滑 / CRDT Yrs / 音频波形）
+- Layer 5 云端同步：远期规划
+
+**核心原则：** Dart 优先——UI、业务逻辑、持久化全 Dart 实现；Rust 仅承担 Dart 力不能及的计算密集型模块，通过 flutter_rust_bridge 按需接入。
+
+**Phase 1 计划：** `docs/superpowers/plans/2026-06-06-flutter-phase1-project-data.md`（10 任务，覆盖 Block/TextSpan/Stroke/NoteContent/Note/Folder/Notebook/Category/Todo 数据模型 + DatabaseHelper + 5 个 Repository + 全套单测）
+
+**开发分支：** `feature/cross-platform`
 
 ## M1 完成详情（2026-05-22）
 
