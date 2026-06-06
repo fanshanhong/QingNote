@@ -17,7 +17,6 @@ import '../editor/audio_block_component.dart';
 import '../services/audio_player_service.dart';
 import '../editor/handwriting/handwriting_controller.dart';
 import '../editor/handwriting/handwriting_overlay.dart';
-import '../models/stroke.dart';
 import '../widgets/editor/handwriting_toolbar.dart';
 import '../widgets/editor/handwriting_style_picker_sheet.dart';
 import '../widgets/editor/brush_width_picker.dart';
