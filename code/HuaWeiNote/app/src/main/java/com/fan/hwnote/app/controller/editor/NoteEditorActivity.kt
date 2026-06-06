@@ -217,16 +217,18 @@ class NoteEditorActivity : AppCompatActivity() {
                 handwritingToolbar.highlightBrush(type)
                 handwritingToolbar.highlightEraser(false)
             }
+            override fun onBrushWidthClicked(type: com.fan.hwnote.app.model.entity.BrushType) {
+                com.fan.hwnote.app.view.handwriting.BrushWidthPickerPopup(
+                    this@NoteEditorActivity,
+                    currentWidth = handwritingOverlay.currentWidth,
+                    brushColor = handwritingOverlay.currentColor,
+                ) { width ->
+                    handwritingOverlay.currentWidth = width
+                }.show(handwritingToolbar.brushButton(type))
+            }
             override fun onEraserClicked() {
                 handwritingOverlay.isErasing = !handwritingOverlay.isErasing
                 handwritingToolbar.highlightEraser(handwritingOverlay.isErasing)
-            }
-            override fun onPlusClicked() {
-                android.widget.Toast.makeText(
-                    this@NoteEditorActivity,
-                    R.string.toast_hw_plus_placeholder,
-                    android.widget.Toast.LENGTH_SHORT
-                ).show()
             }
         }
 

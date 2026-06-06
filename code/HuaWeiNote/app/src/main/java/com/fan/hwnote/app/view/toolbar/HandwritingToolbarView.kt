@@ -17,8 +17,8 @@ class HandwritingToolbarView @JvmOverloads constructor(
     interface Listener {
         fun onColorClicked()
         fun onBrushSelected(type: BrushType)
+        fun onBrushWidthClicked(type: BrushType)
         fun onEraserClicked()
-        fun onPlusClicked()
     }
 
     var listener: Listener? = null
@@ -26,17 +26,16 @@ class HandwritingToolbarView @JvmOverloads constructor(
     private val btnColor: ImageView by lazy { findViewById(R.id.btn_hw_color) }
     private val btnPen: ImageView by lazy { findViewById(R.id.btn_hw_pen) }
     private val btnBrush: ImageView by lazy { findViewById(R.id.btn_hw_brush) }
-    private val btnMarker: ImageView by lazy { findViewById(R.id.btn_hw_marker) }
     private val btnPencil: ImageView by lazy { findViewById(R.id.btn_hw_pencil) }
+    private val btnMarker: ImageView by lazy { findViewById(R.id.btn_hw_marker) }
     private val btnEraser: ImageView by lazy { findViewById(R.id.btn_hw_eraser) }
-    private val btnPlus: ImageView by lazy { findViewById(R.id.btn_hw_plus) }
 
     private val brushButtons: List<Pair<ImageView, BrushType>> by lazy {
         listOf(
             btnPen to BrushType.PEN,
             btnBrush to BrushType.BRUSH,
-            btnMarker to BrushType.MARKER,
             btnPencil to BrushType.PENCIL,
+            btnMarker to BrushType.MARKER,
         )
     }
 
@@ -44,12 +43,16 @@ class HandwritingToolbarView @JvmOverloads constructor(
         orientation = HORIZONTAL
         LayoutInflater.from(context).inflate(R.layout.toolbar_handwriting, this, true)
         btnColor.setOnClickListener { listener?.onColorClicked() }
-        btnPen.setOnClickListener { listener?.onBrushSelected(BrushType.PEN) }
-        btnBrush.setOnClickListener { listener?.onBrushSelected(BrushType.BRUSH) }
-        btnMarker.setOnClickListener { listener?.onBrushSelected(BrushType.MARKER) }
-        btnPencil.setOnClickListener { listener?.onBrushSelected(BrushType.PENCIL) }
+        for ((btn, type) in brushButtons) {
+            btn.setOnClickListener {
+                if (btn.isSelected) {
+                    listener?.onBrushWidthClicked(type)
+                } else {
+                    listener?.onBrushSelected(type)
+                }
+            }
+        }
         btnEraser.setOnClickListener { listener?.onEraserClicked() }
-        btnPlus.setOnClickListener { listener?.onPlusClicked() }
     }
 
     fun highlightBrush(type: BrushType) {
@@ -66,4 +69,11 @@ class HandwritingToolbarView @JvmOverloads constructor(
     }
 
     fun colorButton(): ImageView = btnColor
+
+    fun brushButton(type: BrushType): ImageView = when (type) {
+        BrushType.PEN -> btnPen
+        BrushType.BRUSH -> btnBrush
+        BrushType.PENCIL -> btnPencil
+        BrushType.MARKER -> btnMarker
+    }
 }
