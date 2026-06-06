@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/todo.dart';
 import '../repositories/todo_repository.dart';
 import '../repositories/folder_repository.dart';
+import '../services/todo_notification_service.dart';
 import 'repository_providers.dart';
 
 sealed class TodoListFilter {
@@ -186,6 +187,7 @@ class TodoListNotifier extends StateNotifier<TodoListState> {
 
   Future<void> toggleComplete(int todoId) async {
     await _todoRepo.completeTodo(todoId);
+    TodoNotificationService.instance.cancelReminder(todoId);
     await reload();
   }
 
@@ -255,7 +257,10 @@ class TodoListNotifier extends StateNotifier<TodoListState> {
       folderId: folderId,
       setFolderIdNull: folderId == null,
     );
-    await _todoRepo.insert(todo);
+    final newId = await _todoRepo.insert(todo);
+    if (remindAt > DateTime.now().millisecondsSinceEpoch) {
+      TodoNotificationService.instance.scheduleReminder(newId, title, remindAt);
+    }
     state = state.copyWith(isQuickAddVisible: false);
     await reload();
   }

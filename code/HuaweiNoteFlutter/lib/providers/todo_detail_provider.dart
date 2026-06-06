@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/todo.dart';
 import '../repositories/todo_repository.dart';
 import '../repositories/folder_repository.dart';
+import '../services/todo_notification_service.dart';
 import 'repository_providers.dart';
 
 class TodoDetailState {
@@ -128,8 +129,12 @@ class TodoDetailNotifier extends StateNotifier<TodoDetailState> {
 
   void setRemindAt(int value) => state = state.copyWith(remindAt: value);
 
-  void clearRemind() =>
-      state = state.copyWith(remindAt: 0, repeatType: RepeatType.none);
+  void clearRemind() {
+    state = state.copyWith(remindAt: 0, repeatType: RepeatType.none);
+    if (state.todoId > 0) {
+      TodoNotificationService.instance.cancelReminder(state.todoId);
+    }
+  }
 
   void setRepeatType(RepeatType value) =>
       state = state.copyWith(repeatType: value);
@@ -165,17 +170,28 @@ class TodoDetailNotifier extends StateNotifier<TodoDetailState> {
       final newId = await _todoRepo.insert(todo);
       if (newId > 0) {
         state = state.copyWith(todoId: newId);
+        _scheduleOrCancel(newId);
         return true;
       }
       return false;
     } else {
       await _todoRepo.update(todo);
+      _scheduleOrCancel(state.todoId);
       return true;
+    }
+  }
+
+  void _scheduleOrCancel(int todoId) {
+    if (state.remindAt > DateTime.now().millisecondsSinceEpoch && !state.isCompleted) {
+      TodoNotificationService.instance.scheduleReminder(todoId, state.title.trim(), state.remindAt);
+    } else {
+      TodoNotificationService.instance.cancelReminder(todoId);
     }
   }
 
   Future<void> delete() async {
     if (state.todoId > 0) {
+      TodoNotificationService.instance.cancelReminder(state.todoId);
       await _todoRepo.softDelete(state.todoId);
     }
   }
