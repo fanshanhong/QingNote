@@ -9,6 +9,7 @@ import '../utils/color_utils.dart';
 import '../widgets/editor/editor_top_bar.dart';
 import '../widgets/editor/metadata_strip.dart';
 import '../widgets/editor/notebook_indicator.dart';
+import '../widgets/editor/style_picker_sheet.dart';
 import '../widgets/editor/text_toolbar.dart';
 
 class NoteEditorPage extends ConsumerStatefulWidget {
@@ -236,8 +237,12 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
   }
 
   void _showStylePicker(NoteEditorNotifier notifier) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('样式面板将在下一步实现')),
+    final es = notifier.editorState;
+    if (es == null) return;
+    showStylePickerSheet(
+      context,
+      editorState: es,
+      onBackgroundChanged: notifier.setBackground,
     );
   }
 }
