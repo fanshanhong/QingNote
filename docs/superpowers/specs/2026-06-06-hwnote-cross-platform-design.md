@@ -1,9 +1,11 @@
 # HwNote 全平台架构设计文档
 
-> 状态：Draft v2
+> 状态：Draft v3
 > 日期：2026-06-06
 > 范围：Android / iOS / Mac / Windows / HarmonyOS NEXT 五端全覆盖
-> 变更记录：v1 → v2：从 KMP+CMP 混合方案转向全 Flutter 方案（见附录 A 决策记录）
+> 变更记录：
+> - v1 → v2：从 KMP+CMP 混合方案转向全 Flutter 方案（见附录 A 决策记录）
+> - v2 → v3：补充分层架构原则、Dart/Rust 职责边界、数据流设计
 
 ---
 
@@ -19,7 +21,7 @@
 | Windows | Flutter Desktop（同上） |
 | HarmonyOS NEXT | Flutter 鸿蒙版（CPF-Flutter，华为主导适配） |
 
-核心原则：**一套 Dart 代码，5 端共享；Block Editor 基于 appflowy_editor 二次开发或自建；架构预留 Rust FFI 通道供未来扩展。**
+核心原则：**UI + 业务逻辑 + 持久化全 Dart，5 端共享；Block Editor 基于 appflowy_editor 二次开发；Rust 仅承担 Dart 力不能及的计算密集型模块（全文检索、手写平滑、CRDT 协同），通过 flutter_rust_bridge 按需接入。**
 
 ---
 
@@ -47,34 +49,105 @@
 
 ---
 
-## 3. 平台策略总览
+## 3. 分层架构
+
+### 3.1 整体分层
 
 ```
-┌───────────────────────────────────────────────────┐
-│               Flutter App Shell                     │
-│         一套 Dart 代码 → 5 端                        │
-│  Android    iOS    macOS    Windows    HarmonyOS     │
-│  (标准)    (标准)  (Desktop) (Desktop)  (CPF-Flutter)│
-└───────────────────────┬─────────────────────────────┘
-                        │
-┌───────────────────────┴─────────────────────────────┐
-│             Block Editor（Dart）                      │
-│   appflowy_editor 二次开发 或 自建                    │
-│   + AudioBlock / HandwritingBlock / 拖拽排序          │
-└───────────────────────┬─────────────────────────────┘
-                        │
-┌───────────────────────┴─────────────────────────────┐
-│           Business Logic（Dart）                      │
-│   NoteRepository / FolderRepository / TodoRepository  │
-│   sqflite / drift                                     │
-└───────────────────────┬─────────────────────────────┘
-                        │ （可选，未来按需接入）
-┌───────────────────────┴─────────────────────────────┐
-│             Rust Core（预留通道）                      │
-│   flutter_rust_bridge / 鸿蒙端 NAPI                   │
-│   手写平滑 / 全文搜索 / 协同编辑                      │
+┌─────────────────────────────────────────────────────┐
+│  Layer 1  表现层（Flutter / Dart）                     │
+│  ├─ appflowy_editor（文档编辑态 + 渲染 + Operation）   │
+│  ├─ 业务页面（笔记列表/待办/设置/录音/文件夹管理）     │
+│  └─ 平台适配（file_picker/share_plus/桌面窗口/布局）   │
+│                                                       │
+│  Android    iOS    macOS    Windows    HarmonyOS NEXT  │
+│  (标准)    (标准)  (Desktop) (Desktop)  (CPF-Flutter)  │
+├─────────────────────────────────────────────────────┤
+│  Layer 2  业务逻辑层（Dart）                           │
+│  ├─ NoteRepository / FolderRepository                  │
+│  ├─ NotebookRepository / CategoryRepository            │
+│  ├─ TodoRepository                                     │
+│  └─ FileStorageService / AudioService / ImageService   │
+├─────────────────────────────────────────────────────┤
+│  Layer 3  本地持久化层（Dart）                         │
+│  ├─ SQLite（sqflite）— 结构化数据                      │
+│  └─ 文件系统（path_provider + dart:io）— 图片/音频附件 │
+├──────────── FRB（flutter_rust_bridge 按需桥接）────────┤
+│  Layer 4  Rust 扩展层（按需接入，非必选）              │
+│  ├─ 全文检索（tantivy）                               │
+│  ├─ 手写笔迹平滑（贝塞尔拟合，性能 10x+）             │
+│  ├─ CRDT 协同编辑（Yrs，远期）                        │
+│  └─ 音频波形生成（实时计算）                           │
+├─────────────────────────────────────────────────────┤
+│  Layer 5  云端同步（远期规划，不影响 Phase 1-5）       │
+│  └─ Rust 后端 + CRDT 增量同步 + 可选私有部署           │
 └─────────────────────────────────────────────────────┘
 ```
+
+### 3.2 分层原则
+
+| 原则 | 说明 |
+|---|---|
+| Dart 优先 | UI、业务逻辑、数据持久化全部用 Dart 实现，保证开发效率和调试便利 |
+| Rust 按需 | 仅当 Dart 在性能或能力上无法满足时，才将特定模块下沉到 Rust |
+| 接口预留 | Repository 和 Service 层保持接口清晰，未来可将实现替换为 Rust FFI 调用而不影响上层 |
+| 编辑器状态在 Dart | appflowy_editor 在 Dart 内存中持有 Document 编辑态（渲染需要），Rust 不管理编辑态 |
+| 五端一致 | 同一套 Dart 代码 + 同一套 Rust 二进制（如启用），保证五端数据逻辑 100% 一致 |
+
+### 3.3 Dart / Rust 职责边界
+
+| 职责 | 归属 | 理由 |
+|---|---|---|
+| 文档编辑（Operation / Transaction / Undo） | Dart（appflowy_editor） | 编辑器内置，16ms 渲染帧内闭环 |
+| 笔记/文件夹/笔记本/分类/待办 CRUD | Dart（sqflite） | 标准 CRUD，Dart 完全胜任 |
+| 文件存储（图片/音频附件） | Dart（path_provider） | 跨平台插件成熟 |
+| 录音/播放/拍照/分享 | Dart（Flutter 插件） | 各端插件已适配 |
+| 全文搜索索引 | **Rust**（tantivy） | 大量笔记时性能关键，Dart 无成熟方案 |
+| 手写笔迹平滑 | **Rust**（贝塞尔拟合） | 计算密集，Rust 性能优势 10x+ |
+| CRDT 协同编辑 | **Rust**（Yrs） | 算法复杂，Rust 类型系统更安全 |
+| 音频波形实时生成 | **Rust** | 实时计算，Dart isolate 不够快 |
+
+### 3.4 数据流
+
+**编辑笔记时**：
+
+```
+用户输入 → appflowy_editor 更新 Document（Dart 内存）
+        → Repository.save() → sqflite 持久化
+        → （若启用 Rust）FRB → 全文索引更新
+```
+
+**打开笔记时**：
+
+```
+sqflite 读取 content_json → NoteContent.fromJson() → appflowy_editor Document → 渲染
+```
+
+**未来启用 Rust 全文搜索时**：
+
+```
+搜索请求 → FRB → Rust tantivy 查询 → 返回 id 列表 → Dart sqflite 按 id 加载
+```
+
+### 3.5 Rust 接入方式
+
+| 平台 | 接入方式 | 产物 |
+|---|---|---|
+| Android | flutter_rust_bridge 代码生成 | .so（ARM64） |
+| iOS | flutter_rust_bridge 代码生成 | .dylib → .framework |
+| macOS | flutter_rust_bridge 代码生成 | .dylib |
+| Windows | flutter_rust_bridge 代码生成 | .dll |
+| HarmonyOS NEXT | NAPI 直接调用 Rust | .so（aarch64-unknown-linux-ohos，Tier 2） |
+
+### 3.6 五端平台策略
+
+| 平台 | 框架 | 最低版本 | 备注 |
+|---|---|---|---|
+| Android | Flutter 标准 | API 24（Android 7.0） | APK / AAB |
+| iOS | Flutter 标准 | iOS 13+ | Apple Pencil 压力感应 |
+| macOS | Flutter Desktop | macOS 11+ | ARM64，Intel 通过 Rosetta 2 |
+| Windows | Flutter Desktop | Windows 10+ | MSIX / exe |
+| HarmonyOS NEXT | CPF-Flutter | API 12+（HarmonyOS NEXT 5.0） | `flutter build hap`，Impeller + Vulkan |
 
 ---
 
@@ -136,20 +209,11 @@
 | ImageService | 拍照/选图 | image_picker |
 | ShareService | 分享 | share_plus |
 
-### 4.4 Rust Core（预留通道，当前阶段不实现）
+### 4.4 Rust 扩展层（按需接入，当前阶段不实现）
 
-**设计原则**：业务逻辑层用纯 Dart 实现，但保持模块接口清晰，未来可将计算密集型模块迁移到 Rust。
+当前阶段全部业务逻辑用 Dart 实现。Rust 仅在 Dart 性能或能力不足时按需接入。
 
-**未来候选模块**：
-
-| 模块 | 迁移理由 |
-|---|---|
-| 手写笔迹平滑（贝塞尔拟合） | 计算密集，Rust 性能优势 10x+ |
-| 全文搜索索引 | 大量笔记时性能关键 |
-| OT/CRDT 协同编辑 | 算法复杂，Rust 类型系统更安全 |
-| 音频波形生成 | 实时计算 |
-
-**接入方式**：flutter_rust_bridge 代码生成（Android / iOS / Mac / Windows），鸿蒙端通过 NAPI 直接调用 Rust .so（Rust 官方 Tier 2 支持 `aarch64-unknown-linux-ohos`）。
+候选模块、职责边界、接入方式、各端编译产物详见 **Section 3.3 ~ 3.5**。
 
 ---
 
