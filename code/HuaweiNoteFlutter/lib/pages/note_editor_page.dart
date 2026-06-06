@@ -185,6 +185,7 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
       editorState: editorState,
       editable: state.isEditing,
       editorScrollController: _scrollController,
+      blockComponentBuilders: _buildBlockComponentBuilders(),
       editorStyle: EditorStyle.mobile(
         padding: const EdgeInsets.symmetric(
           horizontal: AppDimens.editorContentPadding,
@@ -194,6 +195,19 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
         ),
       ),
     );
+  }
+
+  Map<String, BlockComponentBuilder> _buildBlockComponentBuilders() {
+    return {
+      ...standardBlockComponentBuilderMap,
+      TodoListBlockKeys.type: TodoListBlockComponentBuilder(
+        configuration: const BlockComponentConfiguration(),
+        textStyleBuilder: (checked) => TextStyle(
+          decoration: checked ? TextDecoration.lineThrough : null,
+          color: checked ? AppColors.textHint : AppColors.textPrimary,
+        ),
+      ),
+    };
   }
 
   Future<void> _showCategoryPicker(NoteEditorNotifier notifier) async {
