@@ -173,8 +173,7 @@ class NoteEditorActivity : AppCompatActivity() {
         browseFavoriteIcon = findViewById(R.id.browse_favorite_icon)
         browseFavoriteLabel = findViewById(R.id.browse_favorite_label)
         findViewById<android.view.View>(R.id.btn_browse_share).setOnClickListener {
-            android.widget.Toast.makeText(this, R.string.toast_share_placeholder,
-                android.widget.Toast.LENGTH_SHORT).show()
+            shareNote()
         }
         findViewById<android.view.View>(R.id.btn_browse_favorite).setOnClickListener {
             toggleFavorite()
@@ -587,6 +586,25 @@ class NoteEditorActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    private fun shareNote() {
+        val title = titleInput.text.toString()
+        val note = presenter.collectCurrentNote(title)
+        val text = buildString {
+            if (title.isNotBlank()) {
+                append(title)
+                append("\n\n")
+            }
+            append(note.content.toPlainText())
+        }.trim()
+        if (text.isEmpty()) return
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, text)
+            if (title.isNotBlank()) putExtra(Intent.EXTRA_SUBJECT, title)
+        }
+        startActivity(Intent.createChooser(intent, getString(R.string.editor_share)))
     }
 
     private fun saveNote() {

@@ -85,7 +85,7 @@ class TodoDetailActivity : AppCompatActivity() {
         }
         folderIndicator.setOnClickListener { showFolderPicker() }
         findViewById<View>(R.id.btn_share).setOnClickListener {
-            Toast.makeText(this, R.string.toast_todo_share_placeholder, Toast.LENGTH_SHORT).show()
+            shareTodo()
         }
         findViewById<View>(R.id.btn_delete).setOnClickListener { deleteTodo() }
 
@@ -315,6 +315,25 @@ class TodoDetailActivity : AppCompatActivity() {
                 .setNegativeButton(R.string.action_cancel, null)
                 .show()
         }
+    }
+
+    private fun shareTodo() {
+        val title = inputTitle.text.toString().trim()
+        val memo = inputMemo.text.toString().trim()
+        val text = buildString {
+            if (title.isNotBlank()) append(title)
+            if (memo.isNotBlank()) {
+                if (isNotEmpty()) append("\n\n")
+                append(memo)
+            }
+        }
+        if (text.isEmpty()) return
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, text)
+            if (title.isNotBlank()) putExtra(Intent.EXTRA_SUBJECT, title)
+        }
+        startActivity(Intent.createChooser(intent, getString(R.string.todo_detail_share)))
     }
 
     private fun deleteTodo() {
