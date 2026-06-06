@@ -94,11 +94,15 @@ class ChecklistItemView @JvmOverloads constructor(
     }
 
     fun setEditable(editable: Boolean) {
+        edit.isEnabled = editable
         edit.isFocusableInTouchMode = editable
         edit.isFocusable = editable
         edit.isCursorVisible = editable
         edit.isClickable = editable
         edit.isLongClickable = editable
+        if (!editable) {
+            applyCheckedStyle(checkbox.isChecked)
+        }
     }
 
     private fun applyCheckedStyle(checked: Boolean) {

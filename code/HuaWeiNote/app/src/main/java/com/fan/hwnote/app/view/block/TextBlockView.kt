@@ -9,6 +9,7 @@ import android.util.TypedValue
 import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.widget.EditText
+import androidx.core.content.ContextCompat
 import com.fan.hwnote.app.R
 import com.fan.hwnote.app.model.entity.Alignment
 import com.fan.hwnote.app.model.entity.Block
@@ -103,11 +104,15 @@ class TextBlockView @JvmOverloads constructor(
     }
 
     fun setEditable(editable: Boolean) {
+        edit.isEnabled = editable
         edit.isFocusableInTouchMode = editable
         edit.isFocusable = editable
         edit.isCursorVisible = editable
         edit.isClickable = editable
         edit.isLongClickable = editable
+        if (!editable) {
+            edit.setTextColor(ContextCompat.getColor(context, R.color.text_primary))
+        }
     }
 
     fun setListMarker(text: String) {
