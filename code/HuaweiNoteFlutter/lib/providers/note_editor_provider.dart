@@ -1,7 +1,9 @@
 import 'dart:io';
 import 'package:appflowy_editor/appflowy_editor.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import '../editor/audio_block_component.dart';
 import '../models/note.dart';
 import '../models/note_content.dart';
 import '../repositories/note_repository.dart';
@@ -9,6 +11,7 @@ import '../repositories/notebook_repository.dart';
 import '../repositories/category_repository.dart';
 import '../utils/image_compressor.dart';
 import '../utils/note_file_storage.dart';
+import '../widgets/editor/audio_recording_sheet.dart';
 import 'repository_providers.dart';
 
 class NoteEditorState {
@@ -152,11 +155,13 @@ class NoteEditorNotifier extends StateNotifier<NoteEditorState> {
         updatedAt: now,
       );
       final id = await _noteRepo.save(note);
-      // 异步清理孤儿图片（不阻塞 UI）
+      // 异步清理孤儿文件（不阻塞 UI）
       if (editorDoc != null) {
-        final referencedPaths = _extractImagePaths(editorDoc);
         final effectiveId = state.noteId == 0 ? id : state.noteId;
+        final referencedPaths = _extractImagePaths(editorDoc);
         NoteFileStorage.cleanOrphanImages(effectiveId, referencedPaths);
+        final referencedAudioNames = _extractAudioFileNames(editorDoc);
+        NoteFileStorage.cleanOrphanAudios(effectiveId, referencedAudioNames);
       }
       if (state.noteId == 0) {
         state = state.copyWith(
@@ -212,6 +217,40 @@ class NoteEditorNotifier extends StateNotifier<NoteEditorState> {
     await es.apply(transaction);
   }
 
+  Future<void> startRecording(BuildContext context) async {
+    final noteId = await ensureNoteSaved();
+    if (noteId == 0) return;
+
+    final dir = await NoteFileStorage.audioDir(noteId);
+    if (!dir.existsSync()) dir.createSync(recursive: true);
+    final targetPath = '${dir.path}/${DateTime.now().millisecondsSinceEpoch}.m4a';
+
+    if (!context.mounted) return;
+    final result = await showAudioRecordingSheet(
+      context,
+      targetFilePath: targetPath,
+    );
+    if (result == null) return;
+
+    final es = _editorState;
+    if (es == null) return;
+
+    final fileName = result.filePath.split('/').last;
+    final selection = es.selection;
+    final path = selection?.end.path ?? es.document.root.children.last.path;
+    final insertPath = path.next;
+
+    final transaction = es.transaction;
+    transaction.insertNode(
+      insertPath,
+      audioNode(fileName: fileName, durationMs: result.durationMs),
+    );
+    transaction.afterSelection = Selection.collapsed(
+      Position(path: insertPath.next, offset: 0),
+    );
+    await es.apply(transaction);
+  }
+
   Set<String> _extractImagePaths(Document document) {
     final paths = <String>{};
     void visit(Node node) {
@@ -225,6 +264,21 @@ class NoteEditorNotifier extends StateNotifier<NoteEditorState> {
     }
     visit(document.root);
     return paths;
+  }
+
+  Set<String> _extractAudioFileNames(Document document) {
+    final names = <String>{};
+    void visit(Node node) {
+      if (node.type == AudioBlockKeys.type) {
+        final name = node.attributes[AudioBlockKeys.fileName] as String?;
+        if (name != null) names.add(name);
+      }
+      for (final child in node.children) {
+        visit(child);
+      }
+    }
+    visit(document.root);
+    return names;
   }
 
   Future<void> softDelete() async {
