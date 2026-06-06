@@ -1,6 +1,6 @@
 # HwNote · 项目进度
 
-最后更新：2026-06-06（跨平台架构设计完成，Flutter Phase 1 计划就绪）
+最后更新：2026-06-06（Flutter Phase 1 数据层完成，79 测试全绿）
 
 ## 项目概况
 
@@ -12,7 +12,7 @@
 - **Android 已完成里程碑：** M1-M14c + M13d-e（共 22 轮 + Phase C 修复），181 项自动化测试全绿
 - **计划归档：** `docs/superpowers/plans/archived/`（20 份已完成计划）
 - **DB 版本：** v5（M14a 新增 todos 表）
-- **跨平台状态：** Flutter Phase 1（项目搭建 + 数据层）计划已完成，待用户审批后执行
+- **跨平台状态：** Flutter Phase 1（项目搭建 + 数据层）已完成，79 测试全绿，代码在 `code/HuaweiNoteFlutter/`
 
 ## 里程碑进度
 
@@ -41,7 +41,7 @@
 | M13e 分享功能 | ✅ 完成（2026-06-06） | NoteEditorActivity.shareNote(Intent.ACTION_SEND标题+纯文本) + TodoDetailActivity.shareTodo(Intent.ACTION_SEND标题+备注) |
 | **--- 跨平台 Flutter 重写 ---** | | |
 | 跨平台架构设计 | ✅ 完成（2026-06-06） | 全 Flutter 5 端方案（v3），5 层分层架构，Dart 优先 + Rust 按需，appflowy_editor(MPL-2.0) |
-| Flutter Phase 1：项目搭建+数据层 | ⏳ 计划就绪 | 10 任务，迁移全部数据模型/DB/Repository 到 Dart+sqflite，待用户审批 |
+| Flutter Phase 1：项目搭建+数据层 | ✅ 完成（2026-06-06） | 10 任务，9 模型 + DatabaseHelper(v5) + 5 Repository，79 测试全绿，`code/HuaweiNoteFlutter/` |
 
 ## 跨平台转型（2026-06-06）
 
