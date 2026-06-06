@@ -12,6 +12,9 @@ import '../widgets/editor/notebook_indicator.dart';
 import '../widgets/editor/browse_bottom_bar.dart';
 import '../widgets/editor/style_picker_sheet.dart';
 import '../widgets/editor/text_toolbar.dart';
+import 'package:path_provider/path_provider.dart';
+import '../editor/audio_block_component.dart';
+import '../services/audio_player_service.dart';
 
 class NoteEditorPage extends ConsumerStatefulWidget {
   final int noteId;
@@ -27,6 +30,8 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
   EditorScrollController? _scrollController;
   StreamSubscription? _transactionSub;
   bool _editorReady = false;
+  final _audioPlayer = AudioPlayerService();
+  String _appDocPath = '';
 
   @override
   void initState() {
@@ -34,6 +39,8 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
     Future.microtask(() async {
       final notifier = ref.read(noteEditorProvider(widget.noteId).notifier);
       await notifier.loadNote();
+      final appDir = await getApplicationDocumentsDirectory();
+      _appDocPath = appDir.path;
       final state = ref.read(noteEditorProvider(widget.noteId));
       _titleController.text = state.title;
       _setupEditor(notifier);
@@ -69,6 +76,7 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
 
   @override
   void dispose() {
+    _audioPlayer.dispose();
     _transactionSub?.cancel();
     _scrollController?.dispose();
     _titleFocusNode.dispose();
@@ -198,6 +206,8 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
   }
 
   Map<String, BlockComponentBuilder> _buildBlockComponentBuilders() {
+    final state = ref.read(noteEditorProvider(widget.noteId));
+    final notifier = ref.read(noteEditorProvider(widget.noteId).notifier);
     return {
       ...standardBlockComponentBuilderMap,
       TodoListBlockKeys.type: TodoListBlockComponentBuilder(
@@ -206,6 +216,19 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
           decoration: checked ? TextDecoration.lineThrough : null,
           color: checked ? AppColors.textHint : AppColors.textPrimary,
         ),
+      ),
+      AudioBlockKeys.type: AudioBlockComponentBuilder(
+        noteId: state.noteId,
+        audioPlayer: _audioPlayer,
+        editable: state.isEditing,
+        basePath: _appDocPath,
+        onDelete: (node) {
+          final es = notifier.editorState;
+          if (es == null) return;
+          final transaction = es.transaction;
+          transaction.deleteNode(node);
+          es.apply(transaction);
+        },
       ),
     };
   }
@@ -265,6 +288,7 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
         editorState: notifier.editorState,
         onStyleTap: () => _showStylePicker(notifier),
         onImageTap: () => notifier.insertImage(),
+        onRecordTap: () => notifier.startRecording(context),
       );
     }
     final note = state.loadedNote;
