@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/note_editor_provider.dart';
 import '../theme.dart';
+import '../widgets/editor/editor_top_bar.dart';
 
 class NoteEditorPage extends ConsumerStatefulWidget {
   final int noteId;
@@ -59,7 +60,16 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
           body: SafeArea(
             child: Column(
               children: [
-                _buildTopBar(state, notifier),
+                EditorTopBar(
+                  isEditing: state.isEditing,
+                  onBack: _onBack,
+                  onUndo: () => notifier.editorState?.undoManager.undo(),
+                  onRedo: () => notifier.editorState?.undoManager.redo(),
+                  onDone: () async {
+                    await notifier.saveNote();
+                    notifier.exitEditMode();
+                  },
+                ),
                 Expanded(
                   child: Center(
                     child: Text(
@@ -76,39 +86,6 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildTopBar(NoteEditorState state, NoteEditorNotifier notifier) {
-    return Container(
-      height: AppDimens.editorToolbarHeight,
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: AppColors.divider, width: 0.5)),
-      ),
-      child: Row(
-        children: [
-          IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new, size: 20),
-            onPressed: _onBack,
-          ),
-          const Spacer(),
-          if (state.isEditing)
-            TextButton(
-              onPressed: () async {
-                await notifier.saveNote();
-                notifier.exitEditMode();
-              },
-              child: Text(
-                '完成',
-                style: TextStyle(
-                  color: AppColors.primary,
-                  fontSize: AppDimens.textBody,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-        ],
       ),
     );
   }
