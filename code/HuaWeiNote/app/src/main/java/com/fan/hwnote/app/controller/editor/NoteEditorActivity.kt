@@ -636,6 +636,9 @@ class NoteEditorActivity : AppCompatActivity() {
         updateUndoRedoButtons()
         val imm = getSystemService(INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
         imm.hideSoftInputFromWindow(blocksContainer.windowToken, 0)
+        for (view in presenter.allBlocks()) {
+            if (view is com.fan.hwnote.app.view.block.TextBlockView) view.edit.isCursorVisible = false
+        }
         handwritingToolbar.highlightBrush(handwritingOverlay.currentBrush)
         handwritingToolbar.setColorIndicator(handwritingOverlay.currentColor)
     }
@@ -646,6 +649,11 @@ class NoteEditorActivity : AppCompatActivity() {
         titleInput.alpha = 1f
         textToolbar.visibility = if (isEditing) android.view.View.VISIBLE else android.view.View.GONE
         handwritingToolbar.visibility = android.view.View.GONE
+        if (isEditing) {
+            for (view in presenter.allBlocks()) {
+                if (view is com.fan.hwnote.app.view.block.TextBlockView) view.edit.isCursorVisible = true
+            }
+        }
         updateUndoRedoButtons()
     }
 

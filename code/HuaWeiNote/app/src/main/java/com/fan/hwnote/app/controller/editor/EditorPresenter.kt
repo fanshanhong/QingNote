@@ -254,6 +254,8 @@ class EditorPresenter(
         }
     }
 
+    fun allBlocks(): List<BlockView> = currentBlocks.toList()
+
     /**
      * 把 UI 当前内容收集成一份新 Note（保留原 id / createdAt / isFavorite，更新 title / content）。
      * 调用方负责 save 到 Repository。
