@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../providers/note_editor_provider.dart';
 import '../theme.dart';
 import '../widgets/editor/editor_top_bar.dart';
+import '../widgets/editor/notebook_indicator.dart';
 
 class NoteEditorPage extends ConsumerStatefulWidget {
   final int noteId;
@@ -69,6 +70,13 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
                     await notifier.saveNote();
                     notifier.exitEditMode();
                   },
+                ),
+                NotebookIndicator(
+                  notebookName: state.loadedNote?.notebookId != null ? null : null,
+                  notebookColor: null,
+                  isEditing: state.isEditing,
+                  onLoadNotebooks: notifier.loadNotebooks,
+                  onNotebookSelected: notifier.setNotebook,
                 ),
                 Expanded(
                   child: Center(
