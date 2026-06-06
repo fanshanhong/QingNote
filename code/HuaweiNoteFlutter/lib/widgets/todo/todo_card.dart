@@ -7,6 +7,7 @@ class TodoCard extends StatelessWidget {
   final bool isBatchMode;
   final bool isSelected;
   final bool isDeletedView;
+  final bool isAnimatingOut;
   final VoidCallback? onCheckToggle;
   final VoidCallback? onTap;
   final VoidCallback? onBatchToggle;
@@ -19,6 +20,7 @@ class TodoCard extends StatelessWidget {
     this.isBatchMode = false,
     this.isSelected = false,
     this.isDeletedView = false,
+    this.isAnimatingOut = false,
     this.onCheckToggle,
     this.onTap,
     this.onBatchToggle,
@@ -28,24 +30,32 @@ class TodoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: isBatchMode ? onBatchToggle : (isDeletedView ? null : onTap),
-      child: Container(
-        margin: const EdgeInsets.symmetric(
-            horizontal: AppDimens.spacingL, vertical: AppDimens.spacingXs),
-        padding: const EdgeInsets.symmetric(
-            horizontal: AppDimens.spacingL, vertical: AppDimens.spacingM),
-        decoration: BoxDecoration(
-          color: AppColors.bgCard,
-          borderRadius: BorderRadius.circular(AppDimens.radiusCard),
-        ),
-        child: Row(
-          children: [
-            _buildLeading(),
-            const SizedBox(width: AppDimens.spacingM),
-            Expanded(child: _buildContent()),
-            if (isDeletedView) _buildDeletedActions(),
-          ],
+    return AnimatedOpacity(
+      opacity: isAnimatingOut ? 0.0 : 1.0,
+      duration: const Duration(milliseconds: 300),
+      child: AnimatedSlide(
+        offset: isAnimatingOut ? const Offset(0.3, 0) : Offset.zero,
+        duration: const Duration(milliseconds: 300),
+        child: GestureDetector(
+          onTap: isBatchMode ? onBatchToggle : (isDeletedView ? null : onTap),
+          child: Container(
+            margin: const EdgeInsets.symmetric(
+                horizontal: AppDimens.spacingL, vertical: AppDimens.spacingXs),
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppDimens.spacingL, vertical: AppDimens.spacingM),
+            decoration: BoxDecoration(
+              color: AppColors.bgCard,
+              borderRadius: BorderRadius.circular(AppDimens.radiusCard),
+            ),
+            child: Row(
+              children: [
+                _buildLeading(),
+                const SizedBox(width: AppDimens.spacingM),
+                Expanded(child: _buildContent()),
+                if (isDeletedView) _buildDeletedActions(),
+              ],
+            ),
+          ),
         ),
       ),
     );

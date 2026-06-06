@@ -4,6 +4,8 @@ import '../models/folder.dart';
 import '../models/todo.dart';
 import '../providers/todo_list_provider.dart';
 import '../providers/repository_providers.dart';
+import '../repositories/todo_repository.dart';
+import '../repositories/folder_repository.dart';
 import '../theme.dart';
 import '../utils/todo_group_utils.dart';
 import '../widgets/delete_confirm_sheet.dart';
@@ -22,6 +24,7 @@ class TodoListPage extends ConsumerStatefulWidget {
 
 class _TodoListPageState extends ConsumerState<TodoListPage> {
   bool _initialized = false;
+  int? _animatingOutId;
 
   @override
   void initState() {
@@ -142,32 +145,44 @@ class _TodoListPageState extends ConsumerState<TodoListPage> {
     final todoRepo = ref.read(todoRepositoryProvider);
     final folderRepo = ref.read(folderRepositoryProvider);
     return FutureBuilder(
-      future: Future.wait([
-        todoRepo.count(),
-        todoRepo.countUncategorized(),
-        todoRepo.count(includeDeleted: true),
-        folderRepo.list(),
-      ]),
+      future: _loadFilterPanelData(todoRepo, folderRepo),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
         }
         final data = snapshot.data!;
-        final allCount = data[0] as int;
-        final uncatCount = data[1] as int;
-        final delCount = data[2] as int;
-        final folders = data[3] as List<Folder>;
         return TodoFilterPanel(
           currentFilter: state.filter,
-          allCount: allCount,
-          uncategorizedCount: uncatCount,
-          deletedCount: delCount,
-          folders: folders,
-          folderCounts: const {},
+          allCount: data.allCount,
+          uncategorizedCount: data.uncategorizedCount,
+          deletedCount: data.deletedCount,
+          folders: data.folders,
+          folderCounts: data.folderCounts,
           onFilterSelected: (f) =>
               ref.read(todoListProvider.notifier).setFilter(f),
         );
       },
+    );
+  }
+
+  Future<_FilterPanelData> _loadFilterPanelData(
+    TodoRepository todoRepo,
+    FolderRepository folderRepo,
+  ) async {
+    final allCount = await todoRepo.count();
+    final uncatCount = await todoRepo.countUncategorized();
+    final delCount = await todoRepo.count(includeDeleted: true);
+    final folders = await folderRepo.list();
+    final folderCounts = <int, int>{};
+    for (final f in folders) {
+      folderCounts[f.id] = await todoRepo.count(folderId: f.id);
+    }
+    return _FilterPanelData(
+      allCount: allCount,
+      uncategorizedCount: uncatCount,
+      deletedCount: delCount,
+      folders: folders,
+      folderCounts: folderCounts,
     );
   }
 
@@ -212,11 +227,18 @@ class _TodoListPageState extends ConsumerState<TodoListPage> {
           isBatchMode: state.isBatchMode,
           isSelected: state.selectedIds.contains(todo.id),
           isDeletedView: isDeletedView,
+          isAnimatingOut: _animatingOutId == todo.id,
           onCheckToggle: () {
             if (todo.isCompleted) {
               ref.read(todoListProvider.notifier).uncomplete(todo.id);
             } else {
-              ref.read(todoListProvider.notifier).toggleComplete(todo.id);
+              setState(() => _animatingOutId = todo.id);
+              Future.delayed(const Duration(milliseconds: 300), () {
+                if (mounted) {
+                  setState(() => _animatingOutId = null);
+                  ref.read(todoListProvider.notifier).toggleComplete(todo.id);
+                }
+              });
             }
           },
           onTap: () {},
@@ -265,4 +287,20 @@ class _TodoListPageState extends ConsumerState<TodoListPage> {
       ),
     );
   }
+}
+
+class _FilterPanelData {
+  final int allCount;
+  final int uncategorizedCount;
+  final int deletedCount;
+  final List<Folder> folders;
+  final Map<int, int> folderCounts;
+
+  const _FilterPanelData({
+    required this.allCount,
+    required this.uncategorizedCount,
+    required this.deletedCount,
+    required this.folders,
+    required this.folderCounts,
+  });
 }
