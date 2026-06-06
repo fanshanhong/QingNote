@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -18,6 +20,9 @@ class NoteEditorPage extends ConsumerStatefulWidget {
 
 class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
   final _titleController = TextEditingController();
+  EditorScrollController? _scrollController;
+  StreamSubscription? _transactionSub;
+  bool _editorReady = false;
 
   @override
   void initState() {
@@ -27,11 +32,29 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
       await notifier.loadNote();
       final state = ref.read(noteEditorProvider(widget.noteId));
       _titleController.text = state.title;
+      _setupEditor(notifier);
     });
+  }
+
+  void _setupEditor(NoteEditorNotifier notifier) {
+    final editorState = notifier.editorState;
+    if (editorState == null) return;
+    _scrollController = EditorScrollController(editorState: editorState);
+    _transactionSub = editorState.transactionStream.listen((_) {
+      final doc = editorState.document;
+      final hasContent = doc.root.children.any((node) {
+        final delta = node.delta;
+        return delta != null && delta.toPlainText().isNotEmpty;
+      });
+      notifier.updateDocumentHasContent(hasContent);
+    });
+    if (mounted) setState(() => _editorReady = true);
   }
 
   @override
   void dispose() {
+    _transactionSub?.cancel();
+    _scrollController?.dispose();
     _titleController.dispose();
     super.dispose();
   }
@@ -110,21 +133,31 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
                     ),
                   ),
                 ),
-                Expanded(
-                  child: Center(
-                    child: Text(
-                      '编辑器内容区域',
-                      style: TextStyle(
-                        color: AppColors.textHint,
-                        fontSize: AppDimens.textBody,
-                      ),
-                    ),
-                  ),
-                ),
+                Expanded(child: _buildEditor(notifier, state)),
                 _buildBottomBar(state),
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEditor(NoteEditorNotifier notifier, NoteEditorState state) {
+    final editorState = notifier.editorState;
+    if (!_editorReady || editorState == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    return AppFlowyEditor(
+      editorState: editorState,
+      editable: state.isEditing,
+      editorScrollController: _scrollController,
+      editorStyle: EditorStyle.mobile(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppDimens.editorContentPadding,
+        ),
+        textStyleConfiguration: TextStyleConfiguration(
+          text: const TextStyle(fontSize: 16, color: AppColors.textPrimary),
         ),
       ),
     );
