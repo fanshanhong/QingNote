@@ -9,6 +9,7 @@ import '../utils/color_utils.dart';
 import '../widgets/editor/editor_top_bar.dart';
 import '../widgets/editor/metadata_strip.dart';
 import '../widgets/editor/notebook_indicator.dart';
+import '../widgets/editor/browse_bottom_bar.dart';
 import '../widgets/editor/style_picker_sheet.dart';
 import '../widgets/editor/text_toolbar.dart';
 
@@ -221,18 +222,18 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
         onStyleTap: () => _showStylePicker(notifier),
       );
     }
-    return Container(
-      height: AppDimens.editorToolbarHeight,
-      decoration: const BoxDecoration(
-        color: AppColors.editorToolbarBg,
-        border: Border(top: BorderSide(color: AppColors.divider, width: 0.5)),
-      ),
-      child: Center(
-        child: Text(
-          '浏览工具栏占位',
-          style: TextStyle(color: AppColors.textHint, fontSize: AppDimens.textCaption),
-        ),
-      ),
+    final note = state.loadedNote;
+    final plainText = [state.title, note?.plainText ?? '']
+        .where((s) => s.isNotEmpty)
+        .join('\n');
+    return BrowseBottomBar(
+      isFavorite: note?.isFavorite ?? false,
+      shareText: plainText,
+      onToggleFavorite: () => notifier.toggleFavorite(),
+      onDelete: () async {
+        await notifier.softDelete();
+        if (mounted) context.pop();
+      },
     );
   }
 
