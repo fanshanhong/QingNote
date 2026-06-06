@@ -37,14 +37,14 @@ class FolderRepository {
   }
 
   Future<void> rename(int id, String name) async {
-    assert(id != 1, '默认文件夹不可改名');
+    if (id == 1) return;
     final db = await _dbHelper.database;
     await db.update('folders', {'name': name},
         where: 'id = ?', whereArgs: [id]);
   }
 
   Future<void> softDelete(int id) async {
-    assert(id != 1, '默认文件夹不可删除');
+    if (id == 1) return;
     final db = await _dbHelper.database;
     final now = DateTime.now().millisecondsSinceEpoch;
     await db.transaction((txn) async {

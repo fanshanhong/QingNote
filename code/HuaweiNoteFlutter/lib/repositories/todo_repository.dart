@@ -158,12 +158,20 @@ class TodoRepository {
       dt = switch (repeatType) {
         RepeatType.daily => dt.add(const Duration(days: 1)),
         RepeatType.weekly => dt.add(const Duration(days: 7)),
-        RepeatType.monthly => DateTime(dt.year, dt.month + 1, dt.day, dt.hour, dt.minute, dt.second),
-        RepeatType.yearly => DateTime(dt.year + 1, dt.month, dt.day, dt.hour, dt.minute, dt.second),
+        RepeatType.monthly => _addMonth(dt, 1),
+        RepeatType.yearly => _addMonth(dt, 12),
         RepeatType.none => dt,
       };
     } while (dt.millisecondsSinceEpoch <= now);
     return dt.millisecondsSinceEpoch;
+  }
+
+  static DateTime _addMonth(DateTime dt, int months) {
+    final targetYear = dt.year + (dt.month + months - 1) ~/ 12;
+    final targetMonth = (dt.month + months - 1) % 12 + 1;
+    final lastDay = DateTime(targetYear, targetMonth + 1, 0).day;
+    final day = dt.day > lastDay ? lastDay : dt.day;
+    return DateTime(targetYear, targetMonth, day, dt.hour, dt.minute, dt.second);
   }
 
   Map<String, Object?> _toMap(Todo todo) => {

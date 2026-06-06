@@ -46,7 +46,7 @@ class NotebookRepository {
   }
 
   Future<void> softDelete(int id) async {
-    assert(id != 1, '默认笔记本不可删除');
+    if (id == 1) return;
     final db = await _dbHelper.database;
     final now = DateTime.now().millisecondsSinceEpoch;
     await db.transaction((txn) async {
@@ -59,7 +59,7 @@ class NotebookRepository {
   }
 
   Future<void> move(int id, int targetFolderId) async {
-    assert(id != 1, '默认笔记本不可跨文件夹移动');
+    if (id == 1) return;
     final db = await _dbHelper.database;
     final nextIndex = await _nextOrderIndex(db, targetFolderId);
     await db.update('notebooks', {
