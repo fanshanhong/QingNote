@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/note_editor_provider.dart';
 import '../theme.dart';
+import '../utils/color_utils.dart';
 import '../widgets/editor/editor_top_bar.dart';
+import '../widgets/editor/metadata_strip.dart';
 import '../widgets/editor/notebook_indicator.dart';
 
 class NoteEditorPage extends ConsumerStatefulWidget {
@@ -78,6 +80,36 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
                   onLoadNotebooks: notifier.loadNotebooks,
                   onNotebookSelected: notifier.setNotebook,
                 ),
+                MetadataStrip(
+                  updatedAt: state.loadedNote?.updatedAt,
+                  categoryName: null,
+                  onCategoryTap: () => _showCategoryPicker(notifier),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppDimens.editorContentPadding,
+                  ),
+                  child: TextField(
+                    controller: _titleController,
+                    enabled: state.isEditing,
+                    onChanged: notifier.updateTitle,
+                    style: const TextStyle(
+                      fontSize: AppDimens.editorTitleSize,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                    decoration: const InputDecoration(
+                      hintText: '标题',
+                      hintStyle: TextStyle(
+                        fontSize: AppDimens.editorTitleSize,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textHint,
+                      ),
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.symmetric(vertical: AppDimens.spacingS),
+                    ),
+                  ),
+                ),
                 Expanded(
                   child: Center(
                     child: Text(
@@ -93,6 +125,55 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showCategoryPicker(NoteEditorNotifier notifier) async {
+    final categories = await notifier.loadCategories();
+    if (!mounted) return;
+    await showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.all(AppDimens.spacingL),
+              child: Text('选择分类', style: TextStyle(
+                fontSize: AppDimens.textTitle,
+                fontWeight: FontWeight.w600,
+              )),
+            ),
+            ListTile(
+              leading: const Icon(Icons.clear, size: 20),
+              title: const Text('无分类'),
+              onTap: () {
+                notifier.setCategoryId(null);
+                Navigator.pop(ctx);
+              },
+            ),
+            ...categories.map((c) => ListTile(
+              leading: Container(
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: AppColorUtils.parseHex(c.color) ?? AppColors.primary,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              title: Text(c.name),
+              onTap: () {
+                notifier.setCategoryId(c.id);
+                Navigator.pop(ctx);
+              },
+            )),
+            const SizedBox(height: AppDimens.spacingL),
+          ],
         ),
       ),
     );
