@@ -1,15 +1,15 @@
 # HwNote · 项目进度
 
-最后更新：2026-06-05（M14b 待办详情页+时间选择器+提醒通知完成）
+最后更新：2026-06-06（M14c+M13d+M13e 全部完成 + Phase C bug 修复 7 项）
 
 ## 项目概况
 
 - **架构：** Block 块组合 + 手写 Overlay 透明层，MVC + XML View，无 Compose/ViewModel/Room
 - **PRD：** `docs/superpowers/specs/2026-05-22-hwnote-design.md`
-- **已完成里程碑：** M1-M13c + M14a-b（共 18 轮），181 项自动化测试全绿
+- **已完成里程碑：** M1-M14c + M13d-e（共 22 轮 + Phase C 修复），181 项自动化测试全绿
 - **计划归档：** `docs/superpowers/plans/archived/`（18 份已完成计划）
 - **DB 版本：** v5（M14a 新增 todos 表）
-- **待开发：** M14c 批量操作+软删除 / M13d 宫格+批量删除 / M13e 分享功能
+- **全部计划里程碑已完成**
 
 ## 里程碑进度
 
@@ -32,6 +32,10 @@
 | M13c 样式增强 | ✅ 完成（2026-06-05） | StylePickerBottomSheet 4行→7行 + 对齐/列表/缩进 + H1-H6 + 字号5档 + 7色 + 背景纹理(DB v4) + ParagraphCommands(3 Command)；158 单测 |
 | M14a 数据层+Fragment重构+待办列表页 | ✅ 完成（2026-06-05） | DB v5(todos 表) + Todo/RepeatType 实体 + TodoRepository + NoteListActivity→Fragment 容器 + NoteListFragment + TodoListFragment + TodoListAdapter(6分组) + TodoFilterPanelAdapter + QuickAddBar；178 单测 |
 | M14b 待办详情+时间选择+通知 | ✅ 完成（2026-06-05） | TodoDetailActivity(onPause 自动保存) + DateTimePickerDialog(4列 NumberPicker) + RepeatPickerBottomSheet + TodoAlarmManager(精确闹钟) + TodoAlarmReceiver(通知/完成/贪睡) + TodoBootReceiver(开机恢复) + NotificationChannel + POST_NOTIFICATIONS/SCHEDULE_EXACT_ALARM 权限；181 单测 |
+| Phase C bug 修复 | ✅ 完成（2026-06-06） | 筛选水波纹缩小+overflow隐藏+空白收起 / 图片FrameLayout+去maxHeight+删除悬浮 / 浏览模式EditText禁用touch冒泡 / 手写模式隐藏光标 / 手写工具栏重排+去plus / 笔刷粗细弹窗；7 commit |
+| M14c 批量操作+软删除 | ✅ 完成（2026-06-06） | TodoListAdapter batch模式 + DeletedView恢复/彻底删除 + TodoListFragment enterBatchMode/exitBatchMode/confirmBatchDelete + TodoRepository.softDeleteBatch |
+| M13d 宫格+批量删除 | ✅ 完成（2026-06-06） | NoteListAdapter batch模式 + StaggeredGridLayoutManager(2列)宫格切换 + NoteListFragment enterBatchMode/exitBatchMode/confirmBatchDelete + NoteRepository.softDeleteBatch + overflow动态菜单 |
+| M13e 分享功能 | ✅ 完成（2026-06-06） | NoteEditorActivity.shareNote(Intent.ACTION_SEND标题+纯文本) + TodoDetailActivity.shareTodo(Intent.ACTION_SEND标题+备注) |
 
 ## M1 完成详情（2026-05-22）
 
@@ -653,9 +657,9 @@ M1 ✅ → M2 数据层 → M3 列表页
 
 **累计：** ~220 个 commit（含 docs/计划 commit），178 项自动化单测全绿，**PRD MVP + §13 全部 100% 覆盖 + M12 文件夹层级 + M13a-c 视觉重设计 + M14a 待办数据层+列表页完成**。架构守住"Block 块组合 + 手写 Overlay 透明层"原始决策，未引入 Compose / ViewModel / LiveData / Room / Hilt / Navigation；DB 二次迁移（v2→v3）走 SQLiteOpenHelper.onUpgrade 新增 folders/notebooks 表 + notes.notebook_id 列 + 预置默认行，旧装机数据无损；M12 引入二级分类体系（Folder→Notebook→Note），全面替换 M9 的 Category 平级模型，PopupWindow 复用折叠树 UI 模式，FolderManager 三粒度拖动排序（文件夹整体 / 笔记本同夹 / 笔记本跨夹），默认文件夹(id=1)与默认笔记本(id=1)受保护不可删除/移动。
 
-**Pending：** M14b 待办详情页+时间选择器+通知 / M14c 批量操作+软删除 / M13d 宫格+批量删除 / M13e 分享功能。
+**全部计划里程碑已完成。**
 
-**后续可选方向：** M15 UI 全面审查 / 置顶 pin / 加锁 / 导出 / 备份 / 深色模式 / 多端同步。
+**后续可选方向：** UI 全面审查 / 置顶 pin / 加锁 / 导出 / 备份 / 深色模式 / 多端同步 / 搜索增强 / 小组件。
 
 ---
 
