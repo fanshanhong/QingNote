@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:go_router/go_router.dart';
 import '../models/note.dart';
 import '../providers/note_list_provider.dart';
 import '../repositories/note_repository.dart';
@@ -64,8 +65,10 @@ class _NoteListPageState extends ConsumerState<NoteListPage> {
       ),
       floatingActionButton:
           (s.isBatchMode || s.filterPanelVisible) ? null : FloatingActionButton(
-            onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('新建笔记将在 Phase 2B 实现'))),
+            onPressed: () async {
+              await context.push('/editor/0');
+              if (mounted) ref.read(noteListProvider.notifier).reload();
+            },
             child: const Icon(Icons.add),
           ),
     );
@@ -104,8 +107,10 @@ class _NoteListPageState extends ConsumerState<NoteListPage> {
       isBatchMode: s.isBatchMode,
       isSelected: s.selectedIds.contains(note.id),
       notebookColor: note.notebookId != null ? s.notebookColorMap[note.notebookId] : null,
-      onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('编辑器将在 Phase 2B 实现'))),
+      onTap: () async {
+        await context.push('/editor/${note.id}');
+        if (mounted) ref.read(noteListProvider.notifier).reload();
+      },
       onLongPress: () => _showCardMenu(context, note, s, notifier),
       onBatchToggle: (_) => notifier.toggleSelection(note.id),
     );
