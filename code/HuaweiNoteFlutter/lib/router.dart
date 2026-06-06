@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'pages/app_shell.dart';
+import 'pages/note_editor_page.dart';
 import 'pages/note_list_page.dart';
 import 'pages/todo_placeholder_page.dart';
 import 'providers/note_list_provider.dart';
@@ -13,6 +14,13 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: initialTab == 1 ? '/todos' : '/notes',
     routes: [
+      GoRoute(
+        path: '/editor/:noteId',
+        builder: (context, state) {
+          final noteId = int.tryParse(state.pathParameters['noteId'] ?? '0') ?? 0;
+          return NoteEditorPage(noteId: noteId);
+        },
+      ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
           return Consumer(

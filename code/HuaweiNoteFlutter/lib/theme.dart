@@ -15,6 +15,10 @@ class AppColors {
   static const bgKraft = Color(0xFFE8D5B7);
   static const bgGrid = Color(0xFFF8F8F8);
   static const danger = Color(0xFFFF4444);
+  static const editorToolbarBg = Color(0xFFFFFFFF);
+  static const editorIconActive = Color(0xFF333333);
+  static const editorIconInactive = Color(0xFF999999);
+  static const styleSheetHeader = Color(0xFF333333);
 }
 
 class AppDimens {
@@ -31,6 +35,9 @@ class AppDimens {
   static const textHint = 11.0;
   static const headerTitleSize = 26.0;
   static const bottomNavHeight = 56.0;
+  static const editorTitleSize = 22.0;
+  static const editorToolbarHeight = 48.0;
+  static const editorContentPadding = 16.0;
 }
 
 ThemeData buildAppTheme() {
