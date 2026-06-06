@@ -30,4 +30,21 @@ class AppDateUtils {
 
     return '${target.year}/${_pad2(target.month)}/${_pad2(target.day)}';
   }
+
+  static String timeAgo(int timeMs, {int? now}) {
+    final nowMs = now ?? DateTime.now().millisecondsSinceEpoch;
+    final diffMs = nowMs - timeMs;
+    final diffMin = diffMs ~/ 60000;
+    final diffHour = diffMs ~/ 3600000;
+    final diffDay = diffMs ~/ 86400000;
+
+    if (diffMin < 1) return '刚刚';
+    if (diffMin < 60) return '$diffMin分钟前';
+    if (diffHour < 24) return '$diffHour小时前';
+    if (diffDay < 2) return '昨天';
+    if (diffDay < 7) return '$diffDay天前';
+
+    final target = DateTime.fromMillisecondsSinceEpoch(timeMs);
+    return '${_pad2(target.month)}/${_pad2(target.day)}';
+  }
 }

@@ -39,4 +39,54 @@ void main() {
       expect(AppDateUtils.formatRelative(target, now: now), '周三 10:00');
     });
   });
+
+  group('AppDateUtils.timeAgo', () {
+    test('不到1分钟显示 刚刚', () {
+      final now = DateTime(2026, 6, 6, 15, 0, 0).millisecondsSinceEpoch;
+      final target = DateTime(2026, 6, 6, 14, 59, 30).millisecondsSinceEpoch;
+      expect(AppDateUtils.timeAgo(target, now: now), '刚刚');
+    });
+
+    test('1分钟前', () {
+      final now = DateTime(2026, 6, 6, 15, 1, 0).millisecondsSinceEpoch;
+      final target = DateTime(2026, 6, 6, 15, 0, 0).millisecondsSinceEpoch;
+      expect(AppDateUtils.timeAgo(target, now: now), '1分钟前');
+    });
+
+    test('59分钟前', () {
+      final now = DateTime(2026, 6, 6, 15, 59, 0).millisecondsSinceEpoch;
+      final target = DateTime(2026, 6, 6, 15, 0, 0).millisecondsSinceEpoch;
+      expect(AppDateUtils.timeAgo(target, now: now), '59分钟前');
+    });
+
+    test('1小时前', () {
+      final now = DateTime(2026, 6, 6, 16, 0, 0).millisecondsSinceEpoch;
+      final target = DateTime(2026, 6, 6, 15, 0, 0).millisecondsSinceEpoch;
+      expect(AppDateUtils.timeAgo(target, now: now), '1小时前');
+    });
+
+    test('23小时前', () {
+      final now = DateTime(2026, 6, 6, 14, 0, 0).millisecondsSinceEpoch;
+      final target = DateTime(2026, 6, 5, 15, 0, 0).millisecondsSinceEpoch;
+      expect(AppDateUtils.timeAgo(target, now: now), '23小时前');
+    });
+
+    test('1-2天显示 昨天', () {
+      final now = DateTime(2026, 6, 6, 15, 0, 0).millisecondsSinceEpoch;
+      final target = DateTime(2026, 6, 5, 10, 0, 0).millisecondsSinceEpoch;
+      expect(AppDateUtils.timeAgo(target, now: now), '昨天');
+    });
+
+    test('3天前', () {
+      final now = DateTime(2026, 6, 6, 15, 0, 0).millisecondsSinceEpoch;
+      final target = DateTime(2026, 6, 3, 15, 0, 0).millisecondsSinceEpoch;
+      expect(AppDateUtils.timeAgo(target, now: now), '3天前');
+    });
+
+    test('7天及以上显示 MM/dd', () {
+      final now = DateTime(2026, 6, 15, 15, 0, 0).millisecondsSinceEpoch;
+      final target = DateTime(2026, 6, 1, 10, 0, 0).millisecondsSinceEpoch;
+      expect(AppDateUtils.timeAgo(target, now: now), '06/01');
+    });
+  });
 }
