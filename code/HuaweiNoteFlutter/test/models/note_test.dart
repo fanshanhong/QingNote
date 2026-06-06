@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hwnote/models/note.dart';
-import 'package:hwnote/models/note_content.dart';
 
 void main() {
   group('Note', () {
