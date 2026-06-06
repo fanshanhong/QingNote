@@ -6,12 +6,14 @@ class TextToolbar extends StatelessWidget {
   final EditorState? editorState;
   final VoidCallback? onStyleTap;
   final VoidCallback? onImageTap;
+  final VoidCallback? onRecordTap;
 
   const TextToolbar({
     super.key,
     this.editorState,
     this.onStyleTap,
     this.onImageTap,
+    this.onRecordTap,
   });
 
   @override
@@ -47,8 +49,8 @@ class TextToolbar extends StatelessWidget {
           ),
           _ToolbarButton(
             icon: Icons.mic_none,
-            color: AppColors.editorIconInactive,
-            onTap: () => _showSnackBar(context, '录音功能将在后续版本实现'),
+            color: AppColors.editorIconActive,
+            onTap: onRecordTap,
           ),
         ],
       ),
