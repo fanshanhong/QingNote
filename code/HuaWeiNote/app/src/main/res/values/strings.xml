@@ -237,6 +237,14 @@
     <string name="todo_batch_confirm_message">确定删除选中的 %d 项待办？</string>
     <string name="todo_deleted_confirm_message">彻底删除后不可恢复，确定删除？</string>
 
+    <!-- M13d: 宫格+批量删除 -->
+    <string name="note_menu_grid_view">宫格视图</string>
+    <string name="note_menu_list_view">列表视图</string>
+    <string name="note_menu_batch_delete">批量删除</string>
+    <string name="note_batch_selected_count">已选择 %d 项</string>
+    <string name="note_batch_delete_action">删除</string>
+    <string name="note_batch_confirm_message">确定删除选中的 %d 条笔记？</string>
+
     <!-- M14b: 待办详情 -->
     <string name="todo_detail_title_hint">待办事项</string>
     <string name="todo_detail_memo_hint">添加备注</string>

@@ -113,6 +113,15 @@ object NoteRepository {
         Unit
     }
 
+    suspend fun softDeleteBatch(ids: List<Long>) = withContext(Dispatchers.IO) {
+        val now = System.currentTimeMillis()
+        val db = dbHelper.writableDatabase
+        for (id in ids) {
+            val cv = ContentValues().apply { put("deleted_at", now) }
+            db.update("notes", cv, "id = ?", arrayOf(id.toString()))
+        }
+    }
+
     /** 恢复：deleted_at = 0。 */
     suspend fun restore(id: Long) = withContext(Dispatchers.IO) {
         val cv = ContentValues().apply { put("deleted_at", 0L) }

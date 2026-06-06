@@ -4,6 +4,7 @@ import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.CheckBox
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.core.content.ContextCompat
@@ -21,6 +22,16 @@ class NoteListAdapter(
 
     private val items = mutableListOf<Note>()
     private var notebookColorMap: Map<Long, String> = emptyMap()
+
+    var isBatchMode = false
+        set(value) {
+            field = value
+            selectedIds.clear()
+            notifyDataSetChanged()
+        }
+    val selectedIds = mutableSetOf<Long>()
+    val selectedCount: Int get() = selectedIds.size
+    var onBatchSelectionChanged: (() -> Unit)? = null
 
     fun submit(list: List<Note>) {
         items.clear()
@@ -46,6 +57,7 @@ class NoteListAdapter(
 
     inner class VH(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val card: MaterialCardView = itemView as MaterialCardView
+        private val batchCheckbox: CheckBox = itemView.findViewById(R.id.batch_checkbox)
         private val title: TextView = itemView.findViewById(R.id.card_title)
         private val star: ImageView = itemView.findViewById(R.id.card_star)
         private val time: TextView = itemView.findViewById(R.id.card_time)
@@ -81,10 +93,31 @@ class NoteListAdapter(
                 }
             }
 
-            itemView.setOnClickListener { onClick(note) }
-            itemView.setOnLongClickListener {
-                onLongClick(note, itemView)
-                true
+            if (isBatchMode) {
+                batchCheckbox.visibility = View.VISIBLE
+                star.visibility = View.GONE
+                batchCheckbox.setOnCheckedChangeListener(null)
+                batchCheckbox.isChecked = selectedIds.contains(note.id)
+                batchCheckbox.setOnClickListener {
+                    if (selectedIds.contains(note.id)) selectedIds.remove(note.id)
+                    else selectedIds.add(note.id)
+                    onBatchSelectionChanged?.invoke()
+                }
+                itemView.setOnClickListener {
+                    batchCheckbox.isChecked = !batchCheckbox.isChecked
+                    if (selectedIds.contains(note.id)) selectedIds.remove(note.id)
+                    else selectedIds.add(note.id)
+                    onBatchSelectionChanged?.invoke()
+                }
+                itemView.setOnLongClickListener(null)
+            } else {
+                batchCheckbox.visibility = View.GONE
+                star.visibility = View.VISIBLE
+                itemView.setOnClickListener { onClick(note) }
+                itemView.setOnLongClickListener {
+                    onLongClick(note, itemView)
+                    true
+                }
             }
         }
     }

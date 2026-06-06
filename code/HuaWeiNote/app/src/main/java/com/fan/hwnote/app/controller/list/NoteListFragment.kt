@@ -7,6 +7,7 @@ import android.os.Handler
 import android.os.Looper
 import android.text.Editable
 import android.text.TextWatcher
+import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -20,6 +21,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.recyclerview.widget.StaggeredGridLayoutManager
 import com.fan.hwnote.app.R
 import com.fan.hwnote.app.controller.editor.NoteEditorActivity
 import com.fan.hwnote.app.controller.folder.FolderManagerActivity
@@ -49,6 +51,7 @@ class NoteListFragment : Fragment() {
     private lateinit var contentArea: View
     private lateinit var emptyState: View
     private lateinit var fab: FloatingActionButton
+    private lateinit var batchBottomBar: View
 
     private lateinit var adapter: NoteListAdapter
 
@@ -56,6 +59,8 @@ class NoteListFragment : Fragment() {
     private var currentQuery: String? = null
     private var currentFilter: NoteRepository.ListFilter = NoteRepository.ListFilter.All
     private var filterPanelVisible = false
+    private var isGridView = false
+    private var isBatchMode = false
 
     private val searchHandler = Handler(Looper.getMainLooper())
     private var searchRunnable: Runnable? = null
@@ -80,6 +85,7 @@ class NoteListFragment : Fragment() {
         recycler = view.findViewById(R.id.recycler_notes)
         emptyState = view.findViewById(R.id.empty_state)
         fab = view.findViewById(R.id.fab_new_note)
+        batchBottomBar = view.findViewById(R.id.batch_delete_btn)
 
         adapter = NoteListAdapter(
             onClick = { note ->
@@ -87,17 +93,20 @@ class NoteListFragment : Fragment() {
             },
             onLongClick = { note, anchor -> showCardMenu(note, anchor) },
         )
-        recycler.layoutManager = LinearLayoutManager(requireContext())
-        recycler.adapter = adapter
+        adapter.onBatchSelectionChanged = { updateBatchCount() }
 
         sortBy = loadSort()
         currentFilter = loadFilter()
+        isGridView = loadGridView()
+        applyLayoutManager()
+        recycler.adapter = adapter
 
         headerTitleArea.setOnClickListener { toggleFilterPanel() }
         btnOverflow.setOnClickListener { showOverflowMenu() }
         fab.setOnClickListener {
             startActivity(NoteEditorActivity.newIntent(requireContext(), -1L))
         }
+        batchBottomBar.setOnClickListener { confirmBatchDelete() }
 
         searchInput.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
@@ -125,6 +134,14 @@ class NoteListFragment : Fragment() {
     override fun onDestroyView() {
         searchRunnable?.let { searchHandler.removeCallbacks(it) }
         super.onDestroyView()
+    }
+
+    private fun applyLayoutManager() {
+        recycler.layoutManager = if (isGridView) {
+            StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL)
+        } else {
+            LinearLayoutManager(requireContext())
+        }
     }
 
     private fun reload() {
@@ -301,14 +318,79 @@ class NoteListFragment : Fragment() {
 
     private fun showOverflowMenu() {
         val popup = PopupMenu(requireContext(), btnOverflow)
-        popup.menuInflater.inflate(R.menu.menu_note_list_overflow, popup.menu)
+        popup.menu.add(0, MENU_SORT, 0, R.string.sort_picker_title)
+        popup.menu.add(0, MENU_TOGGLE_VIEW, 1,
+            if (isGridView) R.string.note_menu_list_view else R.string.note_menu_grid_view,
+        )
+        popup.menu.add(0, MENU_BATCH_DELETE, 2, R.string.note_menu_batch_delete)
         popup.setOnMenuItemClickListener { item ->
             when (item.itemId) {
-                R.id.action_sort -> { showSortDialog(); true }
+                MENU_SORT -> { showSortDialog(); true }
+                MENU_TOGGLE_VIEW -> {
+                    isGridView = !isGridView
+                    saveGridView(isGridView)
+                    applyLayoutManager()
+                    adapter.notifyDataSetChanged()
+                    true
+                }
+                MENU_BATCH_DELETE -> { enterBatchMode(); true }
                 else -> false
             }
         }
         popup.show()
+    }
+
+    private fun enterBatchMode() {
+        isBatchMode = true
+        adapter.isBatchMode = true
+        headerSubtitle.visibility = View.GONE
+        headerArrow.setImageResource(R.drawable.ic_clear)
+        headerArrow.rotation = 0f
+        headerTitle.text = getString(R.string.note_batch_selected_count, 0)
+        headerTitle.setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f)
+        headerTitleArea.setOnClickListener { exitBatchMode() }
+        btnOverflow.visibility = View.GONE
+        searchBar.visibility = View.GONE
+        fab.visibility = View.GONE
+        batchBottomBar.visibility = View.VISIBLE
+        (activity as? NoteListActivity)?.setBottomNavVisible(false)
+    }
+
+    private fun exitBatchMode() {
+        isBatchMode = false
+        adapter.isBatchMode = false
+        headerSubtitle.visibility = View.VISIBLE
+        headerArrow.setImageResource(R.drawable.ic_arrow_drop_down)
+        headerTitle.setTextSize(
+            TypedValue.COMPLEX_UNIT_PX,
+            resources.getDimension(R.dimen.header_title_size),
+        )
+        headerTitleArea.setOnClickListener { toggleFilterPanel() }
+        btnOverflow.visibility = View.VISIBLE
+        searchBar.visibility = View.VISIBLE
+        fab.visibility = View.VISIBLE
+        batchBottomBar.visibility = View.GONE
+        (activity as? NoteListActivity)?.setBottomNavVisible(true)
+        reload()
+    }
+
+    private fun updateBatchCount() {
+        headerTitle.text = getString(R.string.note_batch_selected_count, adapter.selectedCount)
+    }
+
+    private fun confirmBatchDelete() {
+        val count = adapter.selectedCount
+        if (count == 0) return
+        DeleteConfirmBottomSheet(
+            requireContext(),
+            message = getString(R.string.note_batch_confirm_message, count),
+            confirmLabel = getString(R.string.note_batch_delete_action),
+        ) {
+            lifecycleScope.launch {
+                NoteRepository.softDeleteBatch(adapter.selectedIds.toList())
+                exitBatchMode()
+            }
+        }.show()
     }
 
     private fun showCardMenu(note: Note, anchor: View) {
@@ -404,6 +486,16 @@ class NoteListFragment : Fragment() {
             .putString(KEY_SORT, sortBy.name).apply()
     }
 
+    private fun loadGridView(): Boolean {
+        val prefs = requireContext().getSharedPreferences(PREFS, android.content.Context.MODE_PRIVATE)
+        return prefs.getBoolean(KEY_GRID_VIEW, false)
+    }
+
+    private fun saveGridView(grid: Boolean) {
+        requireContext().getSharedPreferences(PREFS, android.content.Context.MODE_PRIVATE).edit()
+            .putBoolean(KEY_GRID_VIEW, grid).apply()
+    }
+
     private fun loadFilter(): NoteRepository.ListFilter {
         val prefs = requireContext().getSharedPreferences(PREFS, android.content.Context.MODE_PRIVATE)
         val type = prefs.getString(KEY_FILTER_TYPE, "ALL") ?: "ALL"
@@ -447,5 +539,9 @@ class NoteListFragment : Fragment() {
         private const val KEY_FILTER_TYPE = "filter_type"
         private const val KEY_FILTER_FOLDER_ID = "filter_folder_id"
         private const val KEY_FILTER_NOTEBOOK_ID = "filter_notebook_id"
+        private const val KEY_GRID_VIEW = "note_grid_view"
+        private const val MENU_SORT = 2001
+        private const val MENU_TOGGLE_VIEW = 2002
+        private const val MENU_BATCH_DELETE = 2003
     }
 }

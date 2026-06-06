@@ -174,4 +174,16 @@
             app:backgroundTint="@color/primary"
             app:tint="@color/white" />
     </FrameLayout>
+
+    <TextView
+        android:id="@+id/batch_delete_btn"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:background="#E53935"
+        android:gravity="center"
+        android:text="@string/note_batch_delete_action"
+        android:textColor="@android:color/white"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:visibility="gone" />
 </LinearLayout>

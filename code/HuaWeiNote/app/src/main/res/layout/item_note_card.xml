@@ -18,9 +18,23 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
         android:paddingHorizontal="16dp"
         android:paddingVertical="14dp">
+
+        <CheckBox
+            android:id="@+id/batch_checkbox"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:layout_marginEnd="@dimen/spacing_s"
+            android:visibility="gone" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
 
         <!-- 第一行：标题 + 星标 + 时间 -->
         <LinearLayout
@@ -70,6 +84,7 @@
             android:textColor="@color/text_secondary"
             android:textSize="@dimen/text_caption"
             tools:text="项目排期需要重新审视，李雷负责…" />
+        </LinearLayout>
     </LinearLayout>
 
 </com.google.android.material.card.MaterialCardView>
