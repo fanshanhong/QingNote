@@ -64,4 +64,49 @@ class NoteFileStorage {
     final dir = await imageDir(noteId);
     cleanOrphanFilesInDir(dir, referencedPaths);
   }
+
+  static Directory audioDirFromBase(String basePath, int noteId) {
+    return Directory('$basePath/notes/$noteId/audio');
+  }
+
+  static Future<Directory> audioDir(int noteId) async {
+    final appDir = await getApplicationDocumentsDirectory();
+    return audioDirFromBase(appDir.path, noteId);
+  }
+
+  static Future<File> saveAudioToBase(
+    String basePath,
+    int noteId,
+    String sourceFilePath,
+  ) async {
+    final dir = audioDirFromBase(basePath, noteId);
+    if (!dir.existsSync()) dir.createSync(recursive: true);
+    final fileName = '${DateTime.now().millisecondsSinceEpoch}.m4a';
+    final target = File('${dir.path}/$fileName');
+    await File(sourceFilePath).copy(target.path);
+    return target;
+  }
+
+  static Future<File> saveAudio(int noteId, String sourceFilePath) async {
+    final appDir = await getApplicationDocumentsDirectory();
+    return saveAudioToBase(appDir.path, noteId, sourceFilePath);
+  }
+
+  static String audioFilePath(String basePath, int noteId, String fileName) {
+    return '$basePath/notes/$noteId/audio/$fileName';
+  }
+
+  static Future<void> cleanOrphanAudios(
+    int noteId,
+    Set<String> referencedFileNames,
+  ) async {
+    final dir = await audioDir(noteId);
+    if (!dir.existsSync()) return;
+    for (final file in dir.listSync().whereType<File>()) {
+      final name = file.path.split('/').last;
+      if (!referencedFileNames.contains(name)) {
+        file.deleteSync();
+      }
+    }
+  }
 }
