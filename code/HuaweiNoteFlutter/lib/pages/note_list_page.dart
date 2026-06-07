@@ -114,6 +114,7 @@ class _NoteListPageState extends ConsumerState<NoteListPage> {
     return NoteCard(
       key: ValueKey(note.id),
       note: note,
+      isGridView: s.isGridView,
       isBatchMode: s.isBatchMode,
       isSelected: s.selectedIds.contains(note.id),
       notebookColor: note.notebookId != null ? s.notebookColorMap[note.notebookId] : null,
