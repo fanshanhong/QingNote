@@ -243,7 +243,7 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
     }
     return AppFlowyEditor(
       editorState: editorState,
-      editable: state.isEditing,
+      editable: true,
       editorScrollController: _scrollController,
       blockComponentBuilders: _buildBlockComponentBuilders(),
       editorStyle: EditorStyle.mobile(
