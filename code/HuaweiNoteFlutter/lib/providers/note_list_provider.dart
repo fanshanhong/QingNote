@@ -5,6 +5,7 @@ import '../models/note.dart';
 import '../repositories/note_repository.dart';
 import '../repositories/folder_repository.dart';
 import '../repositories/notebook_repository.dart';
+import '../services/search_service.dart';
 import 'repository_providers.dart';
 
 class NoteListState {
@@ -144,11 +145,24 @@ class NoteListNotifier extends StateNotifier<NoteListState> {
     state = state.copyWith(isLoading: true);
     try {
       final filter = await _validateFilter(state.filter);
-      final notes = await _noteRepo.list(
-        filter: filter,
-        sortBy: state.sortBy,
-        query: state.query.isEmpty ? null : state.query,
-      );
+      List<Note> notes;
+      if (state.query.isNotEmpty) {
+        final hits = await SearchService.instance.search(state.query);
+        if (hits.isNotEmpty) {
+          final hitIds = hits.map((h) => h.noteId as int).toSet();
+          final allNotes = await _noteRepo.list(filter: filter, sortBy: state.sortBy);
+          notes = allNotes.where((n) => hitIds.contains(n.id)).toList();
+          final idOrder = {for (var i = 0; i < hits.length; i++) hits[i].noteId as int: i};
+          notes.sort((a, b) => (idOrder[a.id] ?? 999).compareTo(idOrder[b.id] ?? 999));
+        } else {
+          notes = [];
+        }
+      } else {
+        notes = await _noteRepo.list(
+          filter: filter,
+          sortBy: state.sortBy,
+        );
+      }
       final colorMap = <int, String>{};
       final nbIds = notes.map((n) => n.notebookId).whereType<int>().toSet();
       for (final id in nbIds) {

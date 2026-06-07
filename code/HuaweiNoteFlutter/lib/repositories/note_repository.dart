@@ -2,6 +2,7 @@ import 'package:sqflite/sqflite.dart';
 import '../db/database_helper.dart';
 import '../models/note.dart';
 import '../models/note_content.dart';
+import '../services/search_service.dart';
 
 enum NoteSortBy { updatedDesc, createdDesc }
 
@@ -116,13 +117,20 @@ class NoteRepository {
       'first_image_path': firstImage,
       'has_todo': hasTodo ? 1 : 0,
     };
+    int resultId;
     if (note.id == 0) {
       values['created_at'] = note.createdAt > 0 ? note.createdAt : now;
-      return await db.insert('notes', values);
+      resultId = await db.insert('notes', values);
     } else {
       await db.update('notes', values, where: 'id = ?', whereArgs: [note.id]);
-      return note.id;
+      resultId = note.id;
     }
+    if (note.deletedAt == 0) {
+      SearchService.instance.indexNote(note.copyWith(id: resultId));
+    } else {
+      SearchService.instance.removeNote(resultId);
+    }
+    return resultId;
   }
 
   Future<void> softDelete(int id) async {
@@ -133,6 +141,7 @@ class NoteRepository {
       where: 'id = ?',
       whereArgs: [id],
     );
+    SearchService.instance.removeNote(id);
   }
 
   Future<void> softDeleteBatch(List<int> ids) async {
@@ -150,11 +159,14 @@ class NoteRepository {
     final db = await _dbHelper.database;
     await db.update('notes', {'deleted_at': 0},
         where: 'id = ?', whereArgs: [id]);
+    final note = await get(id);
+    if (note != null) SearchService.instance.indexNote(note);
   }
 
   Future<void> deletePermanently(int id) async {
     final db = await _dbHelper.database;
     await db.delete('notes', where: 'id = ?', whereArgs: [id]);
+    SearchService.instance.removeNote(id);
   }
 
   Future<int> count({NoteListFilter filter = const AllFilter()}) async {
