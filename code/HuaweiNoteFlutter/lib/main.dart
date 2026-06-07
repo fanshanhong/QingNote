@@ -5,6 +5,7 @@ import 'router.dart';
 import 'theme.dart';
 import 'services/todo_notification_service.dart';
 import 'providers/repository_providers.dart';
+import 'providers/theme_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,6 +30,7 @@ class _HwNoteAppState extends ConsumerState<HwNoteApp> {
   void initState() {
     super.initState();
     _setupNotifications();
+    Future.microtask(() => ref.read(themeModeProvider.notifier).init());
   }
 
   Future<void> _setupNotifications() async {
@@ -56,6 +58,8 @@ class _HwNoteAppState extends ConsumerState<HwNoteApp> {
     return MaterialApp.router(
       title: '备忘录',
       theme: buildAppTheme(),
+      darkTheme: buildDarkTheme(),
+      themeMode: ref.watch(themeModeProvider),
       routerConfig: router,
       debugShowCheckedModeBanner: false,
     );

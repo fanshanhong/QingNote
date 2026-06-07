@@ -54,3 +54,19 @@ ThemeData buildAppTheme() {
     ),
   );
 }
+
+ThemeData buildDarkTheme() {
+  return ThemeData.dark().copyWith(
+    colorScheme: ColorScheme.dark(
+      primary: AppColors.primary,
+      surface: const Color(0xFF121212),
+    ),
+    scaffoldBackgroundColor: const Color(0xFF121212),
+    dividerColor: const Color(0xFF2C2C2C),
+    cardColor: const Color(0xFF1E1E1E),
+    floatingActionButtonTheme: const FloatingActionButtonThemeData(
+      backgroundColor: AppColors.primary,
+      foregroundColor: Colors.white,
+    ),
+  );
+}
