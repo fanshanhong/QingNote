@@ -49,6 +49,7 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
   EditorState? _editorStateRef;
   VoidCallback? _onToggledStyleChanged;
   VoidCallback? _onSelectionChanged;
+  VoidCallback? _onCursorVisibilityChanged;
 
   @override
   void initState() {
@@ -125,6 +126,15 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
     };
     editorState.selectionNotifier.addListener(_onSelectionChanged!);
 
+    _onCursorVisibilityChanged = () {
+      if (editorState.selection == null) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _ensureCursorVisible();
+      });
+    };
+    editorState.selectionNotifier.addListener(_onCursorVisibilityChanged!);
+
     if (mounted) setState(() => _editorReady = true);
   }
 
@@ -175,6 +185,9 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
       if (_onSelectionChanged != null) {
         _editorStateRef!.selectionNotifier.removeListener(_onSelectionChanged!);
       }
+      if (_onCursorVisibilityChanged != null) {
+        _editorStateRef!.selectionNotifier.removeListener(_onCursorVisibilityChanged!);
+      }
     }
     _scrollController?.dispose();
     _editorFocusNode.dispose();
@@ -217,6 +230,38 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
       }
     }
     return null;
+  }
+
+  void _ensureCursorVisible() {
+    final es = _editorStateRef;
+    final sc = _scrollController;
+    if (es == null || sc == null || es.selection == null) return;
+
+    final rects = es.selectionRects();
+    if (rects.isEmpty) return;
+
+    final cursorRect = rects.last;
+    final editorBox = _editorFocusNode.context?.findRenderObject() as RenderBox?;
+    if (editorBox == null) return;
+
+    final editorTop = editorBox.localToGlobal(Offset.zero).dy;
+    final editorHeight = editorBox.size.height;
+    final editorBottom = editorTop + editorHeight;
+    const margin = 40.0;
+
+    if (cursorRect.bottom > editorBottom - margin) {
+      final overshoot = cursorRect.bottom - editorBottom + margin;
+      sc.scrollOffsetController.animateScroll(
+        offset: overshoot,
+        duration: const Duration(milliseconds: 120),
+      );
+    } else if (cursorRect.top < editorTop + margin) {
+      final overshoot = editorTop + margin - cursorRect.top;
+      sc.scrollOffsetController.animateScroll(
+        offset: -overshoot,
+        duration: const Duration(milliseconds: 120),
+      );
+    }
   }
 
   @override
@@ -433,24 +478,22 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
     void deleteNode(Node node) {
       final es = notifier.editorState;
       if (es == null) return;
-      final prev = node.previous;
+
+      Selection targetSel;
+      if (node.previous != null) {
+        final prev = node.previous!;
+        final path = List<int>.from(prev.path);
+        final offset = prev.delta?.toPlainText().length ?? 0;
+        targetSel = Selection.collapsed(Position(path: path, offset: offset));
+      } else {
+        final path = List<int>.from(node.path);
+        targetSel = Selection.collapsed(Position(path: path, offset: 0));
+      }
 
       final transaction = es.transaction;
       transaction.deleteNode(node);
+      transaction.afterSelection = targetSel;
       es.apply(transaction);
-
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        Selection targetSel;
-        if (prev != null) {
-          final offset = prev.delta?.toPlainText().length ?? 0;
-          targetSel = Selection.collapsed(Position(path: prev.path, offset: offset));
-        } else {
-          final first = es.document.root.children.firstOrNull;
-          if (first == null) return;
-          targetSel = Selection.collapsed(Position(path: first.path, offset: 0));
-        }
-        es.updateSelectionWithReason(targetSel, reason: SelectionUpdateReason.uiEvent);
-      });
     }
     return {
       ...standardBlockComponentBuilderMap,

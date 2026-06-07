@@ -226,10 +226,12 @@ class NoteEditorNotifier extends StateNotifier<NoteEditorState> {
   }
 
   void updateDocumentHasContent(bool hasContent) {
+    if (state.documentHasContent == hasContent) return;
     state = state.copyWith(documentHasContent: hasContent);
   }
 
   void updateUndoRedoState(bool canUndo, bool canRedo) {
+    if (state.canUndo == canUndo && state.canRedo == canRedo) return;
     state = state.copyWith(canUndo: canUndo, canRedo: canRedo);
   }
 
@@ -329,7 +331,7 @@ class NoteEditorNotifier extends StateNotifier<NoteEditorState> {
     );
     transaction.afterSelection = sel;
     await es.apply(transaction);
-    Future.delayed(const Duration(milliseconds: 100), () {
+    Future.delayed(const Duration(milliseconds: 300), () {
       es.updateSelectionWithReason(sel, reason: SelectionUpdateReason.uiEvent);
     });
   }
@@ -368,7 +370,7 @@ class NoteEditorNotifier extends StateNotifier<NoteEditorState> {
     );
     transaction.afterSelection = sel;
     await es.apply(transaction);
-    Future.delayed(const Duration(milliseconds: 100), () {
+    Future.delayed(const Duration(milliseconds: 300), () {
       es.updateSelectionWithReason(sel, reason: SelectionUpdateReason.uiEvent);
     });
   }
