@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/note_editor_provider.dart';
@@ -43,6 +44,9 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
   String _appDocPath = '';
   bool _showStylePanel = false;
   Map<String, dynamic> _savedToggledStyle = {};
+  EditorState? _editorStateRef;
+  VoidCallback? _onToggledStyleChanged;
+  VoidCallback? _onSelectionChanged;
 
   @override
   void initState() {
@@ -66,6 +70,7 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
   void _setupEditor(NoteEditorNotifier notifier) {
     final editorState = notifier.editorState;
     if (editorState == null) return;
+    _editorStateRef = editorState;
     _scrollController = EditorScrollController(editorState: editorState);
     _transactionSub = editorState.transactionStream.listen((_) {
       final doc = editorState.document;
@@ -81,17 +86,29 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
       _carryFormatOnNewLine(editorState);
     });
 
-    editorState.toggledStyleNotifier.addListener(() {
+    _onToggledStyleChanged = () {
       final style = editorState.toggledStyle;
       if (style.isNotEmpty) {
         _savedToggledStyle = Map.from(style);
       }
-    });
+    };
+    editorState.toggledStyleNotifier.addListener(_onToggledStyleChanged!);
+
+    _onSelectionChanged = () {
+      if (_savedToggledStyle.isNotEmpty && editorState.toggledStyle.isEmpty) {
+        for (final entry in _savedToggledStyle.entries) {
+          editorState.updateToggledStyle(entry.key, entry.value);
+        }
+      }
+    };
+    editorState.selectionNotifier.addListener(_onSelectionChanged!);
 
     if (mounted) setState(() => _editorReady = true);
   }
 
   void _carryFormatOnNewLine(EditorState es) {
+    if (_savedToggledStyle.isNotEmpty) return;
+
     final selection = es.selection;
     if (selection == null || !selection.isCollapsed) return;
     if (selection.start.offset != 0) return;
@@ -113,15 +130,6 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
             es.updateToggledStyle(entry.key, entry.value);
           }
         }
-        return;
-      }
-    }
-
-    if (_savedToggledStyle.isNotEmpty) {
-      for (final entry in _savedToggledStyle.entries) {
-        if (inlineKeys.contains(entry.key) && entry.value != null) {
-          es.updateToggledStyle(entry.key, entry.value);
-        }
       }
     }
   }
@@ -140,6 +148,14 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
     _audioPlayer.dispose();
     _handwritingController.dispose();
     _transactionSub?.cancel();
+    if (_editorStateRef != null) {
+      if (_onToggledStyleChanged != null) {
+        _editorStateRef!.toggledStyleNotifier.removeListener(_onToggledStyleChanged!);
+      }
+      if (_onSelectionChanged != null) {
+        _editorStateRef!.selectionNotifier.removeListener(_onSelectionChanged!);
+      }
+    }
     _scrollController?.dispose();
     _editorFocusNode.dispose();
     _titleFocusNode.dispose();
@@ -276,20 +292,27 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
                         currentColor: state.currentBrushColor,
                         currentWidth: state.currentBrushWidth,
                         isErasing: state.isErasing,
+                        scrollOffset: _scrollController?.offsetNotifier.value ?? 0,
                       ),
-                    if (!state.isHandwritingMode && _handwritingController.strokes.isNotEmpty)
-                      IgnorePointer(
-                        child: CustomPaint(
-                          painter: HandwritingPainter(
-                            strokes: _handwritingController.strokes,
-                            inProgressPoints: const [],
-                            currentBrush: BrushType.pen,
-                            currentColor: '#000000',
-                            currentWidth: 3,
-                            devicePixelRatio: MediaQuery.of(context).devicePixelRatio,
-                          ),
-                          size: Size.infinite,
-                        ),
+                    if (!state.isHandwritingMode && _handwritingController.strokes.isNotEmpty && _scrollController != null)
+                      ValueListenableBuilder<double>(
+                        valueListenable: _scrollController!.offsetNotifier,
+                        builder: (context, scrollOffset, _) {
+                          return IgnorePointer(
+                            child: CustomPaint(
+                              painter: HandwritingPainter(
+                                strokes: _handwritingController.strokes,
+                                inProgressPoints: const [],
+                                currentBrush: BrushType.pen,
+                                currentColor: '#000000',
+                                currentWidth: 3,
+                                devicePixelRatio: MediaQuery.of(context).devicePixelRatio,
+                                scrollOffset: scrollOffset,
+                              ),
+                              size: Size.infinite,
+                            ),
+                          );
+                        },
                       ),
                     if (!state.isEditing)
                       Positioned.fill(
@@ -506,6 +529,7 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
       return TextToolbar(
         editorState: notifier.editorState,
         onStyleTap: () {
+          SystemChannels.textInput.invokeMethod('TextInput.hide');
           final es = notifier.editorState;
           if (es != null && es.selection == null) {
             final lastNode = es.document.root.children.lastOrNull;

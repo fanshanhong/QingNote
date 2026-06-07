@@ -300,6 +300,11 @@ class NoteEditorNotifier extends StateNotifier<NoteEditorState> {
   }
 
   Future<void> insertImage({bool useCamera = false}) async {
+    final es = _editorState;
+    if (es == null) return;
+    final selectionBeforeModal = es.selection;
+    final basePath = selectionBeforeModal?.end.path ?? es.document.root.children.last.path;
+
     final noteId = await ensureNoteSaved();
     if (noteId == 0) return;
 
@@ -314,13 +319,7 @@ class NoteEditorNotifier extends StateNotifier<NoteEditorState> {
     if (compressed == null) return;
 
     final savedFile = await NoteFileStorage.saveImage(noteId, compressed);
-
-    final es = _editorState;
-    if (es == null) return;
-
-    final selection = es.selection;
-    final path = selection?.end.path ?? es.document.root.children.last.path;
-    final insertPath = path.next;
+    final insertPath = basePath.next;
 
     final transaction = es.transaction;
     transaction.insertNode(insertPath, imageNode(url: savedFile.path));
@@ -332,6 +331,11 @@ class NoteEditorNotifier extends StateNotifier<NoteEditorState> {
   }
 
   Future<void> startRecording(BuildContext context) async {
+    final es = _editorState;
+    if (es == null) return;
+    final selectionBeforeModal = es.selection;
+    final basePath = selectionBeforeModal?.end.path ?? es.document.root.children.last.path;
+
     final noteId = await ensureNoteSaved();
     if (noteId == 0) return;
 
@@ -346,13 +350,8 @@ class NoteEditorNotifier extends StateNotifier<NoteEditorState> {
     );
     if (result == null) return;
 
-    final es = _editorState;
-    if (es == null) return;
-
     final fileName = result.filePath.split('/').last;
-    final selection = es.selection;
-    final path = selection?.end.path ?? es.document.root.children.last.path;
-    final insertPath = path.next;
+    final insertPath = basePath.next;
 
     final transaction = es.transaction;
     transaction.insertNode(
