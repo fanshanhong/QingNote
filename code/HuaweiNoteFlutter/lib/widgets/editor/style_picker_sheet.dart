@@ -5,6 +5,7 @@ import '../../theme.dart';
 Future<void> showStylePickerSheet(
   BuildContext context, {
   required EditorState editorState,
+  Selection? savedSelection,
   required ValueChanged<String> onBackgroundChanged,
 }) async {
   await showModalBottomSheet(
@@ -15,6 +16,7 @@ Future<void> showStylePickerSheet(
     ),
     builder: (ctx) => _StylePickerContent(
       editorState: editorState,
+      savedSelection: savedSelection,
       onBackgroundChanged: onBackgroundChanged,
     ),
   );
@@ -22,10 +24,12 @@ Future<void> showStylePickerSheet(
 
 class _StylePickerContent extends StatefulWidget {
   final EditorState editorState;
+  final Selection? savedSelection;
   final ValueChanged<String> onBackgroundChanged;
 
   const _StylePickerContent({
     required this.editorState,
+    this.savedSelection,
     required this.onBackgroundChanged,
   });
 
@@ -56,6 +60,18 @@ class _StylePickerContentState extends State<_StylePickerContent> {
     ('牛皮', 'kraft', AppColors.bgKraft),
     ('网格', 'grid', AppColors.bgGrid),
   ];
+
+  void _ensureSelection() {
+    if (widget.editorState.selection == null && widget.savedSelection != null) {
+      widget.editorState.updateSelectionWithReason(
+        widget.savedSelection,
+        reason: SelectionUpdateReason.uiEvent,
+      );
+    }
+  }
+
+  Selection? get _activeSelection =>
+      widget.editorState.selection ?? widget.savedSelection;
 
   @override
   Widget build(BuildContext context) {
@@ -99,22 +115,22 @@ class _StylePickerContentState extends State<_StylePickerContent> {
         _FormatToggleButton(
           label: 'B',
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-          onTap: () => widget.editorState.toggleAttribute(AppFlowyRichTextKeys.bold),
+          onTap: () { _ensureSelection(); widget.editorState.toggleAttribute(AppFlowyRichTextKeys.bold); },
         ),
         _FormatToggleButton(
           label: 'I',
           style: const TextStyle(fontStyle: FontStyle.italic, fontSize: 18),
-          onTap: () => widget.editorState.toggleAttribute(AppFlowyRichTextKeys.italic),
+          onTap: () { _ensureSelection(); widget.editorState.toggleAttribute(AppFlowyRichTextKeys.italic); },
         ),
         _FormatToggleButton(
           label: 'U',
           style: const TextStyle(decoration: TextDecoration.underline, fontSize: 18),
-          onTap: () => widget.editorState.toggleAttribute(AppFlowyRichTextKeys.underline),
+          onTap: () { _ensureSelection(); widget.editorState.toggleAttribute(AppFlowyRichTextKeys.underline); },
         ),
         _FormatToggleButton(
           label: 'S',
           style: const TextStyle(decoration: TextDecoration.lineThrough, fontSize: 18),
-          onTap: () => widget.editorState.toggleAttribute(AppFlowyRichTextKeys.strikethrough),
+          onTap: () { _ensureSelection(); widget.editorState.toggleAttribute(AppFlowyRichTextKeys.strikethrough); },
         ),
         const Spacer(),
         _AlignButton(
@@ -316,8 +332,9 @@ class _StylePickerContentState extends State<_StylePickerContent> {
   }
 
   void _setAlign(String align) {
+    _ensureSelection();
     final es = widget.editorState;
-    final selection = es.selection;
+    final selection = _activeSelection;
     if (selection == null) return;
     final nodes = es.getNodesInSelection(selection);
     final transaction = es.transaction;
@@ -329,16 +346,19 @@ class _StylePickerContentState extends State<_StylePickerContent> {
   }
 
   void _indent() {
+    _ensureSelection();
     indentCommand.handler(widget.editorState);
   }
 
   void _outdent() {
+    _ensureSelection();
     outdentCommand.handler(widget.editorState);
   }
 
   void _toggleBlockType(String type) {
+    _ensureSelection();
     final es = widget.editorState;
-    final selection = es.selection;
+    final selection = _activeSelection;
     if (selection == null) return;
     final nodes = es.getNodesInSelection(selection);
     if (nodes.isEmpty) return;
@@ -376,8 +396,9 @@ class _StylePickerContentState extends State<_StylePickerContent> {
   }
 
   void _toggleHeading(int level) {
+    _ensureSelection();
     final es = widget.editorState;
-    final selection = es.selection;
+    final selection = _activeSelection;
     if (selection == null) return;
     final nodes = es.getNodesInSelection(selection);
     if (nodes.isEmpty) return;
@@ -402,15 +423,17 @@ class _StylePickerContentState extends State<_StylePickerContent> {
   }
 
   void _applyFontSize(double size) {
+    _ensureSelection();
     final es = widget.editorState;
-    final selection = es.selection;
+    final selection = _activeSelection;
     if (selection == null) return;
     es.formatDelta(selection, {AppFlowyRichTextKeys.fontSize: size});
   }
 
   void _applyTextColor(Color color) {
+    _ensureSelection();
     final es = widget.editorState;
-    final selection = es.selection;
+    final selection = _activeSelection;
     if (selection == null) return;
     final a = (color.a * 255).round();
     final r = (color.r * 255).round();

@@ -195,37 +195,37 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
                 onCategoryTap: () => _showCategoryPicker(notifier),
               ),
               Expanded(
-                child: GestureDetector(
-                  behavior: HitTestBehavior.translucent,
-                  onTap: () {
-                    if (!state.isEditing) {
-                      notifier.enterEditMode();
-                      WidgetsBinding.instance.addPostFrameCallback((_) => _moveCursorToEnd());
-                    }
-                  },
-                  child: Stack(
-                    children: [
-                      if (state.isHandwritingMode)
-                        IgnorePointer(
-                          ignoring: true,
-                          child: Opacity(
-                            opacity: 0.5,
-                            child: _buildEditor(notifier, state),
-                          ),
-                        )
-                      else
-                        _buildEditor(notifier, state),
-                      if (_editorReady && state.isHandwritingMode)
-                        HandwritingOverlay(
-                          controller: _handwritingController,
-                          isActive: state.isHandwritingMode,
-                          currentBrush: state.currentBrush,
-                          currentColor: state.currentBrushColor,
-                          currentWidth: state.currentBrushWidth,
-                          isErasing: state.isErasing,
+                child: Stack(
+                  children: [
+                    if (state.isHandwritingMode)
+                      IgnorePointer(
+                        ignoring: true,
+                        child: Opacity(
+                          opacity: 0.5,
+                          child: _buildEditor(notifier, state),
                         ),
-                    ],
-                  ),
+                      )
+                    else
+                      _buildEditor(notifier, state),
+                    if (_editorReady && state.isHandwritingMode)
+                      HandwritingOverlay(
+                        controller: _handwritingController,
+                        isActive: state.isHandwritingMode,
+                        currentBrush: state.currentBrush,
+                        currentColor: state.currentBrushColor,
+                        currentWidth: state.currentBrushWidth,
+                        isErasing: state.isErasing,
+                      ),
+                    if (!state.isEditing)
+                      Positioned.fill(
+                        child: GestureDetector(
+                          onTap: () {
+                            notifier.enterEditMode();
+                            WidgetsBinding.instance.addPostFrameCallback((_) => _moveCursorToEnd());
+                          },
+                        ),
+                      ),
+                  ],
                 ),
               ),
               _buildBottomBar(notifier, state),
@@ -403,9 +403,11 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
   void _showStylePicker(NoteEditorNotifier notifier) {
     final es = notifier.editorState;
     if (es == null) return;
+    final savedSelection = es.selection;
     showStylePickerSheet(
       context,
       editorState: es,
+      savedSelection: savedSelection,
       onBackgroundChanged: notifier.setBackground,
     );
   }
