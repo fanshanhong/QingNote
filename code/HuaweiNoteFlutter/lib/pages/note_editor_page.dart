@@ -404,9 +404,18 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
     void deleteNode(Node node) {
       final es = notifier.editorState;
       if (es == null) return;
+      final nextTextNode = node.next ?? node.previous;
       final transaction = es.transaction;
       transaction.deleteNode(node);
+      if (nextTextNode != null && nextTextNode.delta != null) {
+        transaction.afterSelection = Selection.collapsed(
+          Position(path: nextTextNode.path, offset: 0),
+        );
+      }
       es.apply(transaction);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _editorFocusNode.requestFocus();
+      });
     }
     return {
       ...standardBlockComponentBuilderMap,
