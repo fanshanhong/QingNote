@@ -251,8 +251,10 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
                   }
                   await notifier.saveNote(handwritingStrokes: _handwritingController.strokes);
                   notifier.exitEditMode();
+                  notifier.editorState?.selection = null;
                   _titleFocusNode.unfocus();
                   _editorFocusNode.unfocus();
+                  SystemChannels.textInput.invokeMethod('TextInput.hide');
                 },
               ),
               Padding(
@@ -375,8 +377,10 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
         ...standardCommandShortcutEvents,
       ],
       editorStyle: EditorStyle.mobile(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppDimens.editorContentPadding,
+        padding: EdgeInsets.only(
+          left: AppDimens.editorContentPadding,
+          right: AppDimens.editorContentPadding,
+          bottom: MediaQuery.of(context).size.height * 0.4,
         ),
         textStyleConfiguration: TextStyleConfiguration(
           text: const TextStyle(fontSize: 16, color: AppColors.textPrimary),
@@ -422,21 +426,30 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
     void deleteNode(Node node) {
       final es = notifier.editorState;
       if (es == null) return;
-      final prev = node.previous;
-      final next = node.next;
-      final deletedPath = node.path;
+      final targetPath = List<int>.from(node.path);
+      final hasNext = node.next != null;
+      final prevPath = node.previous != null ? List<int>.from(node.previous!.path) : null;
+      final prevOffset = node.previous?.delta?.toPlainText().length;
+
       final transaction = es.transaction;
       transaction.deleteNode(node);
-      if (next != null && next.delta != null) {
-        transaction.afterSelection = Selection.collapsed(
-          Position(path: deletedPath, offset: 0),
-        );
-      } else if (prev != null && prev.delta != null) {
-        transaction.afterSelection = Selection.collapsed(
-          Position(path: prev.path, offset: prev.delta!.toPlainText().length),
-        );
+
+      Selection? targetSel;
+      if (hasNext) {
+        targetSel = Selection.collapsed(Position(path: targetPath, offset: 0));
+      } else if (prevPath != null && prevOffset != null) {
+        targetSel = Selection.collapsed(Position(path: prevPath, offset: prevOffset));
+      }
+      if (targetSel != null) {
+        transaction.afterSelection = targetSel;
       }
       es.apply(transaction);
+
+      if (targetSel != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          es.updateSelectionWithReason(targetSel, reason: SelectionUpdateReason.uiEvent);
+        });
+      }
     }
     return {
       ...standardBlockComponentBuilderMap,
