@@ -118,92 +118,53 @@ class _AudioBlockComponentWidgetState
     }
   }
 
-  void _showDeleteConfirm() {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('确定删除这段录音？',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      child: const Text('取消'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.danger,
-                        foregroundColor: Colors.white,
-                      ),
-                      onPressed: () {
-                        Navigator.pop(ctx);
-                        widget.onDelete(widget.node);
-                      },
-                      child: const Text('删除'),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onLongPress: widget.editable ? _showDeleteConfirm : null,
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: AppColors.bgWindow,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: AppColors.divider),
-        ),
-        child: Row(
-          children: [
-            GestureDetector(
-              onTap: _togglePlay,
-              child: Container(
-                width: 36,
-                height: 36,
-                decoration: const BoxDecoration(
-                  color: AppColors.primary,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  _isPlaying ? Icons.pause : Icons.play_arrow,
-                  color: Colors.white,
-                  size: 20,
-                ),
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.bgWindow,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.divider),
+      ),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: _togglePlay,
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: const BoxDecoration(
+                color: AppColors.primary,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                _isPlaying ? Icons.pause : Icons.play_arrow,
+                color: Colors.white,
+                size: 20,
               ),
             ),
-            const SizedBox(width: 12),
-            Text(
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
               '录音 ${_formatDuration(_durationMs)}',
               style: const TextStyle(
                 fontSize: 14,
                 color: AppColors.textSecondary,
               ),
             ),
-          ],
-        ),
+          ),
+          if (widget.editable)
+            GestureDetector(
+              onTap: () => widget.onDelete(widget.node),
+              child: const Padding(
+                padding: EdgeInsets.all(4),
+                child: Icon(Icons.close, size: 18, color: AppColors.textHint),
+              ),
+            ),
+        ],
       ),
     );
   }

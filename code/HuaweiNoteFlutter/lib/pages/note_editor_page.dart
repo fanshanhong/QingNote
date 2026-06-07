@@ -399,14 +399,27 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
         return StylePickerPanel(
           editorState: es,
           onBackgroundChanged: notifier.setBackground,
-          onClose: () => setState(() => _showStylePanel = false),
+          onClose: _closeStylePanel,
         );
       }
     }
     if (state.isEditing) {
       return TextToolbar(
         editorState: notifier.editorState,
-        onStyleTap: () => setState(() => _showStylePanel = true),
+        onStyleTap: () {
+          final es = notifier.editorState;
+          if (es != null && es.selection == null) {
+            final lastNode = es.document.root.children.lastOrNull;
+            if (lastNode != null) {
+              final offset = lastNode.delta?.toPlainText().length ?? 0;
+              es.updateSelectionWithReason(
+                Selection.collapsed(Position(path: lastNode.path, offset: offset)),
+                reason: SelectionUpdateReason.uiEvent,
+              );
+            }
+          }
+          setState(() => _showStylePanel = true);
+        },
         onImageTap: () => _showImageSourcePicker(notifier),
         onRecordTap: () => notifier.startRecording(context),
         onHandwritingTap: () => notifier.enterHandwritingMode(),
@@ -425,6 +438,13 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
         if (mounted) context.pop();
       },
     );
+  }
+
+  void _closeStylePanel() {
+    setState(() => _showStylePanel = false);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _moveCursorToEnd();
+    });
   }
 
   Future<void> _showImageSourcePicker(NoteEditorNotifier notifier) async {

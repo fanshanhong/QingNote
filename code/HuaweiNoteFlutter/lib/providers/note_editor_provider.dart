@@ -321,6 +321,7 @@ class NoteEditorNotifier extends StateNotifier<NoteEditorState> {
 
     final transaction = es.transaction;
     transaction.insertNode(insertPath, imageNode(url: savedFile.path));
+    transaction.insertNode(insertPath.next, paragraphNode());
     transaction.afterSelection = Selection.collapsed(
       Position(path: insertPath.next, offset: 0),
     );
@@ -355,6 +356,7 @@ class NoteEditorNotifier extends StateNotifier<NoteEditorState> {
       insertPath,
       audioNode(fileName: fileName, durationMs: result.durationMs),
     );
+    transaction.insertNode(insertPath.next, paragraphNode());
     transaction.afterSelection = Selection.collapsed(
       Position(path: insertPath.next, offset: 0),
     );
