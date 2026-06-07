@@ -126,109 +126,110 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) _onBack();
       },
-      child: GestureDetector(
-        onTap: () {
-          if (!state.isEditing) {
-            notifier.enterEditMode();
-            WidgetsBinding.instance.addPostFrameCallback((_) => _moveCursorToEnd());
-          }
-        },
-        child: Scaffold(
-          backgroundColor: Colors.white,
-          body: SafeArea(
-            child: Column(
-              children: [
-                EditorTopBar(
-                  isEditing: state.isEditing,
-                  canUndo: state.canUndo,
-                  canRedo: state.canRedo,
-                  onBack: _onBack,
-                  onUndo: () {
-                    if (state.isHandwritingMode) {
-                      _handwritingController.undo();
-                    } else {
-                      notifier.editorState?.undoManager.undo();
-                    }
-                  },
-                  onRedo: () {
-                    if (state.isHandwritingMode) {
-                      _handwritingController.redo();
-                    } else {
-                      notifier.editorState?.undoManager.redo();
-                    }
-                  },
-                  onDone: () async {
-                    if (state.isHandwritingMode) {
-                      notifier.exitHandwritingMode();
-                    } else {
-                      await notifier.saveNote(handwritingStrokes: _handwritingController.strokes);
-                      notifier.exitEditMode();
-                    }
-                  },
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: SafeArea(
+          child: Column(
+            children: [
+              EditorTopBar(
+                isEditing: state.isEditing,
+                canUndo: state.canUndo,
+                canRedo: state.canRedo,
+                onBack: _onBack,
+                onUndo: () {
+                  if (state.isHandwritingMode) {
+                    _handwritingController.undo();
+                  } else {
+                    notifier.editorState?.undoManager.undo();
+                  }
+                },
+                onRedo: () {
+                  if (state.isHandwritingMode) {
+                    _handwritingController.redo();
+                  } else {
+                    notifier.editorState?.undoManager.redo();
+                  }
+                },
+                onDone: () async {
+                  if (state.isHandwritingMode) {
+                    notifier.exitHandwritingMode();
+                  } else {
+                    await notifier.saveNote(handwritingStrokes: _handwritingController.strokes);
+                    notifier.exitEditMode();
+                  }
+                },
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppDimens.editorContentPadding,
                 ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppDimens.editorContentPadding,
+                child: TextField(
+                  controller: _titleController,
+                  focusNode: _titleFocusNode,
+                  enabled: state.isEditing,
+                  onChanged: notifier.updateTitle,
+                  style: const TextStyle(
+                    fontSize: AppDimens.editorTitleSize,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
                   ),
-                  child: TextField(
-                    controller: _titleController,
-                    focusNode: _titleFocusNode,
-                    enabled: state.isEditing,
-                    onChanged: notifier.updateTitle,
-                    style: const TextStyle(
+                  decoration: const InputDecoration(
+                    hintText: '标题',
+                    hintStyle: TextStyle(
                       fontSize: AppDimens.editorTitleSize,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
+                      color: AppColors.textHint,
                     ),
-                    decoration: const InputDecoration(
-                      hintText: '标题',
-                      hintStyle: TextStyle(
-                        fontSize: AppDimens.editorTitleSize,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textHint,
-                      ),
-                      border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(vertical: AppDimens.spacingS),
-                    ),
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(vertical: AppDimens.spacingS),
                   ),
                 ),
-                MetadataStrip(
-                  updatedAt: state.loadedNote?.updatedAt,
-                  notebookName: state.notebookName,
-                  notebookColor: state.notebookColor,
-                  categoryName: state.categoryName,
-                  isEditing: state.isEditing,
-                  onNotebookTap: () => _showNotebookPicker(notifier),
-                  onCategoryTap: () => _showCategoryPicker(notifier),
-                ),
-                Expanded(
+              ),
+              MetadataStrip(
+                updatedAt: state.loadedNote?.updatedAt,
+                notebookName: state.notebookName,
+                notebookColor: state.notebookColor,
+                categoryName: state.categoryName,
+                isEditing: state.isEditing,
+                onNotebookTap: () => _showNotebookPicker(notifier),
+                onCategoryTap: () => _showCategoryPicker(notifier),
+              ),
+              Expanded(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onTap: () {
+                    if (!state.isEditing) {
+                      notifier.enterEditMode();
+                      WidgetsBinding.instance.addPostFrameCallback((_) => _moveCursorToEnd());
+                    }
+                  },
                   child: Stack(
                     children: [
-                      IgnorePointer(
-                        ignoring: state.isHandwritingMode,
-                        child: Opacity(
-                          opacity: state.isHandwritingMode ? 0.5 : 1.0,
-                          child: _buildEditor(notifier, state),
-                        ),
-                      ),
-                      if (_editorReady)
+                      if (state.isHandwritingMode)
                         IgnorePointer(
-                          ignoring: !state.isHandwritingMode,
-                          child: HandwritingOverlay(
-                            controller: _handwritingController,
-                            isActive: state.isHandwritingMode,
-                            currentBrush: state.currentBrush,
-                            currentColor: state.currentBrushColor,
-                            currentWidth: state.currentBrushWidth,
-                            isErasing: state.isErasing,
+                          ignoring: true,
+                          child: Opacity(
+                            opacity: 0.5,
+                            child: _buildEditor(notifier, state),
                           ),
+                        )
+                      else
+                        _buildEditor(notifier, state),
+                      if (_editorReady && state.isHandwritingMode)
+                        HandwritingOverlay(
+                          controller: _handwritingController,
+                          isActive: state.isHandwritingMode,
+                          currentBrush: state.currentBrush,
+                          currentColor: state.currentBrushColor,
+                          currentWidth: state.currentBrushWidth,
+                          isErasing: state.isErasing,
                         ),
                     ],
                   ),
                 ),
-                _buildBottomBar(notifier, state),
-              ],
-            ),
+              ),
+              _buildBottomBar(notifier, state),
+            ],
           ),
         ),
       ),
