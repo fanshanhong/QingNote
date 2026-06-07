@@ -23,6 +23,8 @@ import '../editor/handwriting/handwriting_overlay.dart';
 import '../widgets/editor/handwriting_toolbar.dart';
 import '../widgets/editor/handwriting_style_picker_sheet.dart';
 import '../widgets/editor/brush_width_picker.dart';
+import '../widgets/editor/notebook_picker_popup.dart';
+import '../providers/repository_providers.dart';
 
 class NoteEditorPage extends ConsumerStatefulWidget {
   final int noteId;
@@ -458,30 +460,16 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
   }
 
   Future<void> _showNotebookPicker(NoteEditorNotifier notifier) async {
-    final notebooks = await notifier.loadNotebooks();
-    if (!mounted) return;
-    final selected = await showMenu<int?>(
-      context: context,
-      position: RelativeRect.fromLTRB(
-        MediaQuery.of(context).size.width - 200,
-        200, 16, 0,
-      ),
-      items: [
-        const PopupMenuItem<int?>(value: null, child: Text('全部笔记')),
-        ...notebooks.map((nb) => PopupMenuItem<int?>(
-          value: nb.id,
-          child: Row(children: [
-            Container(width: 10, height: 10, decoration: BoxDecoration(
-              color: AppColorUtils.parseHex(nb.color) ?? AppColors.primary,
-              shape: BoxShape.circle,
-            )),
-            const SizedBox(width: 8),
-            Text(nb.name),
-          ]),
-        )),
-      ],
+    final folderRepo = ref.read(folderRepositoryProvider);
+    final notebookRepo = ref.read(notebookRepositoryProvider);
+    final state = ref.read(noteEditorProvider(widget.noteId));
+    final selected = await showNotebookPickerPopup(
+      context,
+      folderRepo: folderRepo,
+      notebookRepo: notebookRepo,
+      currentNotebookId: state.pendingNotebookId,
     );
-    if (selected != null || notebooks.isNotEmpty) {
+    if (selected != null) {
       await notifier.setNotebook(selected);
     }
   }
