@@ -37,28 +37,38 @@ class _NoteListPageState extends ConsumerState<NoteListPage> {
       backgroundColor: _pageBackground(s),
       body: SafeArea(
         child: Column(children: [
-          if (!s.filterPanelVisible)
-            NoteListHeader(
-              title: s.headerTitle,
-              subtitle: s.headerSubtitle,
-              isBatchMode: s.isBatchMode,
-              selectedCount: s.selectedIds.length,
-              filterPanelVisible: s.filterPanelVisible,
-              onToggleFilterPanel: notifier.toggleFilterPanel,
-              onExitBatchMode: () => notifier.exitBatchMode(),
-              onOverflowTap: () => _showOverflowMenu(context, s, notifier),
-            ),
+          NoteListHeader(
+            title: s.headerTitle,
+            subtitle: s.headerSubtitle,
+            isBatchMode: s.isBatchMode,
+            selectedCount: s.selectedIds.length,
+            filterPanelVisible: s.filterPanelVisible,
+            onToggleFilterPanel: notifier.toggleFilterPanel,
+            onExitBatchMode: () => notifier.exitBatchMode(),
+            onOverflowTap: () => _showOverflowMenu(context, s, notifier),
+          ),
           if (!s.isBatchMode && !s.filterPanelVisible)
             NoteSearchBar(
               initialQuery: s.query,
               onQueryChanged: (q) => notifier.setQuery(q),
             ),
           Expanded(
-            child: s.filterPanelVisible
-                ? const FilterPanel()
-                : (s.notes.isEmpty && !s.isLoading)
+            child: Stack(
+              children: [
+                (s.notes.isEmpty && !s.isLoading)
                     ? _buildEmptyState()
                     : _buildNoteList(s, notifier),
+                if (s.filterPanelVisible) ...[
+                  GestureDetector(
+                    onTap: notifier.toggleFilterPanel,
+                    child: Container(
+                      color: Colors.black.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  const FilterPanel(),
+                ],
+              ],
+            ),
           ),
           if (s.isBatchMode) _buildBatchBottomBar(s, notifier),
         ]),
