@@ -8,7 +8,6 @@ import '../theme.dart';
 import '../utils/color_utils.dart';
 import '../widgets/editor/editor_top_bar.dart';
 import '../widgets/editor/metadata_strip.dart';
-import '../widgets/editor/notebook_indicator.dart';
 import '../widgets/editor/browse_bottom_bar.dart';
 import '../widgets/editor/style_picker_sheet.dart';
 import '../widgets/editor/text_toolbar.dart';
@@ -69,6 +68,10 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
         return delta != null && delta.toPlainText().isNotEmpty;
       });
       notifier.updateDocumentHasContent(hasContent);
+      notifier.updateUndoRedoState(
+        editorState.undoManager.undoStack.isNonEmpty,
+        editorState.undoManager.redoStack.isNonEmpty,
+      );
     });
     if (mounted) setState(() => _editorReady = true);
   }
@@ -137,6 +140,8 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
               children: [
                 EditorTopBar(
                   isEditing: state.isEditing,
+                  canUndo: state.canUndo,
+                  canRedo: state.canRedo,
                   onBack: _onBack,
                   onUndo: () {
                     if (state.isHandwritingMode) {
@@ -160,18 +165,6 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
                       notifier.exitEditMode();
                     }
                   },
-                ),
-                NotebookIndicator(
-                  notebookName: state.loadedNote?.notebookId != null ? null : null,
-                  notebookColor: null,
-                  isEditing: state.isEditing,
-                  onLoadNotebooks: notifier.loadNotebooks,
-                  onNotebookSelected: notifier.setNotebook,
-                ),
-                MetadataStrip(
-                  updatedAt: state.loadedNote?.updatedAt,
-                  categoryName: null,
-                  onCategoryTap: () => _showCategoryPicker(notifier),
                 ),
                 Padding(
                   padding: const EdgeInsets.symmetric(
@@ -198,6 +191,15 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
                       contentPadding: EdgeInsets.symmetric(vertical: AppDimens.spacingS),
                     ),
                   ),
+                ),
+                MetadataStrip(
+                  updatedAt: state.loadedNote?.updatedAt,
+                  notebookName: state.notebookName,
+                  notebookColor: state.notebookColor,
+                  categoryName: state.categoryName,
+                  isEditing: state.isEditing,
+                  onNotebookTap: () => _showNotebookPicker(notifier),
+                  onCategoryTap: () => _showCategoryPicker(notifier),
                 ),
                 Expanded(
                   child: Stack(
@@ -280,6 +282,35 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
         },
       ),
     };
+  }
+
+  Future<void> _showNotebookPicker(NoteEditorNotifier notifier) async {
+    final notebooks = await notifier.loadNotebooks();
+    if (!mounted) return;
+    final selected = await showMenu<int?>(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        MediaQuery.of(context).size.width - 200,
+        200, 16, 0,
+      ),
+      items: [
+        const PopupMenuItem<int?>(value: null, child: Text('全部笔记')),
+        ...notebooks.map((nb) => PopupMenuItem<int?>(
+          value: nb.id,
+          child: Row(children: [
+            Container(width: 10, height: 10, decoration: BoxDecoration(
+              color: AppColorUtils.parseHex(nb.color) ?? AppColors.primary,
+              shape: BoxShape.circle,
+            )),
+            const SizedBox(width: 8),
+            Text(nb.name),
+          ]),
+        )),
+      ],
+    );
+    if (selected != null || notebooks.isNotEmpty) {
+      await notifier.setNotebook(selected);
+    }
   }
 
   Future<void> _showCategoryPicker(NoteEditorNotifier notifier) async {

@@ -29,6 +29,11 @@ class NoteEditorState {
   final String currentBrushColor;
   final int currentBrushWidth;
   final bool isErasing;
+  final String? notebookName;
+  final String? notebookColor;
+  final String? categoryName;
+  final bool canUndo;
+  final bool canRedo;
 
   const NoteEditorState({
     required this.noteId,
@@ -44,6 +49,11 @@ class NoteEditorState {
     this.currentBrushColor = '#212121',
     this.currentBrushWidth = 3,
     this.isErasing = false,
+    this.notebookName,
+    this.notebookColor,
+    this.categoryName,
+    this.canUndo = false,
+    this.canRedo = false,
   });
 
   factory NoteEditorState.initial({required int noteId}) => NoteEditorState(
@@ -68,6 +78,14 @@ class NoteEditorState {
     String? currentBrushColor,
     int? currentBrushWidth,
     bool? isErasing,
+    String? notebookName,
+    bool clearNotebookName = false,
+    String? notebookColor,
+    bool clearNotebookColor = false,
+    String? categoryName,
+    bool clearCategoryName = false,
+    bool? canUndo,
+    bool? canRedo,
   }) => NoteEditorState(
     noteId: noteId ?? this.noteId,
     isEditing: isEditing ?? this.isEditing,
@@ -82,6 +100,11 @@ class NoteEditorState {
     currentBrushColor: currentBrushColor ?? this.currentBrushColor,
     currentBrushWidth: currentBrushWidth ?? this.currentBrushWidth,
     isErasing: isErasing ?? this.isErasing,
+    notebookName: clearNotebookName ? null : (notebookName ?? this.notebookName),
+    notebookColor: clearNotebookColor ? null : (notebookColor ?? this.notebookColor),
+    categoryName: clearCategoryName ? null : (categoryName ?? this.categoryName),
+    canUndo: canUndo ?? this.canUndo,
+    canRedo: canRedo ?? this.canRedo,
   );
 }
 
@@ -110,12 +133,29 @@ class NoteEditorNotifier extends StateNotifier<NoteEditorState> {
         ? Document.fromJson(docJson)
         : Document.blank();
     _editorState = EditorState(document: doc);
+
+    String? nbName;
+    String? nbColor;
+    if (note.notebookId != null) {
+      final nb = await _notebookRepo.get(note.notebookId!);
+      if (nb != null) { nbName = nb.name; nbColor = nb.color; }
+    }
+
+    String? catName;
+    if (note.categoryId != null) {
+      final cat = await _categoryRepo.get(note.categoryId!);
+      if (cat != null) catName = cat.name;
+    }
+
     state = state.copyWith(
       title: note.title,
       loadedNote: note,
       pendingNotebookId: note.notebookId,
       pendingBackground: note.background,
       documentHasContent: content.toPlainText().isNotEmpty,
+      notebookName: nbName,
+      notebookColor: nbColor,
+      categoryName: catName,
     );
   }
 
@@ -155,11 +195,21 @@ class NoteEditorNotifier extends StateNotifier<NoteEditorState> {
     state = state.copyWith(title: title);
   }
 
-  void setNotebook(int? notebookId) {
-    state = state.copyWith(
-      pendingNotebookId: notebookId,
-      clearPendingNotebookId: notebookId == null,
-    );
+  Future<void> setNotebook(int? notebookId) async {
+    if (notebookId != null) {
+      final nb = await _notebookRepo.get(notebookId);
+      state = state.copyWith(
+        pendingNotebookId: notebookId,
+        notebookName: nb?.name,
+        notebookColor: nb?.color,
+      );
+    } else {
+      state = state.copyWith(
+        clearPendingNotebookId: true,
+        clearNotebookName: true,
+        clearNotebookColor: true,
+      );
+    }
   }
 
   void setBackground(String background) {
@@ -168,6 +218,10 @@ class NoteEditorNotifier extends StateNotifier<NoteEditorState> {
 
   void updateDocumentHasContent(bool hasContent) {
     state = state.copyWith(documentHasContent: hasContent);
+  }
+
+  void updateUndoRedoState(bool canUndo, bool canRedo) {
+    state = state.copyWith(canUndo: canUndo, canRedo: canRedo);
   }
 
   Future<void> toggleFavorite() async {
@@ -345,11 +399,22 @@ class NoteEditorNotifier extends StateNotifier<NoteEditorState> {
     if (state.noteId == 0) return;
     final note = state.loadedNote;
     if (note == null) return;
+
+    String? catName;
+    if (categoryId != null) {
+      final cat = await _categoryRepo.get(categoryId);
+      catName = cat?.name;
+    }
+
     final updated = note.copyWith(
       categoryId: categoryId,
       setCategoryIdNull: categoryId == null,
     );
-    state = state.copyWith(loadedNote: updated);
+    state = state.copyWith(
+      loadedNote: updated,
+      categoryName: catName,
+      clearCategoryName: categoryId == null,
+    );
   }
 }
 
