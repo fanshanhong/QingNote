@@ -299,11 +299,11 @@ class NoteEditorNotifier extends StateNotifier<NoteEditorState> {
     return state.noteId;
   }
 
-  Future<void> insertImage({bool useCamera = false}) async {
+  Future<void> insertImage({bool useCamera = false, Selection? insertAt}) async {
     final es = _editorState;
     if (es == null) return;
-    final selectionBeforeModal = es.selection;
-    final basePath = selectionBeforeModal?.end.path ?? es.document.root.children.last.path;
+    final selection = insertAt ?? es.selection;
+    final basePath = selection?.end.path ?? es.document.root.children.last.path;
 
     final noteId = await ensureNoteSaved();
     if (noteId == 0) return;

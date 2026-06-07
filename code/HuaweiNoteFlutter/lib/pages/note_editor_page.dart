@@ -194,6 +194,18 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
     _editorFocusNode.requestFocus();
   }
 
+  void _restoreEditorFocus() {
+    final es = ref.read(noteEditorProvider(widget.noteId).notifier).editorState;
+    if (es == null) return;
+    final sel = es.selection;
+    if (sel != null) {
+      es.updateSelectionWithReason(sel, reason: SelectionUpdateReason.uiEvent);
+      _editorFocusNode.requestFocus();
+    } else {
+      _requestEditorFocus();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(noteEditorProvider(widget.noteId));
@@ -561,7 +573,12 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
           setState(() => _showStylePanel = true);
         },
         onImageTap: () => _showImageSourcePicker(notifier),
-        onRecordTap: () => notifier.startRecording(context),
+        onRecordTap: () async {
+          await notifier.startRecording(context);
+          if (mounted) {
+            WidgetsBinding.instance.addPostFrameCallback((_) => _restoreEditorFocus());
+          }
+        },
         onHandwritingTap: () => notifier.enterHandwritingMode(),
       );
     }
@@ -598,6 +615,7 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
   }
 
   Future<void> _showImageSourcePicker(NoteEditorNotifier notifier) async {
+    final savedSelection = notifier.editorState?.selection;
     final source = await showModalBottomSheet<String>(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -622,8 +640,14 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
         ),
       ),
     );
-    if (source == null) return;
-    await notifier.insertImage(useCamera: source == 'camera');
+    if (source == null) {
+      _requestEditorFocus();
+      return;
+    }
+    await notifier.insertImage(useCamera: source == 'camera', insertAt: savedSelection);
+    if (mounted) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _restoreEditorFocus());
+    }
   }
 
   Color _bgColorForKey(String key) {
