@@ -6,9 +6,11 @@ import 'theme.dart';
 import 'services/todo_notification_service.dart';
 import 'providers/repository_providers.dart';
 import 'providers/theme_provider.dart';
+import 'src/rust/frb_generated.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await RustLib.init();
   await TodoNotificationService.instance.init();
   final prefs = await SharedPreferences.getInstance();
   final savedTab = prefs.getInt('active_tab') ?? 0;
