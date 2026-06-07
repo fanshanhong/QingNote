@@ -80,10 +80,18 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
     _scrollController = EditorScrollController(editorState: editorState);
     _transactionSub = editorState.transactionStream.listen((_) {
       final doc = editorState.document;
-      final hasContent = doc.root.children.any((node) {
+      var hasContent = false;
+      for (final node in doc.root.children) {
+        if (node.type != ParagraphBlockKeys.type) {
+          hasContent = true;
+          break;
+        }
         final delta = node.delta;
-        return delta != null && delta.toPlainText().isNotEmpty;
-      });
+        if (delta != null && delta.toPlainText().isNotEmpty) {
+          hasContent = true;
+          break;
+        }
+      }
       notifier.updateDocumentHasContent(hasContent);
       notifier.updateUndoRedoState(
         editorState.undoManager.undoStack.isNonEmpty,
@@ -425,23 +433,22 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
     void deleteNode(Node node) {
       final es = notifier.editorState;
       if (es == null) return;
-      final prevPath = node.previous != null ? List<int>.from(node.previous!.path) : null;
-      final prevOffset = node.previous?.delta?.toPlainText().length;
-      final targetPath = List<int>.from(node.path);
+      final prev = node.previous;
 
       final transaction = es.transaction;
       transaction.deleteNode(node);
-
-      Selection? targetSel;
-      if (prevPath != null && prevOffset != null) {
-        targetSel = Selection.collapsed(Position(path: prevPath, offset: prevOffset));
-      } else {
-        targetSel = Selection.collapsed(Position(path: targetPath, offset: 0));
-      }
-      transaction.afterSelection = targetSel;
       es.apply(transaction);
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        Selection targetSel;
+        if (prev != null) {
+          final offset = prev.delta?.toPlainText().length ?? 0;
+          targetSel = Selection.collapsed(Position(path: prev.path, offset: offset));
+        } else {
+          final first = es.document.root.children.firstOrNull;
+          if (first == null) return;
+          targetSel = Selection.collapsed(Position(path: first.path, offset: 0));
+        }
         es.updateSelectionWithReason(targetSel, reason: SelectionUpdateReason.uiEvent);
       });
     }

@@ -329,7 +329,7 @@ class NoteEditorNotifier extends StateNotifier<NoteEditorState> {
     );
     transaction.afterSelection = sel;
     await es.apply(transaction);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    Future.delayed(const Duration(milliseconds: 100), () {
       es.updateSelectionWithReason(sel, reason: SelectionUpdateReason.uiEvent);
     });
   }
@@ -368,7 +368,7 @@ class NoteEditorNotifier extends StateNotifier<NoteEditorState> {
     );
     transaction.afterSelection = sel;
     await es.apply(transaction);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    Future.delayed(const Duration(milliseconds: 100), () {
       es.updateSelectionWithReason(sel, reason: SelectionUpdateReason.uiEvent);
     });
   }
