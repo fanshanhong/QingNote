@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../models/note.dart';
 import '../theme.dart';
@@ -43,9 +44,18 @@ class NoteCard extends StatelessWidget {
     return AppColors.bgCard;
   }
 
+  String _displayTitle() {
+    if (!AppTextUtils.isBlankTitle(note.title)) return note.title;
+    final firstLine = note.plainText.split('\n').firstWhere(
+      (l) => l.trim().isNotEmpty,
+      orElse: () => '',
+    );
+    return firstLine.isNotEmpty ? firstLine : '无标题';
+  }
+
   @override
   Widget build(BuildContext context) {
-    final title = AppTextUtils.isBlankTitle(note.title) ? '无标题' : note.title;
+    final title = _displayTitle();
     final summaryText = AppTextUtils.summary(note.plainText);
     final timeText = AppDateUtils.formatRelative(note.updatedAt);
 
@@ -86,37 +96,49 @@ class NoteCard extends StatelessWidget {
       Expanded(child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Text(title, maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: AppDimens.textBody, fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: AppDimens.spacingXs),
           Row(children: [
-            Expanded(child: Text(title, maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: AppDimens.textBody, fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            )),
-            if (!isBatchMode) ...[
-              const SizedBox(width: AppDimens.spacingS),
-              Icon(
-                note.isFavorite ? Icons.star : Icons.star_border,
-                size: 20,
-                color: note.isFavorite ? Colors.amber : AppColors.textHint,
-              ),
+            if (note.hasTodo) ...[
+              const Icon(Icons.check_circle_outline, size: 14, color: AppColors.textHint),
+              const SizedBox(width: 4),
             ],
-            const SizedBox(width: AppDimens.spacingS),
             Text(timeText, style: const TextStyle(
               fontSize: AppDimens.textHint, color: AppColors.textHint,
             )),
+            if (summaryText.isNotEmpty) ...[
+              const Text(' | ', style: TextStyle(
+                fontSize: AppDimens.textHint, color: AppColors.textHint,
+              )),
+              Expanded(child: Text(summaryText, maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: AppDimens.textHint, color: AppColors.textHint,
+                ),
+              )),
+            ],
           ]),
-          if (summaryText.isNotEmpty) ...[
-            const SizedBox(height: AppDimens.spacingXs),
-            Text(summaryText, maxLines: 2, overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: AppDimens.textCaption, color: AppColors.textSecondary,
-              ),
-            ),
-          ],
         ],
       )),
+      if (!isBatchMode && note.firstImagePath != null) ...[
+        const SizedBox(width: AppDimens.spacingS),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: Image.file(
+            File(note.firstImagePath!),
+            width: 48,
+            height: 48,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+          ),
+        ),
+      ],
     ]);
   }
 
@@ -141,6 +163,10 @@ class NoteCard extends StatelessWidget {
         ],
         const SizedBox(height: AppDimens.spacingS),
         Row(children: [
+          if (note.hasTodo) ...[
+            const Icon(Icons.check_circle_outline, size: 14, color: AppColors.textHint),
+            const SizedBox(width: 4),
+          ],
           if (note.isFavorite) ...[
             const Icon(Icons.star, size: 14, color: Colors.amber),
             const SizedBox(width: 4),
