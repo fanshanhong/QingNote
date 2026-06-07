@@ -36,7 +36,7 @@ class TextToolbar extends StatelessWidget {
           ),
           _ToolbarButton(
             icon: Icons.text_format,
-            color: AppColors.primary,
+            color: AppColors.editorIconActive,
             onTap: onStyleTap,
           ),
           _ToolbarButton(
