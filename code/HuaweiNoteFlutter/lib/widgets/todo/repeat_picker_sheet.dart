@@ -50,8 +50,8 @@ class _RepeatPickerContent extends StatelessWidget {
           Center(
             child: TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('取消',
-                  style: TextStyle(color: AppColors.primary)),
+              child:
+                  const Text('取消', style: TextStyle(color: AppColors.primary)),
             ),
           ),
           const SizedBox(height: AppDimens.spacingS),

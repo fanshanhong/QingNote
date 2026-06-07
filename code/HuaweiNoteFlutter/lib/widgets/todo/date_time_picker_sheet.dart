@@ -57,8 +57,7 @@ class _DateTimePickerContentState extends State<_DateTimePickerContent> {
             child: CupertinoDatePicker(
               mode: CupertinoDatePickerMode.dateAndTime,
               initialDateTime: _selected,
-              minimumDate:
-                  DateTime.now().subtract(const Duration(days: 365)),
+              minimumDate: DateTime.now().subtract(const Duration(days: 365)),
               use24hFormat: false,
               onDateTimeChanged: (dt) => setState(() => _selected = dt),
             ),
@@ -92,8 +91,8 @@ class _DateTimePickerContentState extends State<_DateTimePickerContent> {
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8)),
                     ),
-                    child: const Text('确定',
-                        style: TextStyle(color: Colors.white)),
+                    child:
+                        const Text('确定', style: TextStyle(color: Colors.white)),
                   ),
                 ),
               ],

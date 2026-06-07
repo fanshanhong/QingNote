@@ -6,7 +6,7 @@ import 'repeat_picker_sheet.dart';
 
 class TodoQuickAddBar extends StatefulWidget {
   final void Function(
-      String title, int remindAt, bool isImportant, RepeatType repeatType)
+          String title, int remindAt, bool isImportant, RepeatType repeatType)
       onSave;
 
   const TodoQuickAddBar({super.key, required this.onSave});
@@ -45,8 +45,7 @@ class _TodoQuickAddBarState extends State<TodoQuickAddBar> {
   }
 
   void _pickRepeat() async {
-    final result =
-        await showRepeatPickerSheet(context, current: _repeatType);
+    final result = await showRepeatPickerSheet(context, current: _repeatType);
     if (result != null) {
       setState(() => _repeatType = result);
     }
@@ -65,8 +64,8 @@ class _TodoQuickAddBarState extends State<TodoQuickAddBar> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.fromLTRB(AppDimens.spacingL,
-          AppDimens.spacingS, AppDimens.spacingL, AppDimens.spacingS),
+      padding: const EdgeInsets.fromLTRB(AppDimens.spacingL, AppDimens.spacingS,
+          AppDimens.spacingL, AppDimens.spacingS),
       decoration: const BoxDecoration(
         color: AppColors.bgCard,
         border: Border(top: BorderSide(color: AppColors.divider)),
@@ -124,8 +123,8 @@ class _TodoQuickAddBarState extends State<TodoQuickAddBar> {
                   onPressed: _save,
                   style: TextButton.styleFrom(
                     backgroundColor: AppColors.primary,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16)),
                   ),

@@ -23,7 +23,9 @@ void main() {
     test('saveImage 创建目录并写入文件', () async {
       final bytes = Uint8List.fromList([0xFF, 0xD8, 0xFF, 0xE0]);
       final file = await NoteFileStorage.saveImageToBase(
-        tempDir.path, 1, bytes,
+        tempDir.path,
+        1,
+        bytes,
       );
       expect(file.existsSync(), true);
       expect(file.path.endsWith('.jpg'), true);
@@ -33,7 +35,9 @@ void main() {
     test('deleteImage 删除指定文件', () async {
       final bytes = Uint8List.fromList([1, 2, 3]);
       final file = await NoteFileStorage.saveImageToBase(
-        tempDir.path, 1, bytes,
+        tempDir.path,
+        1,
+        bytes,
       );
       expect(file.existsSync(), true);
       NoteFileStorage.deleteImage(file.path);

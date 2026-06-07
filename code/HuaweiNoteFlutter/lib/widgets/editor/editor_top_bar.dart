@@ -26,7 +26,8 @@ class EditorTopBar extends StatelessWidget {
     return Container(
       height: AppDimens.editorToolbarHeight,
       decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: AppColors.divider, width: 0.5)),
+        border:
+            Border(bottom: BorderSide(color: AppColors.divider, width: 0.5)),
       ),
       child: Row(
         children: [
@@ -40,7 +41,9 @@ class EditorTopBar extends StatelessWidget {
               icon: Icon(
                 Icons.undo,
                 size: 22,
-                color: canUndo ? AppColors.editorIconActive : AppColors.editorIconInactive,
+                color: canUndo
+                    ? AppColors.editorIconActive
+                    : AppColors.editorIconInactive,
               ),
               onPressed: canUndo ? onUndo : null,
             ),
@@ -48,7 +51,9 @@ class EditorTopBar extends StatelessWidget {
               icon: Icon(
                 Icons.redo,
                 size: 22,
-                color: canRedo ? AppColors.editorIconActive : AppColors.editorIconInactive,
+                color: canRedo
+                    ? AppColors.editorIconActive
+                    : AppColors.editorIconInactive,
               ),
               onPressed: canRedo ? onRedo : null,
             ),

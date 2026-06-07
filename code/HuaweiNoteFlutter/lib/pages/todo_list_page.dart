@@ -58,11 +58,9 @@ class _TodoListPageState extends ConsumerState<TodoListPage> {
       items: [
         PopupMenuItem(
           value: 'toggle_completed',
-          child:
-              Text(state.hideCompleted ? '显示已完成待办' : '隐藏已完成待办'),
+          child: Text(state.hideCompleted ? '显示已完成待办' : '隐藏已完成待办'),
         ),
-        const PopupMenuItem(
-            value: 'batch_delete', child: Text('批量删除')),
+        const PopupMenuItem(value: 'batch_delete', child: Text('批量删除')),
       ],
     ).then((value) {
       if (value == 'toggle_completed') {
@@ -213,8 +211,8 @@ class _TodoListPageState extends ConsumerState<TodoListPage> {
     return count;
   }
 
-  Widget _buildItem(List<TodoGroupItem> groups, int index,
-      TodoListState state, bool isDeletedView) {
+  Widget _buildItem(List<TodoGroupItem> groups, int index, TodoListState state,
+      bool isDeletedView) {
     int offset = 0;
     for (final g in groups) {
       if (index == offset) {
@@ -248,11 +246,9 @@ class _TodoListPageState extends ConsumerState<TodoListPage> {
               ref.read(todoListProvider.notifier).reload();
             }
           },
-          onBatchToggle: () => ref
-              .read(todoListProvider.notifier)
-              .toggleBatchSelection(todo.id),
-          onRestore: () =>
-              ref.read(todoListProvider.notifier).restore(todo.id),
+          onBatchToggle: () =>
+              ref.read(todoListProvider.notifier).toggleBatchSelection(todo.id),
+          onRestore: () => ref.read(todoListProvider.notifier).restore(todo.id),
           onDeletePermanently: () => _confirmDeletePermanently(todo.id),
         );
       }
@@ -273,8 +269,7 @@ class _TodoListPageState extends ConsumerState<TodoListPage> {
         child: SizedBox(
           width: double.infinity,
           child: TextButton(
-            onPressed:
-                state.selectedIds.isEmpty ? null : _confirmBatchDelete,
+            onPressed: state.selectedIds.isEmpty ? null : _confirmBatchDelete,
             style: TextButton.styleFrom(
               backgroundColor: state.selectedIds.isEmpty
                   ? AppColors.divider

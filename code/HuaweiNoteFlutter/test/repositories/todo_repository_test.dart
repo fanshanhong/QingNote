@@ -96,8 +96,10 @@ void main() {
       final id = await repo.insert(Todo.newTodo().copyWith(title: 'Old'));
       await repo.softDelete(id);
       final db = await dbHelper.database;
-      final longAgo = DateTime.now().millisecondsSinceEpoch - 31 * 24 * 60 * 60 * 1000;
-      await db.update('todos', {'deleted_at': longAgo}, where: 'id = ?', whereArgs: [id]);
+      final longAgo =
+          DateTime.now().millisecondsSinceEpoch - 31 * 24 * 60 * 60 * 1000;
+      await db.update('todos', {'deleted_at': longAgo},
+          where: 'id = ?', whereArgs: [id]);
       final purged = await repo.purgeExpired();
       expect(purged, 1);
       expect(await repo.getById(id), isNull);

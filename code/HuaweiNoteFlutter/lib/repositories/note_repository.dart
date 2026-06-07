@@ -15,14 +15,27 @@ sealed class NoteListFilter {
   static NoteListFilter notebook(int notebookId) => NotebookFilter(notebookId);
 }
 
-class AllFilter extends NoteListFilter { const AllFilter(); }
-class UncategorizedFilter extends NoteListFilter { const UncategorizedFilter(); }
-class FavoriteFilter extends NoteListFilter { const FavoriteFilter(); }
-class DeletedFilter extends NoteListFilter { const DeletedFilter(); }
+class AllFilter extends NoteListFilter {
+  const AllFilter();
+}
+
+class UncategorizedFilter extends NoteListFilter {
+  const UncategorizedFilter();
+}
+
+class FavoriteFilter extends NoteListFilter {
+  const FavoriteFilter();
+}
+
+class DeletedFilter extends NoteListFilter {
+  const DeletedFilter();
+}
+
 class FolderFilter extends NoteListFilter {
   final int folderId;
   const FolderFilter(this.folderId);
 }
+
 class NotebookFilter extends NoteListFilter {
   final int notebookId;
   const NotebookFilter(this.notebookId);
@@ -46,12 +59,17 @@ class NoteRepository {
     final where = <String>[];
     final args = <String>[];
     switch (filter) {
-      case AllFilter(): where.add('deleted_at = 0');
-      case UncategorizedFilter(): where.add('deleted_at = 0 AND notebook_id IS NULL');
-      case FavoriteFilter(): where.add('deleted_at = 0 AND is_favorite = 1');
-      case DeletedFilter(): where.add('deleted_at != 0');
+      case AllFilter():
+        where.add('deleted_at = 0');
+      case UncategorizedFilter():
+        where.add('deleted_at = 0 AND notebook_id IS NULL');
+      case FavoriteFilter():
+        where.add('deleted_at = 0 AND is_favorite = 1');
+      case DeletedFilter():
+        where.add('deleted_at != 0');
       case FolderFilter(:final folderId):
-        where.add('deleted_at = 0 AND notebook_id IN (SELECT id FROM notebooks WHERE folder_id = ? AND deleted_at = 0)');
+        where.add(
+            'deleted_at = 0 AND notebook_id IN (SELECT id FROM notebooks WHERE folder_id = ? AND deleted_at = 0)');
         args.add(folderId.toString());
       case NotebookFilter(:final notebookId):
         where.add('deleted_at = 0 AND notebook_id = ?');
@@ -62,7 +80,8 @@ class NoteRepository {
       where.add('(title LIKE ? OR plain_text LIKE ?)');
       args.addAll([like, like]);
     }
-    final rows = await db.query('notes',
+    final rows = await db.query(
+      'notes',
       where: where.join(' AND '),
       whereArgs: args,
       orderBy: orderBy,
@@ -108,9 +127,11 @@ class NoteRepository {
 
   Future<void> softDelete(int id) async {
     final db = await _dbHelper.database;
-    await db.update('notes',
+    await db.update(
+      'notes',
       {'deleted_at': DateTime.now().millisecondsSinceEpoch},
-      where: 'id = ?', whereArgs: [id],
+      where: 'id = ?',
+      whereArgs: [id],
     );
   }
 
@@ -119,14 +140,16 @@ class NoteRepository {
     final now = DateTime.now().millisecondsSinceEpoch;
     await db.transaction((txn) async {
       for (final id in ids) {
-        await txn.update('notes', {'deleted_at': now}, where: 'id = ?', whereArgs: [id]);
+        await txn.update('notes', {'deleted_at': now},
+            where: 'id = ?', whereArgs: [id]);
       }
     });
   }
 
   Future<void> restore(int id) async {
     final db = await _dbHelper.database;
-    await db.update('notes', {'deleted_at': 0}, where: 'id = ?', whereArgs: [id]);
+    await db.update('notes', {'deleted_at': 0},
+        where: 'id = ?', whereArgs: [id]);
   }
 
   Future<void> deletePermanently(int id) async {
@@ -139,37 +162,51 @@ class NoteRepository {
     final where = <String>[];
     final args = <String>[];
     switch (filter) {
-      case AllFilter(): where.add('deleted_at = 0');
-      case UncategorizedFilter(): where.add('deleted_at = 0 AND notebook_id IS NULL');
-      case FavoriteFilter(): where.add('deleted_at = 0 AND is_favorite = 1');
-      case DeletedFilter(): where.add('deleted_at != 0');
+      case AllFilter():
+        where.add('deleted_at = 0');
+      case UncategorizedFilter():
+        where.add('deleted_at = 0 AND notebook_id IS NULL');
+      case FavoriteFilter():
+        where.add('deleted_at = 0 AND is_favorite = 1');
+      case DeletedFilter():
+        where.add('deleted_at != 0');
       case FolderFilter(:final folderId):
-        where.add('deleted_at = 0 AND notebook_id IN (SELECT id FROM notebooks WHERE folder_id = ? AND deleted_at = 0)');
+        where.add(
+            'deleted_at = 0 AND notebook_id IN (SELECT id FROM notebooks WHERE folder_id = ? AND deleted_at = 0)');
         args.add(folderId.toString());
       case NotebookFilter(:final notebookId):
         where.add('deleted_at = 0 AND notebook_id = ?');
         args.add(notebookId.toString());
     }
     final result = await db.rawQuery(
-      'SELECT COUNT(*) FROM notes WHERE ${where.join(' AND ')}', args,
+      'SELECT COUNT(*) FROM notes WHERE ${where.join(' AND ')}',
+      args,
     );
     return Sqflite.firstIntValue(result) ?? 0;
   }
 
   Future<void> setFavorite(int id, bool favorite) async {
     final db = await _dbHelper.database;
-    await db.update('notes', {
-      'is_favorite': favorite ? 1 : 0,
-      'updated_at': DateTime.now().millisecondsSinceEpoch,
-    }, where: 'id = ?', whereArgs: [id]);
+    await db.update(
+        'notes',
+        {
+          'is_favorite': favorite ? 1 : 0,
+          'updated_at': DateTime.now().millisecondsSinceEpoch,
+        },
+        where: 'id = ?',
+        whereArgs: [id]);
   }
 
   Future<void> moveNoteToNotebook(int noteId, int? targetNotebookId) async {
     final db = await _dbHelper.database;
-    await db.update('notes', {
-      'notebook_id': targetNotebookId,
-      'updated_at': DateTime.now().millisecondsSinceEpoch,
-    }, where: 'id = ?', whereArgs: [noteId]);
+    await db.update(
+        'notes',
+        {
+          'notebook_id': targetNotebookId,
+          'updated_at': DateTime.now().millisecondsSinceEpoch,
+        },
+        where: 'id = ?',
+        whereArgs: [noteId]);
   }
 
   Future<int> purgeExpired({
@@ -179,7 +216,7 @@ class NoteRepository {
     final db = await _dbHelper.database;
     final cutoff = (now ?? DateTime.now().millisecondsSinceEpoch) - ttlMs;
     return db.delete('notes',
-      where: 'deleted_at > 0 AND deleted_at < ?', whereArgs: [cutoff]);
+        where: 'deleted_at > 0 AND deleted_at < ?', whereArgs: [cutoff]);
   }
 
   static String? _extractFirstImagePath(NoteContent content) {

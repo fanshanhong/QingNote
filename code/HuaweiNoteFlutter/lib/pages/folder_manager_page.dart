@@ -40,17 +40,20 @@ class _FolderManagerPageState extends ConsumerState<FolderManagerPage> {
           elevation: 0,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
-            onPressed: () => context.pop(
-                ref.read(folderManagerProvider.notifier).hasChanges),
+            onPressed: () => context
+                .pop(ref.read(folderManagerProvider.notifier).hasChanges),
           ),
-          title: const Text('文件夹管理', style: TextStyle(
-            color: AppColors.textPrimary, fontSize: AppDimens.textTitle,
-            fontWeight: FontWeight.w600,
-          )),
+          title: const Text('文件夹管理',
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: AppDimens.textTitle,
+                fontWeight: FontWeight.w600,
+              )),
           centerTitle: false,
           actions: [
             IconButton(
-              icon: const Icon(Icons.create_new_folder_outlined, color: AppColors.primary),
+              icon: const Icon(Icons.create_new_folder_outlined,
+                  color: AppColors.primary),
               onPressed: _onCreateFolder,
             ),
           ],
@@ -59,8 +62,9 @@ class _FolderManagerPageState extends ConsumerState<FolderManagerPage> {
             ? const Center(child: CircularProgressIndicator())
             : ReorderableListView.builder(
                 itemCount: state.rows.length,
-                onReorder: (oldIndex, newIndex) =>
-                    ref.read(folderManagerProvider.notifier).onReorder(oldIndex, newIndex),
+                onReorder: (oldIndex, newIndex) => ref
+                    .read(folderManagerProvider.notifier)
+                    .onReorder(oldIndex, newIndex),
                 buildDefaultDragHandles: false,
                 itemBuilder: (context, index) {
                   final row = state.rows[index];
@@ -82,25 +86,33 @@ class _FolderManagerPageState extends ConsumerState<FolderManagerPage> {
       index: index,
       enabled: canDrag,
       child: InkWell(
-        onTap: () => ref.read(folderManagerProvider.notifier).toggleExpand(row.folder.id),
+        onTap: () => ref
+            .read(folderManagerProvider.notifier)
+            .toggleExpand(row.folder.id),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppDimens.spacingL, vertical: 14),
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppDimens.spacingL, vertical: 14),
           child: Row(children: [
             if (canDrag)
               const Icon(Icons.drag_handle, size: 20, color: AppColors.textHint)
             else
               const SizedBox(width: 20),
             const SizedBox(width: AppDimens.spacingS),
-            const Icon(Icons.folder_outlined, size: 20, color: AppColors.textPrimary),
+            const Icon(Icons.folder_outlined,
+                size: 20, color: AppColors.textPrimary),
             const SizedBox(width: AppDimens.spacingS),
-            Expanded(child: Text(row.folder.name, style: const TextStyle(
-              fontSize: AppDimens.textBody, color: AppColors.textPrimary,
-              fontWeight: FontWeight.w500,
-            ))),
+            Expanded(
+                child: Text(row.folder.name,
+                    style: const TextStyle(
+                      fontSize: AppDimens.textBody,
+                      color: AppColors.textPrimary,
+                      fontWeight: FontWeight.w500,
+                    ))),
             AnimatedRotation(
               turns: row.expanded ? 0.5 : 0,
               duration: const Duration(milliseconds: 200),
-              child: const Icon(Icons.arrow_drop_down, size: 20, color: AppColors.textHint),
+              child: const Icon(Icons.arrow_drop_down,
+                  size: 20, color: AppColors.textHint),
             ),
             if (row.folder.id != 1)
               _overflowButton(() => _showFolderMenu(row.folder))
@@ -128,14 +140,22 @@ class _FolderManagerPageState extends ConsumerState<FolderManagerPage> {
           else
             const SizedBox(width: 18),
           const SizedBox(width: AppDimens.spacingS),
-          Container(width: 10, height: 10, decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: dotColor != null ? Color(0xFF000000 | dotColor) : AppColors.textHint,
-          )),
+          Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: dotColor != null
+                    ? Color(0xFF000000 | dotColor)
+                    : AppColors.textHint,
+              )),
           const SizedBox(width: 10),
-          Expanded(child: Text(row.notebook.name, style: const TextStyle(
-            fontSize: AppDimens.textBody, color: AppColors.textPrimary,
-          ))),
+          Expanded(
+              child: Text(row.notebook.name,
+                  style: const TextStyle(
+                    fontSize: AppDimens.textBody,
+                    color: AppColors.textPrimary,
+                  ))),
           _overflowButton(() => _showNotebookMenu(row.notebook)),
         ]),
       ),
@@ -151,9 +171,11 @@ class _FolderManagerPageState extends ConsumerState<FolderManagerPage> {
         child: const Row(children: [
           Icon(Icons.add, size: 18, color: AppColors.primary),
           SizedBox(width: AppDimens.spacingS),
-          Text('新建笔记本', style: TextStyle(
-            fontSize: AppDimens.textBody, color: AppColors.primary,
-          )),
+          Text('新建笔记本',
+              style: TextStyle(
+                fontSize: AppDimens.textBody,
+                color: AppColors.primary,
+              )),
         ]),
       ),
     );
@@ -225,8 +247,10 @@ class _FolderManagerPageState extends ConsumerState<FolderManagerPage> {
             ),
           if (!nb.isDefault)
             ListTile(
-              leading: const Icon(Icons.delete_outline, color: AppColors.danger),
-              title: const Text('删除', style: TextStyle(color: AppColors.danger)),
+              leading:
+                  const Icon(Icons.delete_outline, color: AppColors.danger),
+              title:
+                  const Text('删除', style: TextStyle(color: AppColors.danger)),
               onTap: () {
                 Navigator.pop(ctx);
                 _onDeleteNotebook(nb);
@@ -247,7 +271,9 @@ class _FolderManagerPageState extends ConsumerState<FolderManagerPage> {
   Future<void> _onRenameFolder(Folder folder) async {
     final name = await showNewFolderSheet(context, initialName: folder.name);
     if (name != null && name.isNotEmpty) {
-      await ref.read(folderManagerProvider.notifier).renameFolder(folder.id, name);
+      await ref
+          .read(folderManagerProvider.notifier)
+          .renameFolder(folder.id, name);
     }
   }
 
@@ -266,8 +292,10 @@ class _FolderManagerPageState extends ConsumerState<FolderManagerPage> {
     final result = await showNewNotebookSheet(context);
     if (result != null) {
       await ref.read(folderManagerProvider.notifier).createNotebook(
-        folderId, result.name, result.color,
-      );
+            folderId,
+            result.name,
+            result.color,
+          );
     }
   }
 
@@ -279,8 +307,10 @@ class _FolderManagerPageState extends ConsumerState<FolderManagerPage> {
     );
     if (result != null) {
       await ref.read(folderManagerProvider.notifier).renameNotebook(
-        nb.id, result.name, result.color,
-      );
+            nb.id,
+            result.name,
+            result.color,
+          );
     }
   }
 
@@ -294,17 +324,21 @@ class _FolderManagerPageState extends ConsumerState<FolderManagerPage> {
         title: const Text('移动到'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
-          children: folders.map((f) => RadioListTile<int>(
-            title: Text(f.name),
-            value: f.id,
-            groupValue: nb.folderId,
-            onChanged: (value) => Navigator.pop(ctx, value),
-          )).toList(),
+          children: folders
+              .map((f) => RadioListTile<int>(
+                    title: Text(f.name),
+                    value: f.id,
+                    groupValue: nb.folderId,
+                    onChanged: (value) => Navigator.pop(ctx, value),
+                  ))
+              .toList(),
         ),
       ),
     );
     if (targetId != null && targetId != nb.folderId) {
-      await ref.read(folderManagerProvider.notifier).moveNotebook(nb.id, targetId);
+      await ref
+          .read(folderManagerProvider.notifier)
+          .moveNotebook(nb.id, targetId);
     }
   }
 

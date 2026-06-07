@@ -49,8 +49,10 @@ class _NewFolderContentState extends State<_NewFolderContent> {
     final isEditing = widget.initialName != null;
     return Padding(
       padding: EdgeInsets.fromLTRB(
-        AppDimens.spacingXl, AppDimens.spacingL,
-        AppDimens.spacingXl, MediaQuery.of(context).viewInsets.bottom + AppDimens.spacingL,
+        AppDimens.spacingXl,
+        AppDimens.spacingL,
+        AppDimens.spacingXl,
+        MediaQuery.of(context).viewInsets.bottom + AppDimens.spacingL,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -58,7 +60,8 @@ class _NewFolderContentState extends State<_NewFolderContent> {
         children: [
           Text(
             isEditing ? '重命名文件夹' : '新建文件夹',
-            style: const TextStyle(fontSize: AppDimens.textTitle, fontWeight: FontWeight.w600),
+            style: const TextStyle(
+                fontSize: AppDimens.textTitle, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: AppDimens.spacingL),
           TextField(
@@ -66,38 +69,49 @@ class _NewFolderContentState extends State<_NewFolderContent> {
             autofocus: true,
             decoration: InputDecoration(
               hintText: '文件夹名称',
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              border:
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             ),
             onChanged: (_) => setState(() {}),
           ),
           const SizedBox(height: AppDimens.spacingL),
           Row(children: [
-            Expanded(child: TextButton(
+            Expanded(
+                child: TextButton(
               onPressed: () => Navigator.pop(context),
               style: TextButton.styleFrom(
                 backgroundColor: const Color(0xFFF5F5F5),
                 padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
               ),
-              child: const Text('取消', style: TextStyle(
-                color: AppColors.textSecondary, fontSize: AppDimens.textBody,
-              )),
+              child: const Text('取消',
+                  style: TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: AppDimens.textBody,
+                  )),
             )),
             const SizedBox(width: AppDimens.spacingM),
-            Expanded(child: TextButton(
+            Expanded(
+                child: TextButton(
               onPressed: _controller.text.trim().isEmpty
                   ? null
                   : () => Navigator.pop(context, _controller.text.trim()),
               style: TextButton.styleFrom(
                 backgroundColor: AppColors.primary,
-                disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.3),
+                disabledBackgroundColor:
+                    AppColors.primary.withValues(alpha: 0.3),
                 padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
               ),
-              child: const Text('确认', style: TextStyle(
-                color: Colors.white, fontSize: AppDimens.textBody,
-              )),
+              child: const Text('确认',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: AppDimens.textBody,
+                  )),
             )),
           ]),
         ],

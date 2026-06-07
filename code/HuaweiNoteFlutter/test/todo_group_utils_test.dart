@@ -90,15 +90,9 @@ void main() {
     test('multiple sections ordered correctly', () {
       final todos = [
         Todo(
-            id: 1,
-            remindAt: todayStart - 1000,
-            createdAt: now,
-            updatedAt: now),
+            id: 1, remindAt: todayStart - 1000, createdAt: now, updatedAt: now),
         Todo(
-            id: 2,
-            remindAt: todayStart + 1000,
-            createdAt: now,
-            updatedAt: now),
+            id: 2, remindAt: todayStart + 1000, createdAt: now, updatedAt: now),
         Todo(id: 3, remindAt: 0, createdAt: now, updatedAt: now),
         Todo(id: 4, isCompleted: true, createdAt: now, updatedAt: now),
       ];

@@ -77,8 +77,7 @@ class TodoListHeader extends StatelessWidget {
               onTap: onOverflowTap,
               child: const Padding(
                 padding: EdgeInsets.all(8),
-                child:
-                    Icon(Icons.more_vert, color: AppColors.textSecondary),
+                child: Icon(Icons.more_vert, color: AppColors.textSecondary),
               ),
             ),
         ],

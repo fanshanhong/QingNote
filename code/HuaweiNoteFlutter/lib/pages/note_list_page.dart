@@ -61,7 +61,8 @@ class _NoteListPageState extends ConsumerState<NoteListPage> {
                 if (s.filterPanelVisible) ...[
                   GestureDetector(
                     onTap: notifier.toggleFilterPanel,
-                    child: Container(color: Colors.black.withValues(alpha: 0.3)),
+                    child:
+                        Container(color: Colors.black.withValues(alpha: 0.3)),
                   ),
                   ConstrainedBox(
                     constraints: BoxConstraints(
@@ -76,14 +77,15 @@ class _NoteListPageState extends ConsumerState<NoteListPage> {
           if (s.isBatchMode) _buildBatchBottomBar(s, notifier),
         ]),
       ),
-      floatingActionButton:
-          (s.isBatchMode || s.filterPanelVisible) ? null : FloatingActionButton(
-            onPressed: () async {
-              await context.push('/editor/0');
-              if (mounted) ref.read(noteListProvider.notifier).reload();
-            },
-            child: const Icon(Icons.add),
-          ),
+      floatingActionButton: (s.isBatchMode || s.filterPanelVisible)
+          ? null
+          : FloatingActionButton(
+              onPressed: () async {
+                await context.push('/editor/0');
+                if (mounted) ref.read(noteListProvider.notifier).reload();
+              },
+              child: const Icon(Icons.add),
+            ),
     );
   }
 
@@ -120,7 +122,8 @@ class _NoteListPageState extends ConsumerState<NoteListPage> {
       isGridView: s.isGridView,
       isBatchMode: s.isBatchMode,
       isSelected: s.selectedIds.contains(note.id),
-      notebookColor: note.notebookId != null ? s.notebookColorMap[note.notebookId] : null,
+      notebookColor:
+          note.notebookId != null ? s.notebookColorMap[note.notebookId] : null,
       onTap: () async {
         await context.push('/editor/${note.id}');
         if (mounted) ref.read(noteListProvider.notifier).reload();
@@ -131,12 +134,15 @@ class _NoteListPageState extends ConsumerState<NoteListPage> {
   }
 
   Widget _buildEmptyState() {
-    return const Center(child: Column(
+    return const Center(
+        child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(Icons.note_outlined, size: 64, color: AppColors.textHint),
         SizedBox(height: AppDimens.spacingS),
-        Text('暂无笔记', style: TextStyle(fontSize: AppDimens.textBody, color: AppColors.textHint)),
+        Text('暂无笔记',
+            style: TextStyle(
+                fontSize: AppDimens.textBody, color: AppColors.textHint)),
       ],
     ));
   }
@@ -152,22 +158,31 @@ class _NoteListPageState extends ConsumerState<NoteListPage> {
         children: [
           Expanded(
             child: GestureDetector(
-              onTap: s.selectedIds.isEmpty ? null : () async {
-                final confirmed = await showDeleteConfirmSheet(context,
-                  message: '确定要删除选中的 ${s.selectedIds.length} 条笔记吗？\n删除后可在"最近删除"中恢复',
-                  confirmLabel: '删除');
-                if (confirmed) await notifier.batchDelete();
-              },
+              onTap: s.selectedIds.isEmpty
+                  ? null
+                  : () async {
+                      final confirmed = await showDeleteConfirmSheet(context,
+                          message:
+                              '确定要删除选中的 ${s.selectedIds.length} 条笔记吗？\n删除后可在"最近删除"中恢复',
+                          confirmLabel: '删除');
+                      if (confirmed) await notifier.batchDelete();
+                    },
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.delete_outline, size: 24,
-                    color: s.selectedIds.isEmpty ? AppColors.textHint : AppColors.textSecondary),
+                  Icon(Icons.delete_outline,
+                      size: 24,
+                      color: s.selectedIds.isEmpty
+                          ? AppColors.textHint
+                          : AppColors.textSecondary),
                   const SizedBox(height: 2),
-                  Text('删除', style: TextStyle(
-                    fontSize: AppDimens.textCaption,
-                    color: s.selectedIds.isEmpty ? AppColors.textHint : AppColors.textSecondary,
-                  )),
+                  Text('删除',
+                      style: TextStyle(
+                        fontSize: AppDimens.textCaption,
+                        color: s.selectedIds.isEmpty
+                            ? AppColors.textHint
+                            : AppColors.textSecondary,
+                      )),
                 ],
               ),
             ),
@@ -178,12 +193,14 @@ class _NoteListPageState extends ConsumerState<NoteListPage> {
               child: const Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.select_all, size: 24, color: AppColors.textSecondary),
+                  Icon(Icons.select_all,
+                      size: 24, color: AppColors.textSecondary),
                   SizedBox(height: 2),
-                  Text('全选', style: TextStyle(
-                    fontSize: AppDimens.textCaption,
-                    color: AppColors.textSecondary,
-                  )),
+                  Text('全选',
+                      style: TextStyle(
+                        fontSize: AppDimens.textCaption,
+                        color: AppColors.textSecondary,
+                      )),
                 ],
               ),
             ),
@@ -193,13 +210,15 @@ class _NoteListPageState extends ConsumerState<NoteListPage> {
     );
   }
 
-  Future<void> _showOverflowMenu(BuildContext ctx, NoteListState s, NoteListNotifier notifier) async {
+  Future<void> _showOverflowMenu(
+      BuildContext ctx, NoteListState s, NoteListNotifier notifier) async {
     final value = await showMenu<String>(
       context: ctx,
-      position: RelativeRect.fromLTRB(MediaQuery.of(ctx).size.width - 48, 80, 8, 0),
+      position:
+          RelativeRect.fromLTRB(MediaQuery.of(ctx).size.width - 48, 80, 8, 0),
       items: [
-        PopupMenuItem(value: 'toggle_view',
-          child: Text(s.isGridView ? '列表视图' : '宫格视图')),
+        PopupMenuItem(
+            value: 'toggle_view', child: Text(s.isGridView ? '列表视图' : '宫格视图')),
         const PopupMenuItem(value: 'batch', child: Text('批量删除')),
         const PopupMenuItem(value: 'sort', child: Text('排序方式')),
         const PopupMenuItem(value: 'settings', child: Text('设置')),
@@ -210,41 +229,55 @@ class _NoteListPageState extends ConsumerState<NoteListPage> {
       case 'sort':
         final result = await showSortSheet(context, current: s.sortBy);
         if (result != null) await notifier.setSort(result);
-      case 'toggle_view': await notifier.toggleGridView();
-      case 'batch': notifier.enterBatchMode();
-      case 'settings': context.push('/settings');
+      case 'toggle_view':
+        await notifier.toggleGridView();
+      case 'batch':
+        notifier.enterBatchMode();
+      case 'settings':
+        context.push('/settings');
     }
   }
 
-  Future<void> _showCardMenu(BuildContext ctx, Note note, NoteListState s, NoteListNotifier notifier) async {
+  Future<void> _showCardMenu(BuildContext ctx, Note note, NoteListState s,
+      NoteListNotifier notifier) async {
     final isDeleted = s.filter is DeletedFilter;
     final value = await showMenu<String>(
       context: ctx,
-      position: RelativeRect.fromLTRB(MediaQuery.of(ctx).size.width / 2, 300, 50, 0),
+      position:
+          RelativeRect.fromLTRB(MediaQuery.of(ctx).size.width / 2, 300, 50, 0),
       items: isDeleted
-          ? [const PopupMenuItem(value: 'restore', child: Text('恢复')),
-             const PopupMenuItem(value: 'perm_delete',
-               child: Text('永久删除', style: TextStyle(color: Color(0xFFFF4444))))]
-          : [PopupMenuItem(value: 'fav', child: Text(note.isFavorite ? '取消收藏' : '收藏')),
-             const PopupMenuItem(value: 'delete', child: Text('删除')),
-             const PopupMenuItem(value: 'move', child: Text('移入笔记本'))],
+          ? [
+              const PopupMenuItem(value: 'restore', child: Text('恢复')),
+              const PopupMenuItem(
+                  value: 'perm_delete',
+                  child:
+                      Text('永久删除', style: TextStyle(color: Color(0xFFFF4444))))
+            ]
+          : [
+              PopupMenuItem(
+                  value: 'fav', child: Text(note.isFavorite ? '取消收藏' : '收藏')),
+              const PopupMenuItem(value: 'delete', child: Text('删除')),
+              const PopupMenuItem(value: 'move', child: Text('移入笔记本'))
+            ],
     );
     if (value == null || !mounted) return;
     switch (value) {
-      case 'fav': await notifier.toggleFavorite(note.id);
+      case 'fav':
+        await notifier.toggleFavorite(note.id);
       case 'delete':
         final ok = await showDeleteConfirmSheet(context,
-          message: '确定要删除这条笔记吗？\n删除后可在"最近删除"中恢复', confirmLabel: '删除');
+            message: '确定要删除这条笔记吗？\n删除后可在"最近删除"中恢复', confirmLabel: '删除');
         if (ok) await notifier.softDelete(note.id);
-      case 'restore': await notifier.restore(note.id);
+      case 'restore':
+        await notifier.restore(note.id);
       case 'perm_delete':
         final ok = await showDeleteConfirmSheet(context,
-          message: '确定要永久删除这条笔记吗？\n此操作不可恢复', confirmLabel: '永久删除');
+            message: '确定要永久删除这条笔记吗？\n此操作不可恢复', confirmLabel: '永久删除');
         if (ok) await notifier.deletePermanently(note.id);
       case 'move':
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('移入笔记本将在 Phase 2E 实现')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('移入笔记本将在 Phase 2E 实现')));
     }
   }
 }

@@ -1,5 +1,9 @@
 enum RepeatType {
-  none(0), daily(1), weekly(2), monthly(3), yearly(4);
+  none(0),
+  daily(1),
+  weekly(2),
+  monthly(3),
+  yearly(4);
 
   final int value;
   const RepeatType(this.value);
@@ -41,21 +45,30 @@ class Todo {
   }
 
   Todo copyWith({
-    int? id, String? title, String? memo, bool? isCompleted,
-    bool? isImportant, int? remindAt, RepeatType? repeatType,
-    int? folderId, bool setFolderIdNull = false,
-    int? deletedAt, int? createdAt, int? updatedAt,
-  }) => Todo(
-    id: id ?? this.id,
-    title: title ?? this.title,
-    memo: memo ?? this.memo,
-    isCompleted: isCompleted ?? this.isCompleted,
-    isImportant: isImportant ?? this.isImportant,
-    remindAt: remindAt ?? this.remindAt,
-    repeatType: repeatType ?? this.repeatType,
-    folderId: setFolderIdNull ? null : (folderId ?? this.folderId),
-    deletedAt: deletedAt ?? this.deletedAt,
-    createdAt: createdAt ?? this.createdAt,
-    updatedAt: updatedAt ?? this.updatedAt,
-  );
+    int? id,
+    String? title,
+    String? memo,
+    bool? isCompleted,
+    bool? isImportant,
+    int? remindAt,
+    RepeatType? repeatType,
+    int? folderId,
+    bool setFolderIdNull = false,
+    int? deletedAt,
+    int? createdAt,
+    int? updatedAt,
+  }) =>
+      Todo(
+        id: id ?? this.id,
+        title: title ?? this.title,
+        memo: memo ?? this.memo,
+        isCompleted: isCompleted ?? this.isCompleted,
+        isImportant: isImportant ?? this.isImportant,
+        remindAt: remindAt ?? this.remindAt,
+        repeatType: repeatType ?? this.repeatType,
+        folderId: setFolderIdNull ? null : (folderId ?? this.folderId),
+        deletedAt: deletedAt ?? this.deletedAt,
+        createdAt: createdAt ?? this.createdAt,
+        updatedAt: updatedAt ?? this.updatedAt,
+      );
 }

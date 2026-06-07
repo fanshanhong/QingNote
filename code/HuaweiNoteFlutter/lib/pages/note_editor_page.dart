@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/note_editor_provider.dart';
@@ -15,7 +14,6 @@ import '../widgets/editor/text_toolbar.dart';
 import '../editor/handwriting/handwriting_painter.dart';
 import 'package:path_provider/path_provider.dart';
 import '../editor/audio_block_component.dart';
-import '../editor/image_block_component.dart';
 import '../services/audio_player_service.dart';
 import '../editor/handwriting/handwriting_controller.dart';
 import '../models/stroke.dart';
@@ -23,8 +21,6 @@ import '../editor/handwriting/handwriting_overlay.dart';
 import '../widgets/editor/handwriting_toolbar.dart';
 import '../widgets/editor/handwriting_style_picker_sheet.dart';
 import '../widgets/editor/brush_width_picker.dart';
-import '../widgets/editor/notebook_picker_popup.dart';
-import '../providers/repository_providers.dart';
 
 class NoteEditorPage extends ConsumerStatefulWidget {
   final int noteId;
@@ -37,7 +33,6 @@ class NoteEditorPage extends ConsumerStatefulWidget {
 class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
   final _titleController = TextEditingController();
   final _titleFocusNode = FocusNode();
-  final _editorFocusNode = FocusNode();
   EditorScrollController? _scrollController;
   StreamSubscription? _transactionSub;
   bool _editorReady = false;
@@ -45,18 +40,10 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
   final _handwritingController = HandwritingOverlayController();
   String _appDocPath = '';
   bool _showStylePanel = false;
-  Map<String, dynamic> _savedToggledStyle = {};
-  EditorState? _editorStateRef;
-  VoidCallback? _onToggledStyleChanged;
-  VoidCallback? _onSelectionChanged;
 
   @override
   void initState() {
     super.initState();
-    // fontSize 运行时可正常用于 toggledStyle，但不在 supportToggled 列表中导致 debug 断言失败
-    if (!AppFlowyRichTextKeys.supportToggled.contains(AppFlowyRichTextKeys.fontSize)) {
-      AppFlowyRichTextKeys.supportToggled.add(AppFlowyRichTextKeys.fontSize);
-    }
     Future.microtask(() async {
       final notifier = ref.read(noteEditorProvider(widget.noteId).notifier);
       await notifier.loadNote();
@@ -65,7 +52,12 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
       final state = ref.read(noteEditorProvider(widget.noteId));
       _titleController.text = state.title;
       _setupEditor(notifier);
-      final loadedStrokes = ref.read(noteEditorProvider(widget.noteId)).loadedNote?.content.handwriting ?? [];
+      final loadedStrokes = ref
+              .read(noteEditorProvider(widget.noteId))
+              .loadedNote
+              ?.content
+              .handwriting ??
+          [];
       _handwritingController.setStrokes(loadedStrokes);
       if (widget.noteId == 0) {
         _titleFocusNode.requestFocus();
@@ -76,7 +68,6 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
   void _setupEditor(NoteEditorNotifier notifier) {
     final editorState = notifier.editorState;
     if (editorState == null) return;
-    _editorStateRef = editorState;
     _scrollController = EditorScrollController(editorState: editorState);
     _transactionSub = editorState.transactionStream.listen((_) {
       final doc = editorState.document;
@@ -89,68 +80,17 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
         editorState.undoManager.undoStack.isNonEmpty,
         editorState.undoManager.redoStack.isNonEmpty,
       );
-      _carryFormatOnNewLine(editorState);
     });
-
-    final supportedKeys = AppFlowyRichTextKeys.supportToggled.toSet();
-
-    _onToggledStyleChanged = () {
-      final style = editorState.toggledStyle;
-      if (style.isNotEmpty) {
-        _savedToggledStyle = Map.fromEntries(
-          style.entries.where((e) => supportedKeys.contains(e.key)),
-        );
-      }
-    };
-    editorState.toggledStyleNotifier.addListener(_onToggledStyleChanged!);
-
-    _onSelectionChanged = () {
-      if (_savedToggledStyle.isNotEmpty && editorState.toggledStyle.isEmpty) {
-        final styleCopy = Map<String, dynamic>.from(_savedToggledStyle);
-        Future.microtask(() {
-          if (!mounted) return;
-          for (final entry in styleCopy.entries) {
-            editorState.updateToggledStyle(entry.key, entry.value);
-          }
-        });
-      }
-    };
-    editorState.selectionNotifier.addListener(_onSelectionChanged!);
-
     if (mounted) setState(() => _editorReady = true);
-  }
-
-  void _carryFormatOnNewLine(EditorState es) {
-    if (_savedToggledStyle.isNotEmpty) return;
-
-    final selection = es.selection;
-    if (selection == null || !selection.isCollapsed) return;
-    if (selection.start.offset != 0) return;
-
-    final node = es.getNodeAtPath(selection.start.path);
-    if (node == null || node.delta == null) return;
-    if (node.delta!.isNotEmpty) return;
-
-    final supportedKeys = AppFlowyRichTextKeys.supportToggled.toSet();
-
-    final prev = node.previous;
-    if (prev != null && prev.delta != null && prev.delta!.isNotEmpty) {
-      final lastAttrs = prev.delta!.last.attributes;
-      if (lastAttrs != null && lastAttrs.isNotEmpty) {
-        for (final entry in lastAttrs.entries) {
-          if (supportedKeys.contains(entry.key) && entry.value != null) {
-            es.updateToggledStyle(entry.key, entry.value);
-          }
-        }
-      }
-    }
   }
 
   @override
   void deactivate() {
     final state = ref.read(noteEditorProvider(widget.noteId));
     if (state.isEditing && !state.isNoteEmpty) {
-      ref.read(noteEditorProvider(widget.noteId).notifier).saveNote(handwritingStrokes: _handwritingController.strokes);
+      ref
+          .read(noteEditorProvider(widget.noteId).notifier)
+          .saveNote(handwritingStrokes: _handwritingController.strokes);
     }
     super.deactivate();
   }
@@ -160,16 +100,7 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
     _audioPlayer.dispose();
     _handwritingController.dispose();
     _transactionSub?.cancel();
-    if (_editorStateRef != null) {
-      if (_onToggledStyleChanged != null) {
-        _editorStateRef!.toggledStyleNotifier.removeListener(_onToggledStyleChanged!);
-      }
-      if (_onSelectionChanged != null) {
-        _editorStateRef!.selectionNotifier.removeListener(_onSelectionChanged!);
-      }
-    }
     _scrollController?.dispose();
-    _editorFocusNode.dispose();
     _titleFocusNode.dispose();
     _titleController.dispose();
     super.dispose();
@@ -178,37 +109,23 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
   Future<void> _onBack() async {
     final state = ref.read(noteEditorProvider(widget.noteId));
     if (state.isEditing && !state.isNoteEmpty) {
-      await ref.read(noteEditorProvider(widget.noteId).notifier).saveNote(handwritingStrokes: _handwritingController.strokes);
+      await ref
+          .read(noteEditorProvider(widget.noteId).notifier)
+          .saveNote(handwritingStrokes: _handwritingController.strokes);
     }
     if (mounted) context.pop();
   }
 
-  /// 强制重建文本输入连接并弹出键盘。
-  /// 核心原理：NonDeltaTextInputService.attach() 在 currentTextEditingValue == formattedValue
-  /// 时会跳过 .show()，导致键盘无法弹出。通过先置空 selection（触发 close() 重置
-  /// currentTextEditingValue），再恢复 selection（触发 attach() 建立新连接 + .show()），
-  /// 保证键盘一定弹出。
-  void _forceShowKeyboard() {
+  void _moveCursorToEnd() {
     final es = ref.read(noteEditorProvider(widget.noteId).notifier).editorState;
     if (es == null) return;
-    final currentSel = es.selection;
-    es.selection = null;
-    final target = currentSel ?? _findEndOfDocSelection(es);
-    if (target != null) {
-      es.updateSelectionWithReason(target, reason: SelectionUpdateReason.uiEvent);
-    }
-    _editorFocusNode.requestFocus();
-  }
-
-  Selection? _findEndOfDocSelection(EditorState es) {
-    for (final node in es.document.root.children.reversed) {
-      if (node.delta != null) {
-        return Selection.collapsed(
-          Position(path: node.path, offset: node.delta!.toPlainText().length),
-        );
-      }
-    }
-    return null;
+    final lastNode = es.document.root.children.lastOrNull;
+    if (lastNode == null) return;
+    final offset = lastNode.delta?.toPlainText().length ?? 0;
+    es.updateSelectionWithReason(
+      Selection.collapsed(Position(path: lastNode.path, offset: offset)),
+      reason: SelectionUpdateReason.uiEvent,
+    );
   }
 
   @override
@@ -248,11 +165,11 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
                 onDone: () async {
                   if (state.isHandwritingMode) {
                     notifier.exitHandwritingMode();
+                  } else {
+                    await notifier.saveNote(
+                        handwritingStrokes: _handwritingController.strokes);
+                    notifier.exitEditMode();
                   }
-                  await notifier.saveNote(handwritingStrokes: _handwritingController.strokes);
-                  notifier.exitEditMode();
-                  _titleFocusNode.unfocus();
-                  _editorFocusNode.unfocus();
                 },
               ),
               Padding(
@@ -264,8 +181,6 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
                   focusNode: _titleFocusNode,
                   enabled: state.isEditing,
                   onChanged: notifier.updateTitle,
-                  textInputAction: TextInputAction.next,
-                  onSubmitted: (_) => _forceShowKeyboard(),
                   style: const TextStyle(
                     fontSize: AppDimens.editorTitleSize,
                     fontWeight: FontWeight.w600,
@@ -279,7 +194,8 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
                       color: AppColors.textHint,
                     ),
                     border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(vertical: AppDimens.spacingS),
+                    contentPadding:
+                        EdgeInsets.symmetric(vertical: AppDimens.spacingS),
                   ),
                 ),
               ),
@@ -306,37 +222,28 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
                     else
                       _buildEditor(notifier, state),
                     if (_editorReady && state.isHandwritingMode)
-                      ClipRect(
-                        child: HandwritingOverlay(
-                          controller: _handwritingController,
-                          isActive: state.isHandwritingMode,
-                          currentBrush: state.currentBrush,
-                          currentColor: state.currentBrushColor,
-                          currentWidth: state.currentBrushWidth,
-                          isErasing: state.isErasing,
-                          scrollOffset: _scrollController?.offsetNotifier.value ?? 0,
-                        ),
+                      HandwritingOverlay(
+                        controller: _handwritingController,
+                        isActive: state.isHandwritingMode,
+                        currentBrush: state.currentBrush,
+                        currentColor: state.currentBrushColor,
+                        currentWidth: state.currentBrushWidth,
+                        isErasing: state.isErasing,
                       ),
-                    if (!state.isHandwritingMode && _handwritingController.strokes.isNotEmpty && _scrollController != null)
-                      ClipRect(
-                        child: ValueListenableBuilder<double>(
-                          valueListenable: _scrollController!.offsetNotifier,
-                          builder: (context, scrollOffset, _) {
-                            return IgnorePointer(
-                              child: CustomPaint(
-                                painter: HandwritingPainter(
-                                  strokes: _handwritingController.strokes,
-                                  inProgressPoints: const [],
-                                  currentBrush: BrushType.pen,
-                                  currentColor: '#000000',
-                                  currentWidth: 3,
-                                  devicePixelRatio: MediaQuery.of(context).devicePixelRatio,
-                                  scrollOffset: scrollOffset,
-                                ),
-                                size: Size.infinite,
-                              ),
-                            );
-                          },
+                    if (!state.isHandwritingMode &&
+                        _handwritingController.strokes.isNotEmpty)
+                      IgnorePointer(
+                        child: CustomPaint(
+                          painter: HandwritingPainter(
+                            strokes: _handwritingController.strokes,
+                            inProgressPoints: const [],
+                            currentBrush: BrushType.pen,
+                            currentColor: '#000000',
+                            currentWidth: 3,
+                            devicePixelRatio:
+                                MediaQuery.of(context).devicePixelRatio,
+                          ),
+                          size: Size.infinite,
                         ),
                       ),
                     if (!state.isEditing)
@@ -344,7 +251,8 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
                         child: GestureDetector(
                           onTap: () {
                             notifier.enterEditMode();
-                            WidgetsBinding.instance.addPostFrameCallback((_) => _forceShowKeyboard());
+                            WidgetsBinding.instance.addPostFrameCallback(
+                                (_) => _moveCursorToEnd());
                           },
                         ),
                       ),
@@ -367,13 +275,8 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
     return AppFlowyEditor(
       editorState: editorState,
       editable: true,
-      focusNode: _editorFocusNode,
       editorScrollController: _scrollController,
       blockComponentBuilders: _buildBlockComponentBuilders(),
-      commandShortcutEvents: [
-        _backspaceDeleteMediaCommand(editorState),
-        ...standardCommandShortcutEvents,
-      ],
       editorStyle: EditorStyle.mobile(
         padding: const EdgeInsets.symmetric(
           horizontal: AppDimens.editorContentPadding,
@@ -385,93 +288,65 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
     );
   }
 
-  CommandShortcutEvent _backspaceDeleteMediaCommand(EditorState es) {
-    return CommandShortcutEvent(
-      key: 'backspace delete media',
-      getDescription: () => 'Delete media block on backspace at line start',
-      command: 'backspace',
-      handler: (editorState) {
-        final selection = editorState.selection;
-        if (selection == null || !selection.isCollapsed) {
-          return KeyEventResult.ignored;
-        }
-        if (selection.start.offset != 0) return KeyEventResult.ignored;
-
-        final node = editorState.getNodeAtPath(selection.start.path);
-        if (node == null || node.delta == null) return KeyEventResult.ignored;
-
-        final prev = node.previous;
-        if (prev == null) return KeyEventResult.ignored;
-
-        if (prev.type == ImageBlockKeys.type ||
-            prev.type == AudioBlockKeys.type) {
-          final transaction = editorState.transaction;
-          transaction.deleteNode(prev);
-          transaction.afterSelection = selection;
-          editorState.apply(transaction);
-          return KeyEventResult.handled;
-        }
-        return KeyEventResult.ignored;
-      },
-    );
-  }
-
   Map<String, BlockComponentBuilder> _buildBlockComponentBuilders() {
     final state = ref.read(noteEditorProvider(widget.noteId));
     final notifier = ref.read(noteEditorProvider(widget.noteId).notifier);
-    void deleteNode(Node node) {
-      final es = notifier.editorState;
-      if (es == null) return;
-      final prev = node.previous;
-      final next = node.next;
-      final deletedPath = node.path;
-      final transaction = es.transaction;
-      transaction.deleteNode(node);
-      if (next != null && next.delta != null) {
-        transaction.afterSelection = Selection.collapsed(
-          Position(path: deletedPath, offset: 0),
-        );
-      } else if (prev != null && prev.delta != null) {
-        transaction.afterSelection = Selection.collapsed(
-          Position(path: prev.path, offset: prev.delta!.toPlainText().length),
-        );
-      }
-      es.apply(transaction);
-    }
     return {
       ...standardBlockComponentBuilderMap,
       TodoListBlockKeys.type: TodoListBlockComponentBuilder(
         configuration: const BlockComponentConfiguration(),
         textStyleBuilder: (checked) => TextStyle(
           decoration: checked ? TextDecoration.lineThrough : null,
-          color: checked ? AppColors.textHint : null,
+          color: checked ? AppColors.textHint : AppColors.textPrimary,
         ),
-      ),
-      ImageBlockKeys.type: CustomImageBlockComponentBuilder(
-        editable: state.isEditing,
-        onDelete: deleteNode,
       ),
       AudioBlockKeys.type: AudioBlockComponentBuilder(
         noteId: state.noteId,
         audioPlayer: _audioPlayer,
         editable: state.isEditing,
         basePath: _appDocPath,
-        onDelete: deleteNode,
+        onDelete: (node) {
+          final es = notifier.editorState;
+          if (es == null) return;
+          final transaction = es.transaction;
+          transaction.deleteNode(node);
+          es.apply(transaction);
+        },
       ),
     };
   }
 
   Future<void> _showNotebookPicker(NoteEditorNotifier notifier) async {
-    final folderRepo = ref.read(folderRepositoryProvider);
-    final notebookRepo = ref.read(notebookRepositoryProvider);
-    final state = ref.read(noteEditorProvider(widget.noteId));
-    final selected = await showNotebookPickerPopup(
-      context,
-      folderRepo: folderRepo,
-      notebookRepo: notebookRepo,
-      currentNotebookId: state.pendingNotebookId,
+    final notebooks = await notifier.loadNotebooks();
+    if (!mounted) return;
+    final selected = await showMenu<int?>(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        MediaQuery.of(context).size.width - 200,
+        200,
+        16,
+        0,
+      ),
+      items: [
+        const PopupMenuItem<int?>(value: null, child: Text('全部笔记')),
+        ...notebooks.map((nb) => PopupMenuItem<int?>(
+              value: nb.id,
+              child: Row(children: [
+                Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color:
+                          AppColorUtils.parseHex(nb.color) ?? AppColors.primary,
+                      shape: BoxShape.circle,
+                    )),
+                const SizedBox(width: 8),
+                Text(nb.name),
+              ]),
+            )),
+      ],
     );
-    if (selected != null) {
+    if (selected != null || notebooks.isNotEmpty) {
       await notifier.setNotebook(selected);
     }
   }
@@ -490,10 +365,11 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
           children: [
             const Padding(
               padding: EdgeInsets.all(AppDimens.spacingL),
-              child: Text('选择分类', style: TextStyle(
-                fontSize: AppDimens.textTitle,
-                fontWeight: FontWeight.w600,
-              )),
+              child: Text('选择分类',
+                  style: TextStyle(
+                    fontSize: AppDimens.textTitle,
+                    fontWeight: FontWeight.w600,
+                  )),
             ),
             ListTile(
               leading: const Icon(Icons.clear, size: 20),
@@ -504,20 +380,21 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
               },
             ),
             ...categories.map((c) => ListTile(
-              leading: Container(
-                width: 12,
-                height: 12,
-                decoration: BoxDecoration(
-                  color: AppColorUtils.parseHex(c.color) ?? AppColors.primary,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              title: Text(c.name),
-              onTap: () {
-                notifier.setCategoryId(c.id);
-                Navigator.pop(ctx);
-              },
-            )),
+                  leading: Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color:
+                          AppColorUtils.parseHex(c.color) ?? AppColors.primary,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  title: Text(c.name),
+                  onTap: () {
+                    notifier.setCategoryId(c.id);
+                    Navigator.pop(ctx);
+                  },
+                )),
             const SizedBox(height: AppDimens.spacingL),
           ],
         ),
@@ -544,36 +421,16 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
         return StylePickerPanel(
           editorState: es,
           onBackgroundChanged: notifier.setBackground,
-          onClose: _closeStylePanel,
+          onClose: () => setState(() => _showStylePanel = false),
         );
       }
     }
     if (state.isEditing) {
       return TextToolbar(
         editorState: notifier.editorState,
-        onStyleTap: () {
-          final es = notifier.editorState;
-          if (es != null && es.selection == null) {
-            final lastNode = es.document.root.children.lastOrNull;
-            if (lastNode != null) {
-              final offset = lastNode.delta?.toPlainText().length ?? 0;
-              es.updateSelectionWithReason(
-                Selection.collapsed(Position(path: lastNode.path, offset: offset)),
-                reason: SelectionUpdateReason.uiEvent,
-              );
-            }
-          }
-          keepEditorFocusNotifier.increase();
-          SystemChannels.textInput.invokeMethod('TextInput.hide');
-          setState(() => _showStylePanel = true);
-        },
+        onStyleTap: () => setState(() => _showStylePanel = true),
         onImageTap: () => _showImageSourcePicker(notifier),
-        onRecordTap: () async {
-          await notifier.startRecording(context);
-          if (mounted) {
-            WidgetsBinding.instance.addPostFrameCallback((_) => _forceShowKeyboard());
-          }
-        },
+        onRecordTap: () => notifier.startRecording(context),
         onHandwritingTap: () => notifier.enterHandwritingMode(),
       );
     }
@@ -592,28 +449,7 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
     );
   }
 
-  void _closeStylePanel() {
-    setState(() => _showStylePanel = false);
-    // TextInput.hide 隐藏了键盘但连接仍然存活（keepEditorFocusNotifier 保护），
-    // 直接调用 TextInput.show 重新显示即可，不需要 close+attach 重建。
-    // 必须在 decrease() 之前发送，确保连接仍受保护。
-    SystemChannels.textInput.invokeMethod('TextInput.show');
-    keepEditorFocusNotifier.decrease();
-    _editorFocusNode.requestFocus();
-    _reapplySavedStyles();
-  }
-
-  void _reapplySavedStyles() {
-    if (_savedToggledStyle.isEmpty) return;
-    final es = _editorStateRef;
-    if (es == null) return;
-    for (final entry in _savedToggledStyle.entries) {
-      es.updateToggledStyle(entry.key, entry.value);
-    }
-  }
-
   Future<void> _showImageSourcePicker(NoteEditorNotifier notifier) async {
-    final savedSelection = notifier.editorState?.selection;
     final source = await showModalBottomSheet<String>(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -638,26 +474,25 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
         ),
       ),
     );
-    if (source == null) {
-      _forceShowKeyboard();
-      return;
-    }
-    await notifier.insertImage(useCamera: source == 'camera', insertAt: savedSelection);
-    if (mounted) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _forceShowKeyboard());
-    }
+    if (source == null) return;
+    await notifier.insertImage(useCamera: source == 'camera');
   }
 
   Color _bgColorForKey(String key) {
     switch (key) {
-      case 'linen': return AppColors.bgLinen;
-      case 'kraft': return AppColors.bgKraft;
-      case 'grid': return AppColors.bgGrid;
-      default: return Colors.white;
+      case 'linen':
+        return AppColors.bgLinen;
+      case 'kraft':
+        return AppColors.bgKraft;
+      case 'grid':
+        return AppColors.bgGrid;
+      default:
+        return Colors.white;
     }
   }
 
-  void _showHandwritingStylePicker(NoteEditorNotifier notifier, NoteEditorState state) {
+  void _showHandwritingStylePicker(
+      NoteEditorNotifier notifier, NoteEditorState state) {
     showHandwritingStylePickerSheet(
       context,
       currentBrush: state.currentBrush,
@@ -669,7 +504,8 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
     );
   }
 
-  void _showBrushWidthPicker(NoteEditorNotifier notifier, NoteEditorState state) {
+  void _showBrushWidthPicker(
+      NoteEditorNotifier notifier, NoteEditorState state) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(

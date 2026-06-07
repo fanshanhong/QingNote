@@ -33,7 +33,8 @@ class BrowseBottomBar extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.share_outlined, size: 22),
             color: AppColors.editorIconActive,
-            onPressed: () => SharePlus.instance.share(ShareParams(text: shareText)),
+            onPressed: () =>
+                SharePlus.instance.share(ShareParams(text: shareText)),
           ),
           IconButton(
             icon: Icon(
@@ -51,11 +52,12 @@ class BrowseBottomBar extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.more_horiz, size: 22),
             color: AppColors.editorIconActive,
-            onPressed: onMore ?? () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('更多功能将在后续版本实现')),
-              );
-            },
+            onPressed: onMore ??
+                () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('更多功能将在后续版本实现')),
+                  );
+                },
           ),
         ],
       ),

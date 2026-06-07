@@ -1,5 +1,8 @@
 enum BrushType {
-  pen, brush, marker, pencil;
+  pen,
+  brush,
+  marker,
+  pencil;
 
   static BrushType? fromName(String name) {
     for (final v in values) {
@@ -31,11 +34,11 @@ class Stroke {
   });
 
   Map<String, dynamic> toJson() => {
-    'brush': brush.name,
-    'color': color,
-    'width': width,
-    'points': points.map((p) => [p.x, p.y, p.t]).toList(),
-  };
+        'brush': brush.name,
+        'color': color,
+        'width': width,
+        'points': points.map((p) => [p.x, p.y, p.t]).toList(),
+      };
 
   static Stroke? fromJson(Map<String, dynamic> json) {
     final brush = BrushType.fromName(json['brush'] as String? ?? '');

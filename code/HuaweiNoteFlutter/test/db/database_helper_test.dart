@@ -25,7 +25,10 @@ void main() {
         "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE 'android_%' ORDER BY name",
       );
       final names = tables.map((r) => r['name'] as String).toList();
-      expect(names, containsAll(['notes', 'folders', 'notebooks', 'categories', 'todos']));
+      expect(
+          names,
+          containsAll(
+              ['notes', 'folders', 'notebooks', 'categories', 'todos']));
     });
 
     test('seeds default folder and notebook', () async {

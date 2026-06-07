@@ -32,7 +32,11 @@ void main() {
     test('save updates existing note', () async {
       final note = Note.newNote();
       final id = await repo.save(note.copyWith(title: 'V1'));
-      await repo.save(Note(id: id, title: 'V2', createdAt: note.createdAt, updatedAt: note.updatedAt));
+      await repo.save(Note(
+          id: id,
+          title: 'V2',
+          createdAt: note.createdAt,
+          updatedAt: note.updatedAt));
       final loaded = await repo.get(id);
       expect(loaded, isNotNull);
       expect(loaded!.title, 'V2');
@@ -83,7 +87,14 @@ void main() {
             'document': {
               'type': 'page',
               'children': [
-                {'type': 'paragraph', 'data': {'delta': [{'insert': 'Buy apples'}]}},
+                {
+                  'type': 'paragraph',
+                  'data': {
+                    'delta': [
+                      {'insert': 'Buy apples'}
+                    ]
+                  }
+                },
               ],
             },
           },
@@ -112,8 +123,10 @@ void main() {
       final id = await repo.save(Note.newNote().copyWith(title: 'Old'));
       await repo.softDelete(id);
       final db = await dbHelper.database;
-      final longAgo = DateTime.now().millisecondsSinceEpoch - 31 * 24 * 60 * 60 * 1000;
-      await db.update('notes', {'deleted_at': longAgo}, where: 'id = ?', whereArgs: [id]);
+      final longAgo =
+          DateTime.now().millisecondsSinceEpoch - 31 * 24 * 60 * 60 * 1000;
+      await db.update('notes', {'deleted_at': longAgo},
+          where: 'id = ?', whereArgs: [id]);
       final purged = await repo.purgeExpired();
       expect(purged, 1);
       expect(await repo.get(id), isNull);

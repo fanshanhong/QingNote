@@ -5,7 +5,10 @@ class StrokeEraser {
 
   /// 返回被橡皮命中的 strokes
   static List<Stroke> hitTest(
-    double ex, double ey, double radiusPx, List<Stroke> strokes,
+    double ex,
+    double ey,
+    double radiusPx,
+    List<Stroke> strokes,
   ) {
     if (strokes.isEmpty) return const [];
     final out = <Stroke>[];
@@ -34,7 +37,8 @@ class StrokeEraser {
     return dx * dx + dy * dy <= r * r;
   }
 
-  static bool _anySegmentWithin(Stroke s, double ex, double ey, double threshold) {
+  static bool _anySegmentWithin(
+      Stroke s, double ex, double ey, double threshold) {
     final pts = s.points;
     if (pts.length == 1) {
       final p = pts[0];
@@ -45,14 +49,17 @@ class StrokeEraser {
     for (int i = 0; i < pts.length - 1; i++) {
       final a = pts[i];
       final b = pts[i + 1];
-      if (_pointToSegmentDistSq(ex, ey, a.x.toDouble(), a.y.toDouble(), b.x.toDouble(), b.y.toDouble()) <= threshold * threshold) {
+      if (_pointToSegmentDistSq(ex, ey, a.x.toDouble(), a.y.toDouble(),
+              b.x.toDouble(), b.y.toDouble()) <=
+          threshold * threshold) {
         return true;
       }
     }
     return false;
   }
 
-  static double _pointToSegmentDistSq(double px, double py, double ax, double ay, double bx, double by) {
+  static double _pointToSegmentDistSq(
+      double px, double py, double ax, double ay, double bx, double by) {
     final abx = bx - ax;
     final aby = by - ay;
     final apx = px - ax;

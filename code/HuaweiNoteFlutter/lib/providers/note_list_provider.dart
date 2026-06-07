@@ -87,7 +87,8 @@ class NoteListNotifier extends StateNotifier<NoteListState> {
         : NoteSortBy.updatedDesc;
     final isGridView = prefs.getBool('note_grid_view') ?? false;
     final filter = await _loadFilter(prefs);
-    state = state.copyWith(sortBy: sortBy, isGridView: isGridView, filter: filter);
+    state =
+        state.copyWith(sortBy: sortBy, isGridView: isGridView, filter: filter);
     await reload();
   }
 

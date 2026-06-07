@@ -1,5 +1,10 @@
 enum Heading {
-  h1, h2, h3, h4, h5, h6;
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6;
 
   static Heading? fromName(String name) {
     for (final v in values) {
@@ -12,7 +17,9 @@ enum Heading {
 }
 
 enum NoteAlignment {
-  start, center, end;
+  start,
+  center,
+  end;
 
   static NoteAlignment? fromName(String name) {
     for (final v in values) {
@@ -22,14 +29,17 @@ enum NoteAlignment {
   }
 
   String get appFlowyValue => switch (this) {
-    NoteAlignment.start => 'left',
-    NoteAlignment.center => 'center',
-    NoteAlignment.end => 'right',
-  };
+        NoteAlignment.start => 'left',
+        NoteAlignment.center => 'center',
+        NoteAlignment.end => 'right',
+      };
 }
 
 enum ListType {
-  bullet, hollowBullet, numbered, lettered;
+  bullet,
+  hollowBullet,
+  numbered,
+  lettered;
 
   static ListType? fromName(String name) {
     for (final v in values) {

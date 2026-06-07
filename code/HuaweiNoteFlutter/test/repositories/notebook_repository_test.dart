@@ -63,7 +63,10 @@ void main() {
     test('move changes folder_id', () async {
       final db = await dbHelper.database;
       await db.insert('folders', {
-        'name': 'Folder2', 'order_index': 1, 'is_default': 0, 'deleted_at': 0,
+        'name': 'Folder2',
+        'order_index': 1,
+        'is_default': 0,
+        'deleted_at': 0,
       });
       final nbId = await repo.insert(1, 'Movable', '#000');
       await repo.move(nbId, 2);

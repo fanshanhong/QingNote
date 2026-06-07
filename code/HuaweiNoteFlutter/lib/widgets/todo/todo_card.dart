@@ -103,8 +103,8 @@ class TodoCard extends StatelessWidget {
         text: TextSpan(children: [
           const TextSpan(
               text: '❗',
-              style:
-                  TextStyle(color: AppColors.danger, fontSize: AppDimens.textBody)),
+              style: TextStyle(
+                  color: AppColors.danger, fontSize: AppDimens.textBody)),
           TextSpan(
             text: title,
             style: const TextStyle(
@@ -128,8 +128,7 @@ class TodoCard extends StatelessWidget {
     if (todo.remindAt > 0) {
       final dt = DateTime.fromMillisecondsSinceEpoch(todo.remindAt);
       final amPm = dt.hour < 12 ? '上午' : '下午';
-      final hour =
-          dt.hour == 0 ? 12 : (dt.hour > 12 ? dt.hour - 12 : dt.hour);
+      final hour = dt.hour == 0 ? 12 : (dt.hour > 12 ? dt.hour - 12 : dt.hour);
       final minute = dt.minute.toString().padLeft(2, '0');
       parts.add('$amPm$hour:$minute');
     }

@@ -42,7 +42,12 @@ void main() {
     });
 
     test('fromJson with unknown brush returns null', () {
-      final json = {'brush': 'crayon', 'color': '#000', 'width': 1, 'points': []};
+      final json = {
+        'brush': 'crayon',
+        'color': '#000',
+        'width': 1,
+        'points': []
+      };
       expect(Stroke.fromJson(json), isNull);
     });
 

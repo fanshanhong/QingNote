@@ -150,9 +150,8 @@ class FolderManagerNotifier extends StateNotifier<FolderManagerState> {
       final segment = rows.sublist(segStart, segEnd);
       final newRows = List<FolderManagerRow>.from(rows);
       newRows.removeRange(segStart, segEnd);
-      var insertAt = newIndex > oldIndex
-          ? newIndex - segment.length + 1
-          : newIndex;
+      var insertAt =
+          newIndex > oldIndex ? newIndex - segment.length + 1 : newIndex;
       if (insertAt < 0) {
         insertAt = 0;
       }
@@ -185,8 +184,7 @@ class FolderManagerNotifier extends StateNotifier<FolderManagerState> {
         }
       }
       if (!notebookIndices.contains(oldIndex)) return;
-      if (newIndex < notebookIndices.first ||
-          newIndex > notebookIndices.last) {
+      if (newIndex < notebookIndices.first || newIndex > notebookIndices.last) {
         return;
       }
       final newRows = List<FolderManagerRow>.from(rows);

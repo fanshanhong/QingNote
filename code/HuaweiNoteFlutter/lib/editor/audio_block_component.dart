@@ -82,8 +82,7 @@ class AudioBlockComponentWidget extends BlockComponentStatefulWidget {
       _AudioBlockComponentWidgetState();
 }
 
-class _AudioBlockComponentWidgetState
-    extends State<AudioBlockComponentWidget> {
+class _AudioBlockComponentWidgetState extends State<AudioBlockComponentWidget> {
   bool _isPlaying = false;
 
   String get _fileName =>

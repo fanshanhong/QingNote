@@ -21,14 +21,16 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/editor/:noteId',
         builder: (context, state) {
-          final noteId = int.tryParse(state.pathParameters['noteId'] ?? '0') ?? 0;
+          final noteId =
+              int.tryParse(state.pathParameters['noteId'] ?? '0') ?? 0;
           return NoteEditorPage(noteId: noteId);
         },
       ),
       GoRoute(
         path: '/todo/:todoId',
         builder: (context, state) {
-          final todoId = int.tryParse(state.pathParameters['todoId'] ?? '0') ?? 0;
+          final todoId =
+              int.tryParse(state.pathParameters['todoId'] ?? '0') ?? 0;
           return TodoDetailPage(todoId: todoId);
         },
       ),
@@ -48,8 +50,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                   ref.watch(noteListProvider.select((s) => s.isBatchMode));
               final todoBatch =
                   ref.watch(todoListProvider.select((s) => s.isBatchMode));
-              final todoQuickAdd =
-                  ref.watch(todoListProvider.select((s) => s.isQuickAddVisible));
+              final todoQuickAdd = ref
+                  .watch(todoListProvider.select((s) => s.isQuickAddVisible));
               return AppShell(
                 currentIndex: navigationShell.currentIndex,
                 onTabChanged: (index) {

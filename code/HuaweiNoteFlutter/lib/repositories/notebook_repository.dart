@@ -30,19 +30,25 @@ class NotebookRepository {
     final db = await _dbHelper.database;
     final nextIndex = await _nextOrderIndex(db, folderId);
     return db.insert('notebooks', {
-      'folder_id': folderId, 'name': name, 'color': color,
-      'order_index': nextIndex, 'is_default': 0, 'deleted_at': 0,
+      'folder_id': folderId,
+      'name': name,
+      'color': color,
+      'order_index': nextIndex,
+      'is_default': 0,
+      'deleted_at': 0,
     });
   }
 
   Future<void> rename(int id, String name) async {
     final db = await _dbHelper.database;
-    await db.update('notebooks', {'name': name}, where: 'id = ?', whereArgs: [id]);
+    await db.update('notebooks', {'name': name},
+        where: 'id = ?', whereArgs: [id]);
   }
 
   Future<void> updateColor(int id, String color) async {
     final db = await _dbHelper.database;
-    await db.update('notebooks', {'color': color}, where: 'id = ?', whereArgs: [id]);
+    await db.update('notebooks', {'color': color},
+        where: 'id = ?', whereArgs: [id]);
   }
 
   Future<void> softDelete(int id) async {
@@ -54,7 +60,8 @@ class NotebookRepository {
         'UPDATE notes SET deleted_at = ? WHERE deleted_at = 0 AND notebook_id = ?',
         [now, id],
       );
-      await txn.update('notebooks', {'deleted_at': now}, where: 'id = ?', whereArgs: [id]);
+      await txn.update('notebooks', {'deleted_at': now},
+          where: 'id = ?', whereArgs: [id]);
     });
   }
 
@@ -62,9 +69,14 @@ class NotebookRepository {
     if (id == 1) return;
     final db = await _dbHelper.database;
     final nextIndex = await _nextOrderIndex(db, targetFolderId);
-    await db.update('notebooks', {
-      'folder_id': targetFolderId, 'order_index': nextIndex,
-    }, where: 'id = ?', whereArgs: [id]);
+    await db.update(
+        'notebooks',
+        {
+          'folder_id': targetFolderId,
+          'order_index': nextIndex,
+        },
+        where: 'id = ?',
+        whereArgs: [id]);
   }
 
   Future<void> reorderInFolder(int folderId, List<int> orderedIds) async {
@@ -74,7 +86,7 @@ class NotebookRepository {
         final id = orderedIds[i];
         if (id == 1 && folderId == 1) continue;
         await txn.update('notebooks', {'order_index': i},
-          where: 'id = ? AND folder_id = ?', whereArgs: [id, folderId]);
+            where: 'id = ? AND folder_id = ?', whereArgs: [id, folderId]);
       }
     });
   }
@@ -88,12 +100,12 @@ class NotebookRepository {
   }
 
   Notebook _rowToNotebook(Map<String, Object?> row) => Notebook(
-    id: row['id'] as int,
-    folderId: row['folder_id'] as int,
-    name: row['name'] as String,
-    color: row['color'] as String,
-    orderIndex: row['order_index'] as int,
-    isDefault: (row['is_default'] as int) == 1,
-    deletedAt: row['deleted_at'] as int? ?? 0,
-  );
+        id: row['id'] as int,
+        folderId: row['folder_id'] as int,
+        name: row['name'] as String,
+        color: row['color'] as String,
+        orderIndex: row['order_index'] as int,
+        isDefault: (row['is_default'] as int) == 1,
+        deletedAt: row['deleted_at'] as int? ?? 0,
+      );
 }
