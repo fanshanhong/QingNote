@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/note_editor_provider.dart';
@@ -96,9 +95,13 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
 
     _onSelectionChanged = () {
       if (_savedToggledStyle.isNotEmpty && editorState.toggledStyle.isEmpty) {
-        for (final entry in _savedToggledStyle.entries) {
-          editorState.updateToggledStyle(entry.key, entry.value);
-        }
+        final styleCopy = Map<String, dynamic>.from(_savedToggledStyle);
+        Future.microtask(() {
+          if (!mounted) return;
+          for (final entry in styleCopy.entries) {
+            editorState.updateToggledStyle(entry.key, entry.value);
+          }
+        });
       }
     };
     editorState.selectionNotifier.addListener(_onSelectionChanged!);
@@ -285,34 +288,38 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
                     else
                       _buildEditor(notifier, state),
                     if (_editorReady && state.isHandwritingMode)
-                      HandwritingOverlay(
-                        controller: _handwritingController,
-                        isActive: state.isHandwritingMode,
-                        currentBrush: state.currentBrush,
-                        currentColor: state.currentBrushColor,
-                        currentWidth: state.currentBrushWidth,
-                        isErasing: state.isErasing,
-                        scrollOffset: _scrollController?.offsetNotifier.value ?? 0,
+                      ClipRect(
+                        child: HandwritingOverlay(
+                          controller: _handwritingController,
+                          isActive: state.isHandwritingMode,
+                          currentBrush: state.currentBrush,
+                          currentColor: state.currentBrushColor,
+                          currentWidth: state.currentBrushWidth,
+                          isErasing: state.isErasing,
+                          scrollOffset: _scrollController?.offsetNotifier.value ?? 0,
+                        ),
                       ),
                     if (!state.isHandwritingMode && _handwritingController.strokes.isNotEmpty && _scrollController != null)
-                      ValueListenableBuilder<double>(
-                        valueListenable: _scrollController!.offsetNotifier,
-                        builder: (context, scrollOffset, _) {
-                          return IgnorePointer(
-                            child: CustomPaint(
-                              painter: HandwritingPainter(
-                                strokes: _handwritingController.strokes,
-                                inProgressPoints: const [],
-                                currentBrush: BrushType.pen,
-                                currentColor: '#000000',
-                                currentWidth: 3,
-                                devicePixelRatio: MediaQuery.of(context).devicePixelRatio,
-                                scrollOffset: scrollOffset,
+                      ClipRect(
+                        child: ValueListenableBuilder<double>(
+                          valueListenable: _scrollController!.offsetNotifier,
+                          builder: (context, scrollOffset, _) {
+                            return IgnorePointer(
+                              child: CustomPaint(
+                                painter: HandwritingPainter(
+                                  strokes: _handwritingController.strokes,
+                                  inProgressPoints: const [],
+                                  currentBrush: BrushType.pen,
+                                  currentColor: '#000000',
+                                  currentWidth: 3,
+                                  devicePixelRatio: MediaQuery.of(context).devicePixelRatio,
+                                  scrollOffset: scrollOffset,
+                                ),
+                                size: Size.infinite,
                               ),
-                              size: Size.infinite,
-                            ),
-                          );
-                        },
+                            );
+                          },
+                        ),
                       ),
                     if (!state.isEditing)
                       Positioned.fill(
@@ -529,7 +536,6 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
       return TextToolbar(
         editorState: notifier.editorState,
         onStyleTap: () {
-          SystemChannels.textInput.invokeMethod('TextInput.hide');
           final es = notifier.editorState;
           if (es != null && es.selection == null) {
             final lastNode = es.document.root.children.lastOrNull;
@@ -541,6 +547,7 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
               );
             }
           }
+          _editorFocusNode.unfocus();
           setState(() => _showStylePanel = true);
         },
         onImageTap: () => _showImageSourcePicker(notifier),
@@ -567,7 +574,17 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
     setState(() => _showStylePanel = false);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _requestEditorFocus();
+      _reapplySavedStyles();
     });
+  }
+
+  void _reapplySavedStyles() {
+    if (_savedToggledStyle.isEmpty) return;
+    final es = _editorStateRef;
+    if (es == null) return;
+    for (final entry in _savedToggledStyle.entries) {
+      es.updateToggledStyle(entry.key, entry.value);
+    }
   }
 
   Future<void> _showImageSourcePicker(NoteEditorNotifier notifier) async {
