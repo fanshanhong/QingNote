@@ -51,6 +51,10 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
   @override
   void initState() {
     super.initState();
+    // fontSize 运行时可正常用于 toggledStyle，但不在 supportToggled 列表中导致 debug 断言失败
+    if (!AppFlowyRichTextKeys.supportToggled.contains(AppFlowyRichTextKeys.fontSize)) {
+      AppFlowyRichTextKeys.supportToggled.add(AppFlowyRichTextKeys.fontSize);
+    }
     Future.microtask(() async {
       final notifier = ref.read(noteEditorProvider(widget.noteId).notifier);
       await notifier.loadNote();
@@ -86,10 +90,14 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
       _carryFormatOnNewLine(editorState);
     });
 
+    final supportedKeys = AppFlowyRichTextKeys.supportToggled.toSet();
+
     _onToggledStyleChanged = () {
       final style = editorState.toggledStyle;
       if (style.isNotEmpty) {
-        _savedToggledStyle = Map.from(style);
+        _savedToggledStyle = Map.fromEntries(
+          style.entries.where((e) => supportedKeys.contains(e.key)),
+        );
       }
     };
     editorState.toggledStyleNotifier.addListener(_onToggledStyleChanged!);
@@ -121,16 +129,14 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
     if (node == null || node.delta == null) return;
     if (node.delta!.isNotEmpty) return;
 
-    const inlineKeys = {
-      'bold', 'italic', 'underline', 'strikethrough', 'fontSize', 'textColor',
-    };
+    final supportedKeys = AppFlowyRichTextKeys.supportToggled.toSet();
 
     final prev = node.previous;
     if (prev != null && prev.delta != null && prev.delta!.isNotEmpty) {
       final lastAttrs = prev.delta!.last.attributes;
       if (lastAttrs != null && lastAttrs.isNotEmpty) {
         for (final entry in lastAttrs.entries) {
-          if (inlineKeys.contains(entry.key) && entry.value != null) {
+          if (supportedKeys.contains(entry.key) && entry.value != null) {
             es.updateToggledStyle(entry.key, entry.value);
           }
         }
@@ -240,13 +246,9 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
                 onDone: () async {
                   if (state.isHandwritingMode) {
                     notifier.exitHandwritingMode();
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      _forceShowKeyboard();
-                    });
-                  } else {
-                    await notifier.saveNote(handwritingStrokes: _handwritingController.strokes);
-                    notifier.exitEditMode();
                   }
+                  await notifier.saveNote(handwritingStrokes: _handwritingController.strokes);
+                  notifier.exitEditMode();
                 },
               ),
               Padding(
@@ -258,6 +260,8 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
                   focusNode: _titleFocusNode,
                   enabled: state.isEditing,
                   onChanged: notifier.updateTitle,
+                  textInputAction: TextInputAction.next,
+                  onSubmitted: (_) => _forceShowKeyboard(),
                   style: const TextStyle(
                     fontSize: AppDimens.editorTitleSize,
                     fontWeight: FontWeight.w600,
@@ -414,18 +418,21 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
     void deleteNode(Node node) {
       final es = notifier.editorState;
       if (es == null) return;
-      final nextTextNode = node.next ?? node.previous;
+      final prev = node.previous;
+      final next = node.next;
+      final deletedPath = node.path;
       final transaction = es.transaction;
       transaction.deleteNode(node);
-      if (nextTextNode != null && nextTextNode.delta != null) {
+      if (prev != null && prev.delta != null) {
         transaction.afterSelection = Selection.collapsed(
-          Position(path: nextTextNode.path, offset: 0),
+          Position(path: prev.path, offset: prev.delta!.toPlainText().length),
+        );
+      } else if (next != null && next.delta != null) {
+        transaction.afterSelection = Selection.collapsed(
+          Position(path: deletedPath, offset: 0),
         );
       }
       es.apply(transaction);
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _forceShowKeyboard();
-      });
     }
     return {
       ...standardBlockComponentBuilderMap,
@@ -433,7 +440,7 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
         configuration: const BlockComponentConfiguration(),
         textStyleBuilder: (checked) => TextStyle(
           decoration: checked ? TextDecoration.lineThrough : null,
-          color: checked ? AppColors.textHint : AppColors.textPrimary,
+          color: checked ? AppColors.textHint : null,
         ),
       ),
       ImageBlockKeys.type: CustomImageBlockComponentBuilder(
@@ -597,11 +604,13 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
 
   void _closeStylePanel() {
     setState(() => _showStylePanel = false);
+    // TextInput.hide 隐藏了键盘但连接仍然存活（keepEditorFocusNotifier 保护），
+    // 直接调用 TextInput.show 重新显示即可，不需要 close+attach 重建。
+    // 必须在 decrease() 之前发送，确保连接仍受保护。
+    SystemChannels.textInput.invokeMethod('TextInput.show');
     keepEditorFocusNotifier.decrease();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _forceShowKeyboard();
-      _reapplySavedStyles();
-    });
+    _editorFocusNode.requestFocus();
+    _reapplySavedStyles();
   }
 
   void _reapplySavedStyles() {

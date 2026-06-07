@@ -31,11 +31,11 @@ class NoteListHeader extends StatelessWidget {
   }
 
   Widget _buildNormalHeader() {
-    return GestureDetector(
-      onTap: onToggleFilterPanel,
-      behavior: HitTestBehavior.opaque,
-      child: Row(children: [
-        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+    return Row(children: [
+      GestureDetector(
+        onTap: onToggleFilterPanel,
+        behavior: HitTestBehavior.opaque,
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
             Text(title, style: const TextStyle(
               fontSize: AppDimens.headerTitleSize, fontWeight: FontWeight.bold,
@@ -53,17 +53,17 @@ class NoteListHeader extends StatelessWidget {
             fontSize: AppDimens.textCaption + 1, color: AppColors.textHint,
           )),
         ]),
-        const Spacer(),
-        if (!filterPanelVisible)
-          GestureDetector(
-            onTap: onOverflowTap,
-            child: const Padding(
-              padding: EdgeInsets.all(AppDimens.spacingS),
-              child: Icon(Icons.more_vert, color: AppColors.textSecondary, size: 24),
-            ),
+      ),
+      const Spacer(),
+      if (!filterPanelVisible)
+        GestureDetector(
+          onTap: onOverflowTap,
+          child: const Padding(
+            padding: EdgeInsets.all(AppDimens.spacingS),
+            child: Icon(Icons.more_vert, color: AppColors.textSecondary, size: 24),
           ),
-      ]),
-    );
+        ),
+    ]);
   }
 
   Widget _buildBatchHeader() {
