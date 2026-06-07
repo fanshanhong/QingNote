@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../models/folder.dart';
 import '../models/notebook.dart';
 import '../providers/note_list_provider.dart';
@@ -139,8 +140,14 @@ class _FilterPanelState extends ConsumerState<FilterPanel> {
           fontSize: AppDimens.textCaption + 1, color: AppColors.textSecondary, fontWeight: FontWeight.w500,
         ))),
         GestureDetector(
-          onTap: () => ScaffoldMessenger.of(ctx).showSnackBar(
-            const SnackBar(content: Text('文件夹管理将在 Phase 2E 实现'))),
+          onTap: () async {
+            final result = await ctx.push<bool>('/folder-manager');
+            if (result == true) {
+              setState(() {
+                _rowsFuture = _buildRows();
+              });
+            }
+          },
           child: const Text('管理', style: TextStyle(
             fontSize: AppDimens.textCaption + 1, color: AppColors.primary,
           )),
