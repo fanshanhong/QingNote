@@ -175,35 +175,32 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
     if (mounted) context.pop();
   }
 
-  void _requestEditorFocus() {
+  /// 强制重建文本输入连接并弹出键盘。
+  /// 核心原理：NonDeltaTextInputService.attach() 在 currentTextEditingValue == formattedValue
+  /// 时会跳过 .show()，导致键盘无法弹出。通过先置空 selection（触发 close() 重置
+  /// currentTextEditingValue），再恢复 selection（触发 attach() 建立新连接 + .show()），
+  /// 保证键盘一定弹出。
+  void _forceShowKeyboard() {
     final es = ref.read(noteEditorProvider(widget.noteId).notifier).editorState;
     if (es == null) return;
-    Node? lastTextNode;
-    for (final node in es.document.root.children.reversed) {
-      if (node.delta != null) {
-        lastTextNode = node;
-        break;
-      }
+    final currentSel = es.selection;
+    es.selection = null;
+    final target = currentSel ?? _findEndOfDocSelection(es);
+    if (target != null) {
+      es.updateSelectionWithReason(target, reason: SelectionUpdateReason.uiEvent);
     }
-    if (lastTextNode == null) return;
-    final offset = lastTextNode.delta!.toPlainText().length;
-    es.updateSelectionWithReason(
-      Selection.collapsed(Position(path: lastTextNode.path, offset: offset)),
-      reason: SelectionUpdateReason.uiEvent,
-    );
     _editorFocusNode.requestFocus();
   }
 
-  void _restoreEditorFocus() {
-    final es = ref.read(noteEditorProvider(widget.noteId).notifier).editorState;
-    if (es == null) return;
-    final sel = es.selection;
-    if (sel != null) {
-      es.updateSelectionWithReason(sel, reason: SelectionUpdateReason.uiEvent);
-      _editorFocusNode.requestFocus();
-    } else {
-      _requestEditorFocus();
+  Selection? _findEndOfDocSelection(EditorState es) {
+    for (final node in es.document.root.children.reversed) {
+      if (node.delta != null) {
+        return Selection.collapsed(
+          Position(path: node.path, offset: node.delta!.toPlainText().length),
+        );
+      }
     }
+    return null;
   }
 
   @override
@@ -244,7 +241,7 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
                   if (state.isHandwritingMode) {
                     notifier.exitHandwritingMode();
                     WidgetsBinding.instance.addPostFrameCallback((_) {
-                      _requestEditorFocus();
+                      _forceShowKeyboard();
                     });
                   } else {
                     await notifier.saveNote(handwritingStrokes: _handwritingController.strokes);
@@ -339,7 +336,7 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
                         child: GestureDetector(
                           onTap: () {
                             notifier.enterEditMode();
-                            WidgetsBinding.instance.addPostFrameCallback((_) => _requestEditorFocus());
+                            WidgetsBinding.instance.addPostFrameCallback((_) => _forceShowKeyboard());
                           },
                         ),
                       ),
@@ -427,7 +424,7 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
       }
       es.apply(transaction);
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _editorFocusNode.requestFocus();
+        _forceShowKeyboard();
       });
     }
     return {
@@ -569,6 +566,7 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
               );
             }
           }
+          keepEditorFocusNotifier.increase();
           SystemChannels.textInput.invokeMethod('TextInput.hide');
           setState(() => _showStylePanel = true);
         },
@@ -576,7 +574,7 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
         onRecordTap: () async {
           await notifier.startRecording(context);
           if (mounted) {
-            WidgetsBinding.instance.addPostFrameCallback((_) => _restoreEditorFocus());
+            WidgetsBinding.instance.addPostFrameCallback((_) => _forceShowKeyboard());
           }
         },
         onHandwritingTap: () => notifier.enterHandwritingMode(),
@@ -599,8 +597,9 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
 
   void _closeStylePanel() {
     setState(() => _showStylePanel = false);
+    keepEditorFocusNotifier.decrease();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _requestEditorFocus();
+      _forceShowKeyboard();
       _reapplySavedStyles();
     });
   }
@@ -641,12 +640,12 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
       ),
     );
     if (source == null) {
-      _requestEditorFocus();
+      _forceShowKeyboard();
       return;
     }
     await notifier.insertImage(useCamera: source == 'camera', insertAt: savedSelection);
     if (mounted) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _restoreEditorFocus());
+      WidgetsBinding.instance.addPostFrameCallback((_) => _forceShowKeyboard());
     }
   }
 
