@@ -8,14 +8,15 @@ class NotebookSheetResult {
 }
 
 const notebookPalette = [
-  '#9E9E9E',
-  '#E53935',
-  '#FB8C00',
-  '#FBC02D',
-  '#43A047',
-  '#00ACC1',
-  '#1E88E5',
-  '#8E24AA',
+  '#E53935', // 红
+  '#FB8C00', // 橙
+  '#FBC02D', // 黄
+  '#43A047', // 绿
+  '#66BB6A', // 浅绿
+  '#00ACC1', // 青
+  '#42A5F5', // 浅蓝
+  '#8E24AA', // 紫
+  '#1E88E5', // 蓝
 ];
 
 Future<NotebookSheetResult?> showNewNotebookSheet(
@@ -79,10 +80,8 @@ class _NewNotebookContentState extends State<_NewNotebookContent> {
     final isEditing = widget.initialName != null;
     return Padding(
       padding: EdgeInsets.fromLTRB(
-        AppDimens.spacingXl,
-        AppDimens.spacingL,
-        AppDimens.spacingXl,
-        MediaQuery.of(context).viewInsets.bottom + AppDimens.spacingL,
+        AppDimens.spacingXl, AppDimens.spacingL,
+        AppDimens.spacingXl, MediaQuery.of(context).viewInsets.bottom + AppDimens.spacingL,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -90,8 +89,7 @@ class _NewNotebookContentState extends State<_NewNotebookContent> {
         children: [
           Text(
             isEditing ? '编辑笔记本' : '新建笔记本',
-            style: const TextStyle(
-                fontSize: AppDimens.textTitle, fontWeight: FontWeight.w600),
+            style: const TextStyle(fontSize: AppDimens.textTitle, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: AppDimens.spacingL),
           TextField(
@@ -99,24 +97,23 @@ class _NewNotebookContentState extends State<_NewNotebookContent> {
             autofocus: true,
             decoration: InputDecoration(
               hintText: '笔记本名称',
-              border:
-                  OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             ),
             onChanged: (_) => setState(() {}),
           ),
           const SizedBox(height: AppDimens.spacingL),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
             children: notebookPalette.map((hex) {
               final selected = hex == _selectedColor;
               return GestureDetector(
                 onTap: () => setState(() => _selectedColor = hex),
                 child: Container(
-                  width: 32,
-                  height: 32,
-                  margin: const EdgeInsets.symmetric(horizontal: 6),
+                  width: 28,
+                  height: 28,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: _parseHex(hex),
@@ -125,7 +122,7 @@ class _NewNotebookContentState extends State<_NewNotebookContent> {
                         : null,
                   ),
                   child: selected
-                      ? const Icon(Icons.check, size: 16, color: Colors.white)
+                      ? const Icon(Icons.check, size: 14, color: Colors.white)
                       : null,
                 ),
               );
@@ -133,45 +130,34 @@ class _NewNotebookContentState extends State<_NewNotebookContent> {
           ),
           const SizedBox(height: AppDimens.spacingL),
           Row(children: [
-            Expanded(
-                child: TextButton(
+            Expanded(child: TextButton(
               onPressed: () => Navigator.pop(context),
               style: TextButton.styleFrom(
                 backgroundColor: const Color(0xFFF5F5F5),
                 padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
-              child: const Text('取消',
-                  style: TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: AppDimens.textBody,
-                  )),
+              child: const Text('取消', style: TextStyle(
+                color: AppColors.textSecondary, fontSize: AppDimens.textBody,
+              )),
             )),
             const SizedBox(width: AppDimens.spacingM),
-            Expanded(
-                child: TextButton(
+            Expanded(child: TextButton(
               onPressed: _controller.text.trim().isEmpty
                   ? null
-                  : () => Navigator.pop(
-                      context,
-                      NotebookSheetResult(
-                        name: _controller.text.trim(),
-                        color: _selectedColor,
-                      )),
+                  : () => Navigator.pop(context, NotebookSheetResult(
+                      name: _controller.text.trim(),
+                      color: _selectedColor,
+                    )),
               style: TextButton.styleFrom(
                 backgroundColor: AppColors.primary,
-                disabledBackgroundColor:
-                    AppColors.primary.withValues(alpha: 0.3),
+                disabledBackgroundColor: AppColors.primary.withValues(alpha: 0.3),
                 padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
-              child: const Text('确认',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: AppDimens.textBody,
-                  )),
+              child: const Text('确认', style: TextStyle(
+                color: Colors.white, fontSize: AppDimens.textBody,
+              )),
             )),
           ]),
         ],

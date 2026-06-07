@@ -13,13 +13,10 @@ class NoteListHeader extends StatelessWidget {
 
   const NoteListHeader({
     super.key,
-    required this.title,
-    required this.subtitle,
-    required this.isBatchMode,
-    required this.selectedCount,
+    required this.title, required this.subtitle,
+    required this.isBatchMode, required this.selectedCount,
     required this.filterPanelVisible,
-    required this.onToggleFilterPanel,
-    required this.onExitBatchMode,
+    required this.onToggleFilterPanel, required this.onExitBatchMode,
     required this.onOverflowTap,
   });
 
@@ -27,55 +24,46 @@ class NoteListHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-        AppDimens.spacingL,
-        AppDimens.spacingXl,
-        AppDimens.spacingL,
-        AppDimens.spacingS,
+        AppDimens.spacingL, AppDimens.spacingXl, AppDimens.spacingL, AppDimens.spacingS,
       ),
       child: isBatchMode ? _buildBatchHeader() : _buildNormalHeader(),
     );
   }
 
   Widget _buildNormalHeader() {
-    return GestureDetector(
-      onTap: onToggleFilterPanel,
-      behavior: HitTestBehavior.opaque,
-      child: Row(children: [
-        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+    return Row(children: [
+      GestureDetector(
+        onTap: onToggleFilterPanel,
+        behavior: HitTestBehavior.opaque,
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
-            Text(title,
-                style: const TextStyle(
-                  fontSize: AppDimens.headerTitleSize,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                )),
+            Text(title, style: const TextStyle(
+              fontSize: AppDimens.headerTitleSize, fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            )),
             const SizedBox(width: 4),
             AnimatedRotation(
               turns: filterPanelVisible ? 0.5 : 0,
               duration: const Duration(milliseconds: 200),
-              child: const Icon(Icons.arrow_drop_down,
-                  color: AppColors.textHint, size: 24),
+              child: const Icon(Icons.arrow_drop_down, color: AppColors.textHint, size: 24),
             ),
           ]),
           const SizedBox(height: 2),
-          Text(subtitle,
-              style: const TextStyle(
-                fontSize: AppDimens.textCaption + 1,
-                color: AppColors.textHint,
-              )),
+          Text(subtitle, style: const TextStyle(
+            fontSize: AppDimens.textCaption + 1, color: AppColors.textHint,
+          )),
         ]),
-        const Spacer(),
-        if (!filterPanelVisible)
-          GestureDetector(
-            onTap: onOverflowTap,
-            child: const Padding(
-              padding: EdgeInsets.all(AppDimens.spacingS),
-              child: Icon(Icons.more_vert,
-                  color: AppColors.textSecondary, size: 24),
-            ),
+      ),
+      const Spacer(),
+      if (!filterPanelVisible)
+        GestureDetector(
+          onTap: onOverflowTap,
+          child: const Padding(
+            padding: EdgeInsets.all(AppDimens.spacingS),
+            child: Icon(Icons.more_vert, color: AppColors.textSecondary, size: 24),
           ),
-      ]),
-    );
+        ),
+    ]);
   }
 
   Widget _buildBatchHeader() {
@@ -88,11 +76,9 @@ class NoteListHeader extends StatelessWidget {
         ),
       ),
       const SizedBox(width: AppDimens.spacingS),
-      Text('已选择 $selectedCount 项',
-          style: const TextStyle(
-            fontSize: 18,
-            color: AppColors.textPrimary,
-          )),
+      Text('已选择 $selectedCount 项', style: const TextStyle(
+        fontSize: 18, color: AppColors.textPrimary,
+      )),
     ]);
   }
 }

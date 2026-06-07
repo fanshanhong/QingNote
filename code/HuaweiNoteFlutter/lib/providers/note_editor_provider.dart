@@ -57,9 +57,9 @@ class NoteEditorState {
   });
 
   factory NoteEditorState.initial({required int noteId}) => NoteEditorState(
-        noteId: noteId,
-        isEditing: noteId == 0,
-      );
+    noteId: noteId,
+    isEditing: noteId == 0,
+  );
 
   bool get isNoteEmpty => title.trim().isEmpty && !documentHasContent;
 
@@ -86,48 +86,44 @@ class NoteEditorState {
     bool clearCategoryName = false,
     bool? canUndo,
     bool? canRedo,
-  }) =>
-      NoteEditorState(
-        noteId: noteId ?? this.noteId,
-        isEditing: isEditing ?? this.isEditing,
-        isSaving: isSaving ?? this.isSaving,
-        title: title ?? this.title,
-        loadedNote: loadedNote ?? this.loadedNote,
-        pendingNotebookId: clearPendingNotebookId
-            ? null
-            : (pendingNotebookId ?? this.pendingNotebookId),
-        pendingBackground: pendingBackground ?? this.pendingBackground,
-        documentHasContent: documentHasContent ?? this.documentHasContent,
-        isHandwritingMode: isHandwritingMode ?? this.isHandwritingMode,
-        currentBrush: currentBrush ?? this.currentBrush,
-        currentBrushColor: currentBrushColor ?? this.currentBrushColor,
-        currentBrushWidth: currentBrushWidth ?? this.currentBrushWidth,
-        isErasing: isErasing ?? this.isErasing,
-        notebookName:
-            clearNotebookName ? null : (notebookName ?? this.notebookName),
-        notebookColor:
-            clearNotebookColor ? null : (notebookColor ?? this.notebookColor),
-        categoryName:
-            clearCategoryName ? null : (categoryName ?? this.categoryName),
-        canUndo: canUndo ?? this.canUndo,
-        canRedo: canRedo ?? this.canRedo,
-      );
+  }) => NoteEditorState(
+    noteId: noteId ?? this.noteId,
+    isEditing: isEditing ?? this.isEditing,
+    isSaving: isSaving ?? this.isSaving,
+    title: title ?? this.title,
+    loadedNote: loadedNote ?? this.loadedNote,
+    pendingNotebookId: clearPendingNotebookId ? null : (pendingNotebookId ?? this.pendingNotebookId),
+    pendingBackground: pendingBackground ?? this.pendingBackground,
+    documentHasContent: documentHasContent ?? this.documentHasContent,
+    isHandwritingMode: isHandwritingMode ?? this.isHandwritingMode,
+    currentBrush: currentBrush ?? this.currentBrush,
+    currentBrushColor: currentBrushColor ?? this.currentBrushColor,
+    currentBrushWidth: currentBrushWidth ?? this.currentBrushWidth,
+    isErasing: isErasing ?? this.isErasing,
+    notebookName: clearNotebookName ? null : (notebookName ?? this.notebookName),
+    notebookColor: clearNotebookColor ? null : (notebookColor ?? this.notebookColor),
+    categoryName: clearCategoryName ? null : (categoryName ?? this.categoryName),
+    canUndo: canUndo ?? this.canUndo,
+    canRedo: canRedo ?? this.canRedo,
+  );
 }
 
 class NoteEditorNotifier extends StateNotifier<NoteEditorState> {
   final NoteRepository _noteRepo;
   final NotebookRepository _notebookRepo;
   final CategoryRepository _categoryRepo;
+  final int _initialNoteId;
   EditorState? _editorState;
 
-  NoteEditorNotifier(
-      this._noteRepo, this._notebookRepo, this._categoryRepo, int noteId)
-      : super(NoteEditorState.initial(noteId: noteId));
+  NoteEditorNotifier(this._noteRepo, this._notebookRepo, this._categoryRepo, int noteId)
+      : _initialNoteId = noteId,
+        super(NoteEditorState.initial(noteId: noteId));
 
   EditorState? get editorState => _editorState;
 
   Future<void> loadNote() async {
-    if (state.noteId == 0) {
+    if (_initialNoteId == 0) {
+      state = NoteEditorState.initial(noteId: 0);
       final doc = Document.blank(withInitialText: true);
       _editorState = EditorState(document: doc);
       return;
@@ -151,10 +147,7 @@ class NoteEditorNotifier extends StateNotifier<NoteEditorState> {
     String? nbColor;
     if (note.notebookId != null) {
       final nb = await _notebookRepo.get(note.notebookId!);
-      if (nb != null) {
-        nbName = nb.name;
-        nbColor = nb.color;
-      }
+      if (nb != null) { nbName = nb.name; nbColor = nb.color; }
     }
 
     String? catName;
@@ -258,8 +251,7 @@ class NoteEditorNotifier extends StateNotifier<NoteEditorState> {
       final docJson = editorDoc?.toJson() ?? {};
       final content = NoteContent(
         documentJson: {'document': docJson},
-        handwriting:
-            handwritingStrokes ?? state.loadedNote?.content.handwriting ?? [],
+        handwriting: handwritingStrokes ?? state.loadedNote?.content.handwriting ?? [],
       );
       final now = DateTime.now().millisecondsSinceEpoch;
       final note = (state.loadedNote ?? Note.newNote(now: now)).copyWith(
@@ -307,7 +299,12 @@ class NoteEditorNotifier extends StateNotifier<NoteEditorState> {
     return state.noteId;
   }
 
-  Future<void> insertImage({bool useCamera = false}) async {
+  Future<void> insertImage({bool useCamera = false, Selection? insertAt}) async {
+    final es = _editorState;
+    if (es == null) return;
+    final selection = insertAt ?? es.selection;
+    final basePath = selection?.end.path ?? es.document.root.children.last.path;
+
     final noteId = await ensureNoteSaved();
     if (noteId == 0) return;
 
@@ -322,16 +319,11 @@ class NoteEditorNotifier extends StateNotifier<NoteEditorState> {
     if (compressed == null) return;
 
     final savedFile = await NoteFileStorage.saveImage(noteId, compressed);
-
-    final es = _editorState;
-    if (es == null) return;
-
-    final selection = es.selection;
-    final path = selection?.end.path ?? es.document.root.children.last.path;
-    final insertPath = path.next;
+    final insertPath = basePath.next;
 
     final transaction = es.transaction;
     transaction.insertNode(insertPath, imageNode(url: savedFile.path));
+    transaction.insertNode(insertPath.next, paragraphNode());
     transaction.afterSelection = Selection.collapsed(
       Position(path: insertPath.next, offset: 0),
     );
@@ -339,13 +331,17 @@ class NoteEditorNotifier extends StateNotifier<NoteEditorState> {
   }
 
   Future<void> startRecording(BuildContext context) async {
+    final es = _editorState;
+    if (es == null) return;
+    final selectionBeforeModal = es.selection;
+    final basePath = selectionBeforeModal?.end.path ?? es.document.root.children.last.path;
+
     final noteId = await ensureNoteSaved();
     if (noteId == 0) return;
 
     final dir = await NoteFileStorage.audioDir(noteId);
     if (!dir.existsSync()) dir.createSync(recursive: true);
-    final targetPath =
-        '${dir.path}/${DateTime.now().millisecondsSinceEpoch}.m4a';
+    final targetPath = '${dir.path}/${DateTime.now().millisecondsSinceEpoch}.m4a';
 
     if (!context.mounted) return;
     final result = await showAudioRecordingSheet(
@@ -354,19 +350,15 @@ class NoteEditorNotifier extends StateNotifier<NoteEditorState> {
     );
     if (result == null) return;
 
-    final es = _editorState;
-    if (es == null) return;
-
     final fileName = result.filePath.split('/').last;
-    final selection = es.selection;
-    final path = selection?.end.path ?? es.document.root.children.last.path;
-    final insertPath = path.next;
+    final insertPath = basePath.next;
 
     final transaction = es.transaction;
     transaction.insertNode(
       insertPath,
       audioNode(fileName: fileName, durationMs: result.durationMs),
     );
+    transaction.insertNode(insertPath.next, paragraphNode());
     transaction.afterSelection = Selection.collapsed(
       Position(path: insertPath.next, offset: 0),
     );
@@ -384,7 +376,6 @@ class NoteEditorNotifier extends StateNotifier<NoteEditorState> {
         visit(child);
       }
     }
-
     visit(document.root);
     return paths;
   }
@@ -400,7 +391,6 @@ class NoteEditorNotifier extends StateNotifier<NoteEditorState> {
         visit(child);
       }
     }
-
     visit(document.root);
     return names;
   }
@@ -412,9 +402,7 @@ class NoteEditorNotifier extends StateNotifier<NoteEditorState> {
 
   Future<List<({int id, String name, String color})>> loadNotebooks() async {
     final folders = await _notebookRepo.listByFolder(1);
-    return folders
-        .map((nb) => (id: nb.id, name: nb.name, color: nb.color))
-        .toList();
+    return folders.map((nb) => (id: nb.id, name: nb.name, color: nb.color)).toList();
   }
 
   Future<List<({int id, String name, String color})>> loadCategories() async {
