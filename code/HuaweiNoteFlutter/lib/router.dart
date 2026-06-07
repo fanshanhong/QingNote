@@ -6,6 +6,7 @@ import 'pages/note_editor_page.dart';
 import 'pages/note_list_page.dart';
 import 'pages/todo_detail_page.dart';
 import 'pages/folder_manager_page.dart';
+import 'pages/settings_page.dart';
 import 'pages/todo_list_page.dart';
 import 'providers/todo_list_provider.dart';
 import 'providers/note_list_provider.dart';
@@ -34,6 +35,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/folder-manager',
         builder: (context, state) => const FolderManagerPage(),
+      ),
+      GoRoute(
+        path: '/settings',
+        builder: (context, state) => const SettingsPage(),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {

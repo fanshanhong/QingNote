@@ -157,6 +157,7 @@ class _NoteListPageState extends ConsumerState<NoteListPage> {
         PopupMenuItem(value: 'toggle_view',
           child: Text(s.isGridView ? '切换为列表视图' : '切换为宫格视图')),
         const PopupMenuItem(value: 'batch', child: Text('批量删除')),
+        const PopupMenuItem(value: 'settings', child: Text('设置')),
       ],
     );
     if (value == null || !mounted) return;
@@ -166,6 +167,7 @@ class _NoteListPageState extends ConsumerState<NoteListPage> {
         if (result != null) await notifier.setSort(result);
       case 'toggle_view': await notifier.toggleGridView();
       case 'batch': notifier.enterBatchMode();
+      case 'settings': context.push('/settings');
     }
   }
 
