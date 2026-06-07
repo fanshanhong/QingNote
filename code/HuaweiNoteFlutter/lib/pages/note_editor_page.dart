@@ -376,11 +376,10 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
         _backspaceDeleteMediaCommand(editorState),
         ...standardCommandShortcutEvents,
       ],
+      footer: SizedBox(height: MediaQuery.of(context).size.height * 0.4),
       editorStyle: EditorStyle.mobile(
-        padding: EdgeInsets.only(
-          left: AppDimens.editorContentPadding,
-          right: AppDimens.editorContentPadding,
-          bottom: MediaQuery.of(context).size.height * 0.4,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppDimens.editorContentPadding,
         ),
         textStyleConfiguration: TextStyleConfiguration(
           text: const TextStyle(fontSize: 16, color: AppColors.textPrimary),

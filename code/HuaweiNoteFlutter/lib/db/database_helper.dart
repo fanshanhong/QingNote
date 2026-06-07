@@ -83,6 +83,10 @@ class DatabaseHelper {
       await db.execute(
         'ALTER TABLE notes ADD COLUMN has_todo INTEGER NOT NULL DEFAULT 0',
       );
+      final folders = await db.rawQuery('SELECT COUNT(*) AS c FROM folders WHERE deleted_at = 0');
+      if ((folders.first['c'] as int) == 0) {
+        await _seedDefaults(db, allNotesExist: true);
+      }
     }
   }
 
