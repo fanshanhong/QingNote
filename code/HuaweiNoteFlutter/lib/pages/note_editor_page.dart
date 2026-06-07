@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/note_editor_provider.dart';
@@ -556,7 +557,7 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
               );
             }
           }
-          _editorFocusNode.unfocus();
+          SystemChannels.textInput.invokeMethod('TextInput.hide');
           setState(() => _showStylePanel = true);
         },
         onImageTap: () => _showImageSourcePicker(notifier),
