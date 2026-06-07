@@ -14,6 +14,7 @@ import '../widgets/editor/text_toolbar.dart';
 import '../editor/handwriting/handwriting_painter.dart';
 import 'package:path_provider/path_provider.dart';
 import '../editor/audio_block_component.dart';
+import '../editor/image_block_component.dart';
 import '../services/audio_player_service.dart';
 import '../editor/handwriting/handwriting_controller.dart';
 import '../models/stroke.dart';
@@ -33,6 +34,7 @@ class NoteEditorPage extends ConsumerStatefulWidget {
 class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
   final _titleController = TextEditingController();
   final _titleFocusNode = FocusNode();
+  final _editorFocusNode = FocusNode();
   EditorScrollController? _scrollController;
   StreamSubscription? _transactionSub;
   bool _editorReady = false;
@@ -40,6 +42,7 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
   final _handwritingController = HandwritingOverlayController();
   String _appDocPath = '';
   bool _showStylePanel = false;
+  Map<String, dynamic> _savedToggledStyle = {};
 
   @override
   void initState() {
@@ -75,8 +78,52 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
         editorState.undoManager.undoStack.isNonEmpty,
         editorState.undoManager.redoStack.isNonEmpty,
       );
+      _carryFormatOnNewLine(editorState);
     });
+
+    editorState.toggledStyleNotifier.addListener(() {
+      final style = editorState.toggledStyle;
+      if (style.isNotEmpty) {
+        _savedToggledStyle = Map.from(style);
+      }
+    });
+
     if (mounted) setState(() => _editorReady = true);
+  }
+
+  void _carryFormatOnNewLine(EditorState es) {
+    final selection = es.selection;
+    if (selection == null || !selection.isCollapsed) return;
+    if (selection.start.offset != 0) return;
+
+    final node = es.getNodeAtPath(selection.start.path);
+    if (node == null || node.delta == null) return;
+    if (node.delta!.isNotEmpty) return;
+
+    const inlineKeys = {
+      'bold', 'italic', 'underline', 'strikethrough', 'fontSize', 'textColor',
+    };
+
+    final prev = node.previous;
+    if (prev != null && prev.delta != null && prev.delta!.isNotEmpty) {
+      final lastAttrs = prev.delta!.last.attributes;
+      if (lastAttrs != null && lastAttrs.isNotEmpty) {
+        for (final entry in lastAttrs.entries) {
+          if (inlineKeys.contains(entry.key) && entry.value != null) {
+            es.updateToggledStyle(entry.key, entry.value);
+          }
+        }
+        return;
+      }
+    }
+
+    if (_savedToggledStyle.isNotEmpty) {
+      for (final entry in _savedToggledStyle.entries) {
+        if (inlineKeys.contains(entry.key) && entry.value != null) {
+          es.updateToggledStyle(entry.key, entry.value);
+        }
+      }
+    }
   }
 
   @override
@@ -94,6 +141,7 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
     _handwritingController.dispose();
     _transactionSub?.cancel();
     _scrollController?.dispose();
+    _editorFocusNode.dispose();
     _titleFocusNode.dispose();
     _titleController.dispose();
     super.dispose();
@@ -107,16 +155,23 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
     if (mounted) context.pop();
   }
 
-  void _moveCursorToEnd() {
+  void _requestEditorFocus() {
     final es = ref.read(noteEditorProvider(widget.noteId).notifier).editorState;
     if (es == null) return;
-    final lastNode = es.document.root.children.lastOrNull;
-    if (lastNode == null) return;
-    final offset = lastNode.delta?.toPlainText().length ?? 0;
+    Node? lastTextNode;
+    for (final node in es.document.root.children.reversed) {
+      if (node.delta != null) {
+        lastTextNode = node;
+        break;
+      }
+    }
+    if (lastTextNode == null) return;
+    final offset = lastTextNode.delta!.toPlainText().length;
     es.updateSelectionWithReason(
-      Selection.collapsed(Position(path: lastNode.path, offset: offset)),
+      Selection.collapsed(Position(path: lastTextNode.path, offset: offset)),
       reason: SelectionUpdateReason.uiEvent,
     );
+    _editorFocusNode.requestFocus();
   }
 
   @override
@@ -156,6 +211,9 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
                 onDone: () async {
                   if (state.isHandwritingMode) {
                     notifier.exitHandwritingMode();
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      _requestEditorFocus();
+                    });
                   } else {
                     await notifier.saveNote(handwritingStrokes: _handwritingController.strokes);
                     notifier.exitEditMode();
@@ -238,7 +296,7 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
                         child: GestureDetector(
                           onTap: () {
                             notifier.enterEditMode();
-                            WidgetsBinding.instance.addPostFrameCallback((_) => _moveCursorToEnd());
+                            WidgetsBinding.instance.addPostFrameCallback((_) => _requestEditorFocus());
                           },
                         ),
                       ),
@@ -261,8 +319,13 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
     return AppFlowyEditor(
       editorState: editorState,
       editable: true,
+      focusNode: _editorFocusNode,
       editorScrollController: _scrollController,
       blockComponentBuilders: _buildBlockComponentBuilders(),
+      commandShortcutEvents: [
+        _backspaceDeleteMediaCommand(editorState),
+        ...standardCommandShortcutEvents,
+      ],
       editorStyle: EditorStyle.mobile(
         padding: const EdgeInsets.symmetric(
           horizontal: AppDimens.editorContentPadding,
@@ -274,9 +337,47 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
     );
   }
 
+  CommandShortcutEvent _backspaceDeleteMediaCommand(EditorState es) {
+    return CommandShortcutEvent(
+      key: 'backspace delete media',
+      getDescription: () => 'Delete media block on backspace at line start',
+      command: 'backspace',
+      handler: (editorState) {
+        final selection = editorState.selection;
+        if (selection == null || !selection.isCollapsed) {
+          return KeyEventResult.ignored;
+        }
+        if (selection.start.offset != 0) return KeyEventResult.ignored;
+
+        final node = editorState.getNodeAtPath(selection.start.path);
+        if (node == null || node.delta == null) return KeyEventResult.ignored;
+
+        final prev = node.previous;
+        if (prev == null) return KeyEventResult.ignored;
+
+        if (prev.type == ImageBlockKeys.type ||
+            prev.type == AudioBlockKeys.type) {
+          final transaction = editorState.transaction;
+          transaction.deleteNode(prev);
+          transaction.afterSelection = selection;
+          editorState.apply(transaction);
+          return KeyEventResult.handled;
+        }
+        return KeyEventResult.ignored;
+      },
+    );
+  }
+
   Map<String, BlockComponentBuilder> _buildBlockComponentBuilders() {
     final state = ref.read(noteEditorProvider(widget.noteId));
     final notifier = ref.read(noteEditorProvider(widget.noteId).notifier);
+    void deleteNode(Node node) {
+      final es = notifier.editorState;
+      if (es == null) return;
+      final transaction = es.transaction;
+      transaction.deleteNode(node);
+      es.apply(transaction);
+    }
     return {
       ...standardBlockComponentBuilderMap,
       TodoListBlockKeys.type: TodoListBlockComponentBuilder(
@@ -286,18 +387,16 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
           color: checked ? AppColors.textHint : AppColors.textPrimary,
         ),
       ),
+      ImageBlockKeys.type: CustomImageBlockComponentBuilder(
+        editable: state.isEditing,
+        onDelete: deleteNode,
+      ),
       AudioBlockKeys.type: AudioBlockComponentBuilder(
         noteId: state.noteId,
         audioPlayer: _audioPlayer,
         editable: state.isEditing,
         basePath: _appDocPath,
-        onDelete: (node) {
-          final es = notifier.editorState;
-          if (es == null) return;
-          final transaction = es.transaction;
-          transaction.deleteNode(node);
-          es.apply(transaction);
-        },
+        onDelete: deleteNode,
       ),
     };
   }
@@ -443,7 +542,7 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
   void _closeStylePanel() {
     setState(() => _showStylePanel = false);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _moveCursorToEnd();
+      _requestEditorFocus();
     });
   }
 

@@ -251,6 +251,10 @@ class NoteListNotifier extends StateNotifier<NoteListState> {
     state = state.copyWith(filterPanelVisible: !state.filterPanelVisible);
   }
 
+  void setExpandedFolders(Set<int> folders) {
+    state = state.copyWith(expandedFolders: folders);
+  }
+
   void toggleFolderExpand(int folderId) {
     final expanded = Set<int>.from(state.expandedFolders);
     if (expanded.contains(folderId)) {

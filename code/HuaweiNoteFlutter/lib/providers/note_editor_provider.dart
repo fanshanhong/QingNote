@@ -112,15 +112,18 @@ class NoteEditorNotifier extends StateNotifier<NoteEditorState> {
   final NoteRepository _noteRepo;
   final NotebookRepository _notebookRepo;
   final CategoryRepository _categoryRepo;
+  final int _initialNoteId;
   EditorState? _editorState;
 
   NoteEditorNotifier(this._noteRepo, this._notebookRepo, this._categoryRepo, int noteId)
-      : super(NoteEditorState.initial(noteId: noteId));
+      : _initialNoteId = noteId,
+        super(NoteEditorState.initial(noteId: noteId));
 
   EditorState? get editorState => _editorState;
 
   Future<void> loadNote() async {
-    if (state.noteId == 0) {
+    if (_initialNoteId == 0) {
+      state = NoteEditorState.initial(noteId: 0);
       final doc = Document.blank(withInitialText: true);
       _editorState = EditorState(document: doc);
       return;

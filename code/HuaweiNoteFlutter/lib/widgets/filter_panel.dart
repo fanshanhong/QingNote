@@ -63,7 +63,7 @@ class _FilterPanelState extends ConsumerState<FilterPanel> {
     final noteRepo = ref.read(noteRepositoryProvider);
     final folderRepo = ref.read(folderRepositoryProvider);
     final notebookRepo = ref.read(notebookRepositoryProvider);
-    final s = ref.read(noteListProvider);
+    var s = ref.read(noteListProvider);
     final rows = <_FilterRow>[];
 
     rows.add(_PseudoRow('全部笔记', Icons.note_outlined,
@@ -77,7 +77,16 @@ class _FilterPanelState extends ConsumerState<FilterPanel> {
     rows.add(const _DividerRow());
     rows.add(const _SectionHeaderRow());
 
-    for (final folder in await folderRepo.list()) {
+    final folders = await folderRepo.list();
+
+    if (s.expandedFolders.isEmpty && folders.isNotEmpty) {
+      ref.read(noteListProvider.notifier).setExpandedFolders(
+        folders.map((f) => f.id).toSet(),
+      );
+      s = ref.read(noteListProvider);
+    }
+
+    for (final folder in folders) {
       final fCount = await noteRepo.count(filter: NoteListFilter.folder(folder.id));
       final expanded = s.expandedFolders.contains(folder.id);
       rows.add(_FolderHeadRow(folder, expanded, fCount));

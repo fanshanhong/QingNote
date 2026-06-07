@@ -102,6 +102,46 @@ class _StylePickerPanelState extends State<StylePickerPanel> {
     return idx >= 0 ? idx : 2;
   }
 
+  String _currentAlign() {
+    final selection = _es.selection;
+    if (selection == null) return 'left';
+    final node = _es.getNodeAtPath(selection.start.path);
+    if (node == null) return 'left';
+    return node.attributes[blockComponentAlign] as String? ?? 'left';
+  }
+
+  String _currentBlockType() {
+    final selection = _es.selection;
+    if (selection == null) return ParagraphBlockKeys.type;
+    final node = _es.getNodeAtPath(selection.start.path);
+    if (node == null) return ParagraphBlockKeys.type;
+    return node.type;
+  }
+
+  Color? _currentTextColor() {
+    String? hex;
+    if (_es.toggledStyle.containsKey(AppFlowyRichTextKeys.textColor)) {
+      hex = _es.toggledStyle[AppFlowyRichTextKeys.textColor] as String?;
+    } else {
+      final selection = _es.selection;
+      if (selection != null) {
+        hex = _es.getDeltaAttributeValueInSelection<String>(
+          AppFlowyRichTextKeys.textColor, selection,
+        );
+      }
+    }
+    if (hex == null) return null;
+    return _parseHexColor(hex);
+  }
+
+  Color? _parseHexColor(String hex) {
+    hex = hex.replaceFirst('#', '');
+    final v = int.tryParse(hex, radix: 16);
+    if (v == null) return null;
+    if (hex.length == 6) return Color(0xFF000000 | v);
+    return Color(v);
+  }
+
   @override
   Widget build(BuildContext context) {
     return TapRegion(
@@ -158,6 +198,7 @@ class _StylePickerPanelState extends State<StylePickerPanel> {
   }
 
   Widget _buildFormatRow() {
+    final currentAlign = _currentAlign();
     return Row(
       children: [
         _FormatToggleButton(
@@ -187,14 +228,17 @@ class _StylePickerPanelState extends State<StylePickerPanel> {
         const Spacer(),
         _AlignButton(
           icon: Icons.format_align_left,
+          isActive: currentAlign == 'left',
           onTap: () => _setAlign('left'),
         ),
         _AlignButton(
           icon: Icons.format_align_center,
+          isActive: currentAlign == 'center',
           onTap: () => _setAlign('center'),
         ),
         _AlignButton(
           icon: Icons.format_align_right,
+          isActive: currentAlign == 'right',
           onTap: () => _setAlign('right'),
         ),
       ],
@@ -202,6 +246,7 @@ class _StylePickerPanelState extends State<StylePickerPanel> {
   }
 
   Widget _buildListRow() {
+    final currentType = _currentBlockType();
     return Row(
       children: [
         _ActionButton(
@@ -218,16 +263,19 @@ class _StylePickerPanelState extends State<StylePickerPanel> {
         _ActionButton(
           icon: Icons.format_list_bulleted,
           label: '无序',
+          isActive: currentType == BulletedListBlockKeys.type,
           onTap: () => _toggleBlockType(BulletedListBlockKeys.type),
         ),
         _ActionButton(
           icon: Icons.format_list_numbered,
           label: '有序',
+          isActive: currentType == NumberedListBlockKeys.type,
           onTap: () => _toggleBlockType(NumberedListBlockKeys.type),
         ),
         _ActionButton(
           icon: Icons.format_quote,
           label: '引用',
+          isActive: currentType == QuoteBlockKeys.type,
           onTap: () => _toggleBlockType(QuoteBlockKeys.type),
         ),
       ],
@@ -276,10 +324,15 @@ class _StylePickerPanelState extends State<StylePickerPanel> {
   }
 
   Widget _buildTextColorRow() {
+    final activeColor = _currentTextColor();
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: _textColors.map((entry) {
         final (label, color) = entry;
+        final isActive = activeColor != null &&
+            activeColor.r == color.r &&
+            activeColor.g == color.g &&
+            activeColor.b == color.b;
         return GestureDetector(
           onTap: () => _applyTextColor(color),
           child: Column(
@@ -289,14 +342,23 @@ class _StylePickerPanelState extends State<StylePickerPanel> {
                 decoration: BoxDecoration(
                   color: color,
                   shape: BoxShape.circle,
-                  border: color == const Color(0xFF000000)
-                    ? null
-                    : Border.all(color: AppColors.divider, width: 0.5),
+                  border: isActive
+                      ? Border.all(color: AppColors.primary, width: 2.5)
+                      : (color == const Color(0xFF000000)
+                          ? null
+                          : Border.all(color: AppColors.divider, width: 0.5)),
                 ),
+                child: isActive
+                    ? Icon(Icons.check, size: 14,
+                        color: color == const Color(0xFF000000) || color == const Color(0xFF9900CC)
+                            ? Colors.white : Colors.black)
+                    : null,
               ),
               const SizedBox(height: 2),
-              Text(label, style: const TextStyle(
-                fontSize: 10, color: AppColors.textHint,
+              Text(label, style: TextStyle(
+                fontSize: 10,
+                color: isActive ? AppColors.primary : AppColors.textHint,
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
               )),
             ],
           ),
@@ -465,9 +527,10 @@ class _FormatToggleButton extends StatelessWidget {
 
 class _AlignButton extends StatelessWidget {
   final IconData icon;
+  final bool isActive;
   final VoidCallback onTap;
 
-  const _AlignButton({required this.icon, required this.onTap});
+  const _AlignButton({required this.icon, required this.isActive, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -476,7 +539,13 @@ class _AlignButton extends StatelessWidget {
       child: Container(
         width: 36, height: 36,
         alignment: Alignment.center,
-        child: Icon(icon, size: 20, color: AppColors.editorIconActive),
+        decoration: BoxDecoration(
+          color: isActive ? AppColors.primary.withAlpha(25) : null,
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Icon(icon, size: 20,
+          color: isActive ? AppColors.primary : AppColors.editorIconActive,
+        ),
       ),
     );
   }
@@ -485,11 +554,13 @@ class _AlignButton extends StatelessWidget {
 class _ActionButton extends StatelessWidget {
   final IconData icon;
   final String label;
+  final bool isActive;
   final VoidCallback onTap;
 
   const _ActionButton({
     required this.icon,
     required this.label,
+    this.isActive = false,
     required this.onTap,
   });
 
@@ -498,14 +569,25 @@ class _ActionButton extends StatelessWidget {
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
-        child: Column(
-          children: [
-            Icon(icon, size: 20, color: AppColors.editorIconActive),
-            const SizedBox(height: 2),
-            Text(label, style: const TextStyle(
-              fontSize: 10, color: AppColors.textSecondary,
-            )),
-          ],
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          decoration: BoxDecoration(
+            color: isActive ? AppColors.primary.withAlpha(25) : null,
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Column(
+            children: [
+              Icon(icon, size: 20,
+                color: isActive ? AppColors.primary : AppColors.editorIconActive,
+              ),
+              const SizedBox(height: 2),
+              Text(label, style: TextStyle(
+                fontSize: 10,
+                color: isActive ? AppColors.primary : AppColors.textSecondary,
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+              )),
+            ],
+          ),
         ),
       ),
     );
