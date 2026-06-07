@@ -280,6 +280,11 @@ class NoteListNotifier extends StateNotifier<NoteListState> {
     state = state.copyWith(selectedIds: ids);
   }
 
+  void selectAll() {
+    final allIds = state.notes.map((n) => n.id).toSet();
+    state = state.copyWith(selectedIds: allIds);
+  }
+
   Future<void> batchDelete() async {
     if (state.selectedIds.isEmpty) return;
     try {

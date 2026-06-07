@@ -82,14 +82,18 @@ class _StylePickerContentState extends State<_StylePickerContent> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Center(
-              child: Container(
-                width: 36, height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.divider,
-                  borderRadius: BorderRadius.circular(2),
+            Row(
+              children: [
+                const Text('样式', style: TextStyle(
+                  fontSize: 16, fontWeight: FontWeight.w500,
+                  color: AppColors.textPrimary,
+                )),
+                const Spacer(),
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: const Icon(Icons.close, size: 22, color: AppColors.textSecondary),
                 ),
-              ),
+              ],
             ),
             const SizedBox(height: 16),
             _buildFormatRow(),
@@ -99,8 +103,6 @@ class _StylePickerContentState extends State<_StylePickerContent> {
             _buildFontSizeRow(),
             const SizedBox(height: 12),
             _buildTextColorRow(),
-            const SizedBox(height: 12),
-            _buildHeadingRow(),
             const SizedBox(height: 12),
             _buildBackgroundRow(),
           ],
@@ -126,11 +128,6 @@ class _StylePickerContentState extends State<_StylePickerContent> {
           label: 'U',
           style: const TextStyle(decoration: TextDecoration.underline, fontSize: 18),
           onTap: () { _ensureSelection(); widget.editorState.toggleAttribute(AppFlowyRichTextKeys.underline); },
-        ),
-        _FormatToggleButton(
-          label: 'S',
-          style: const TextStyle(decoration: TextDecoration.lineThrough, fontSize: 18),
-          onTap: () { _ensureSelection(); widget.editorState.toggleAttribute(AppFlowyRichTextKeys.strikethrough); },
         ),
         const Spacer(),
         _AlignButton(
@@ -260,32 +257,6 @@ class _StylePickerContentState extends State<_StylePickerContent> {
     );
   }
 
-  Widget _buildHeadingRow() {
-    return Row(
-      children: List.generate(6, (i) {
-        final level = i + 1;
-        return Expanded(
-          child: GestureDetector(
-            onTap: () => _toggleHeading(level),
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Center(
-                child: Text(
-                  'H$level',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.styleSheetHeader,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-      }),
-    );
-  }
-
   Widget _buildBackgroundRow() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -386,33 +357,6 @@ class _StylePickerContentState extends State<_StylePickerContent> {
           default:
             newNode = paragraphNode(delta: node.delta);
         }
-        transaction
-          ..insertNode(node.path, newNode)
-          ..deleteNode(node);
-      }
-    }
-    transaction.afterSelection = selection;
-    es.apply(transaction);
-  }
-
-  void _toggleHeading(int level) {
-    _ensureSelection();
-    final es = widget.editorState;
-    final selection = _activeSelection;
-    if (selection == null) return;
-    final nodes = es.getNodesInSelection(selection);
-    if (nodes.isEmpty) return;
-
-    final transaction = es.transaction;
-    for (final node in nodes) {
-      if (node.type == HeadingBlockKeys.type &&
-          node.attributes[HeadingBlockKeys.level] == level) {
-        final newNode = paragraphNode(delta: node.delta);
-        transaction
-          ..insertNode(node.path, newNode)
-          ..deleteNode(node);
-      } else {
-        final newNode = headingNode(level: level, delta: node.delta);
         transaction
           ..insertNode(node.path, newNode)
           ..deleteNode(node);

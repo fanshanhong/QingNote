@@ -143,21 +143,52 @@ class _NoteListPageState extends ConsumerState<NoteListPage> {
 
   Widget _buildBatchBottomBar(NoteListState s, NoteListNotifier notifier) {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppDimens.spacingL),
-      child: ElevatedButton(
-        onPressed: s.selectedIds.isEmpty ? null : () async {
-          final confirmed = await showDeleteConfirmSheet(context,
-            message: '确定要删除选中的 ${s.selectedIds.length} 条笔记吗？\n删除后可在"最近删除"中恢复',
-            confirmLabel: '删除');
-          if (confirmed) await notifier.batchDelete();
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.danger, foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        ),
-        child: const Text('删除', style: TextStyle(fontSize: AppDimens.textBody)),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: AppColors.divider, width: 0.5)),
+      ),
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: GestureDetector(
+              onTap: s.selectedIds.isEmpty ? null : () async {
+                final confirmed = await showDeleteConfirmSheet(context,
+                  message: '确定要删除选中的 ${s.selectedIds.length} 条笔记吗？\n删除后可在"最近删除"中恢复',
+                  confirmLabel: '删除');
+                if (confirmed) await notifier.batchDelete();
+              },
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.delete_outline, size: 24,
+                    color: s.selectedIds.isEmpty ? AppColors.textHint : AppColors.textSecondary),
+                  const SizedBox(height: 2),
+                  Text('删除', style: TextStyle(
+                    fontSize: AppDimens.textCaption,
+                    color: s.selectedIds.isEmpty ? AppColors.textHint : AppColors.textSecondary,
+                  )),
+                ],
+              ),
+            ),
+          ),
+          Expanded(
+            child: GestureDetector(
+              onTap: () => notifier.selectAll(),
+              child: const Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.select_all, size: 24, color: AppColors.textSecondary),
+                  SizedBox(height: 2),
+                  Text('全选', style: TextStyle(
+                    fontSize: AppDimens.textCaption,
+                    color: AppColors.textSecondary,
+                  )),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -167,10 +198,10 @@ class _NoteListPageState extends ConsumerState<NoteListPage> {
       context: ctx,
       position: RelativeRect.fromLTRB(MediaQuery.of(ctx).size.width - 48, 80, 8, 0),
       items: [
-        const PopupMenuItem(value: 'sort', child: Text('排序方式')),
         PopupMenuItem(value: 'toggle_view',
-          child: Text(s.isGridView ? '切换为列表视图' : '切换为宫格视图')),
+          child: Text(s.isGridView ? '列表视图' : '宫格视图')),
         const PopupMenuItem(value: 'batch', child: Text('批量删除')),
+        const PopupMenuItem(value: 'sort', child: Text('排序方式')),
         const PopupMenuItem(value: 'settings', child: Text('设置')),
       ],
     );

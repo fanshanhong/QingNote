@@ -70,7 +70,7 @@ class _FilterPanelState extends ConsumerState<FilterPanel> {
         await noteRepo.count(filter: NoteListFilter.all), NoteListFilter.all));
     rows.add(_PseudoRow('未分类', Icons.folder_off_outlined,
         await noteRepo.count(filter: NoteListFilter.uncategorized), NoteListFilter.uncategorized));
-    rows.add(_PseudoRow('收藏', Icons.star_border,
+    rows.add(_PseudoRow('我的收藏', Icons.star_border,
         await noteRepo.count(filter: NoteListFilter.favorite), NoteListFilter.favorite));
     rows.add(_PseudoRow('最近删除', Icons.delete_outline,
         await noteRepo.count(filter: NoteListFilter.deleted), NoteListFilter.deleted));
@@ -203,10 +203,9 @@ class _FilterPanelState extends ConsumerState<FilterPanel> {
         color: sel ? AppColors.primaryLight : Colors.transparent,
         padding: const EdgeInsets.fromLTRB(48, 10, AppDimens.spacingL, 10),
         child: Row(children: [
-          Container(width: 10, height: 10, decoration: BoxDecoration(
-            shape: BoxShape.circle,
+          Icon(Icons.menu_book, size: 20,
             color: dotColor != null ? Color(0xFF000000 | dotColor) : AppColors.textHint,
-          )),
+          ),
           const SizedBox(width: 10),
           Expanded(child: Text(r.notebook.name, style: TextStyle(
             fontSize: AppDimens.textBody,

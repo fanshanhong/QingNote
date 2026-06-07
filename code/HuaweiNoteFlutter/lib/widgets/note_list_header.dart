@@ -76,7 +76,7 @@ class NoteListHeader extends StatelessWidget {
         ),
       ),
       const SizedBox(width: AppDimens.spacingS),
-      Text('已选中 $selectedCount 项', style: const TextStyle(
+      Text('已选择 $selectedCount 项', style: const TextStyle(
         fontSize: 18, color: AppColors.textPrimary,
       )),
     ]);
