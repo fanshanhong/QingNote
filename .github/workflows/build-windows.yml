@@ -19,7 +19,9 @@ jobs:
 
       - name: Install dependencies
         working-directory: code/HuaweiNoteFlutter
-        run: flutter pub get
+        run: |
+          rm pubspec.lock
+          flutter pub get
 
       - name: Build Windows
         working-directory: code/HuaweiNoteFlutter
