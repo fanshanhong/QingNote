@@ -331,9 +331,6 @@ class NoteEditorNotifier extends StateNotifier<NoteEditorState> {
     );
     transaction.afterSelection = sel;
     await es.apply(transaction);
-    Future.delayed(const Duration(milliseconds: 300), () {
-      es.updateSelectionWithReason(sel, reason: SelectionUpdateReason.uiEvent);
-    });
   }
 
   Future<void> startRecording(BuildContext context) async {
@@ -370,9 +367,6 @@ class NoteEditorNotifier extends StateNotifier<NoteEditorState> {
     );
     transaction.afterSelection = sel;
     await es.apply(transaction);
-    Future.delayed(const Duration(milliseconds: 300), () {
-      es.updateSelectionWithReason(sel, reason: SelectionUpdateReason.uiEvent);
-    });
   }
 
   Set<String> _extractImagePaths(Document document) {

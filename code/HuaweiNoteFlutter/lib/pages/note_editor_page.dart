@@ -429,7 +429,7 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
         _backspaceDeleteMediaCommand(editorState),
         ...standardCommandShortcutEvents,
       ],
-      footer: SizedBox(height: MediaQuery.of(context).size.height * 0.4),
+      footer: SizedBox(height: MediaQuery.of(context).size.height * 0.25),
       editorStyle: EditorStyle.mobile(
         padding: const EdgeInsets.symmetric(
           horizontal: AppDimens.editorContentPadding,
@@ -478,22 +478,22 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
     void deleteNode(Node node) {
       final es = notifier.editorState;
       if (es == null) return;
-
-      Selection targetSel;
-      if (node.previous != null) {
-        final prev = node.previous!;
-        final path = List<int>.from(prev.path);
-        final offset = prev.delta?.toPlainText().length ?? 0;
-        targetSel = Selection.collapsed(Position(path: path, offset: offset));
-      } else {
-        final path = List<int>.from(node.path);
-        targetSel = Selection.collapsed(Position(path: path, offset: 0));
-      }
+      final prev = node.previous;
 
       final transaction = es.transaction;
       transaction.deleteNode(node);
-      transaction.afterSelection = targetSel;
       es.apply(transaction);
+
+      // 编辑器的 TapGestureRecognizer 会在同一事件循环中根据点击坐标覆盖 selection，
+      // 必须延迟到下一帧才能稳定地设置光标到前一行
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (prev != null) {
+          final offset = prev.delta?.toPlainText().length ?? 0;
+          es.selection = Selection.collapsed(
+            Position(path: prev.path, offset: offset),
+          );
+        }
+      });
     }
     return {
       ...standardBlockComponentBuilderMap,
@@ -507,6 +507,7 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
       ImageBlockKeys.type: CustomImageBlockComponentBuilder(
         editable: state.isEditing,
         onDelete: deleteNode,
+        onImageLoaded: _ensureCursorVisible,
       ),
       AudioBlockKeys.type: AudioBlockComponentBuilder(
         noteId: state.noteId,
