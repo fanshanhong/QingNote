@@ -289,16 +289,21 @@ class NoteEditorNotifier extends StateNotifier<NoteEditorState> {
 
   Future<int> ensureNoteSaved() async {
     if (state.noteId != 0) return state.noteId;
+    if (state.title.trim().isEmpty) {
+      state = state.copyWith(title: '新笔记');
+    }
     await saveNote();
     return state.noteId;
   }
 
-  Future<void> insertImage() async {
+  Future<void> insertImage({bool useCamera = false}) async {
     final noteId = await ensureNoteSaved();
     if (noteId == 0) return;
 
     final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery);
+    final picked = await picker.pickImage(
+      source: useCamera ? ImageSource.camera : ImageSource.gallery,
+    );
     if (picked == null) return;
 
     final source = File(picked.path);

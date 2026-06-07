@@ -70,33 +70,23 @@ class TextToolbar extends StatelessWidget {
 
     final transaction = es.transaction;
 
+    final delta = node.delta ?? Delta();
+    final offset = delta.toPlainText().length;
     if (node.type == TodoListBlockKeys.type) {
-      // todo_list → paragraph（保留文字）
-      final delta = node.delta ?? Delta();
       final paragraph = paragraphNode(delta: delta);
       transaction
         ..insertNode(node.path, paragraph)
         ..deleteNode(node)
         ..afterSelection = Selection.collapsed(
-          Position(path: node.path, offset: delta.toPlainText().length),
+          Position(path: node.path, offset: offset),
         );
-    } else if (node.delta != null && node.delta!.toPlainText().isEmpty) {
-      // 空段落 → 原地替换为 todo_list
-      final newNode = todoListNode(checked: false);
+    } else {
+      final newNode = todoListNode(checked: false, delta: delta);
       transaction
         ..insertNode(node.path, newNode)
         ..deleteNode(node)
         ..afterSelection = Selection.collapsed(
-          Position(path: node.path, offset: 0),
-        );
-    } else {
-      // 非空段落 → 下方插入新 todo_list
-      final nextPath = node.path.next;
-      final newNode = todoListNode(checked: false);
-      transaction
-        ..insertNode(nextPath, newNode)
-        ..afterSelection = Selection.collapsed(
-          Position(path: nextPath, offset: 0),
+          Position(path: node.path, offset: offset),
         );
     }
     es.apply(transaction);

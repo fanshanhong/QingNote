@@ -2,42 +2,23 @@ import 'package:appflowy_editor/appflowy_editor.dart';
 import 'package:flutter/material.dart';
 import '../../theme.dart';
 
-Future<void> showStylePickerSheet(
-  BuildContext context, {
-  required EditorState editorState,
-  Selection? savedSelection,
-  required ValueChanged<String> onBackgroundChanged,
-}) async {
-  await showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-    ),
-    builder: (ctx) => _StylePickerContent(
-      editorState: editorState,
-      savedSelection: savedSelection,
-      onBackgroundChanged: onBackgroundChanged,
-    ),
-  );
-}
-
-class _StylePickerContent extends StatefulWidget {
+class StylePickerPanel extends StatefulWidget {
   final EditorState editorState;
-  final Selection? savedSelection;
   final ValueChanged<String> onBackgroundChanged;
+  final VoidCallback onClose;
 
-  const _StylePickerContent({
+  const StylePickerPanel({
+    super.key,
     required this.editorState,
-    this.savedSelection,
     required this.onBackgroundChanged,
+    required this.onClose,
   });
 
   @override
-  State<_StylePickerContent> createState() => _StylePickerContentState();
+  State<StylePickerPanel> createState() => _StylePickerPanelState();
 }
 
-class _StylePickerContentState extends State<_StylePickerContent> {
+class _StylePickerPanelState extends State<StylePickerPanel> {
   int _fontSizeIndex = 2;
   String _selectedBg = 'plain';
 
@@ -61,53 +42,57 @@ class _StylePickerContentState extends State<_StylePickerContent> {
     ('网格', 'grid', AppColors.bgGrid),
   ];
 
-  void _ensureSelection() {
-    if (widget.editorState.selection == null && widget.savedSelection != null) {
-      widget.editorState.updateSelectionWithReason(
-        widget.savedSelection,
-        reason: SelectionUpdateReason.uiEvent,
-      );
-    }
-  }
-
-  Selection? get _activeSelection =>
-      widget.editorState.selection ?? widget.savedSelection;
+  EditorState get _es => widget.editorState;
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: AppColors.divider, width: 0.5)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('样式', style: TextStyle(
-                  fontSize: 16, fontWeight: FontWeight.w500,
-                  color: AppColors.textPrimary,
-                )),
-                const Spacer(),
-                GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: const Icon(Icons.close, size: 22, color: AppColors.textSecondary),
-                ),
+                _buildHeader(),
+                const SizedBox(height: 12),
+                _buildFormatRow(),
+                const SizedBox(height: 12),
+                _buildListRow(),
+                const SizedBox(height: 12),
+                _buildFontSizeRow(),
+                const SizedBox(height: 12),
+                _buildTextColorRow(),
+                const SizedBox(height: 12),
+                _buildBackgroundRow(),
+                const SizedBox(height: 4),
               ],
             ),
-            const SizedBox(height: 16),
-            _buildFormatRow(),
-            const SizedBox(height: 12),
-            _buildListRow(),
-            const SizedBox(height: 12),
-            _buildFontSizeRow(),
-            const SizedBox(height: 12),
-            _buildTextColorRow(),
-            const SizedBox(height: 12),
-            _buildBackgroundRow(),
-          ],
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Row(
+      children: [
+        const Text('样式', style: TextStyle(
+          fontSize: 16, fontWeight: FontWeight.w500,
+          color: AppColors.textPrimary,
+        )),
+        const Spacer(),
+        GestureDetector(
+          onTap: widget.onClose,
+          child: const Icon(Icons.close, size: 22, color: AppColors.textSecondary),
+        ),
+      ],
     );
   }
 
@@ -117,17 +102,22 @@ class _StylePickerContentState extends State<_StylePickerContent> {
         _FormatToggleButton(
           label: 'B',
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-          onTap: () { _ensureSelection(); widget.editorState.toggleAttribute(AppFlowyRichTextKeys.bold); },
+          onTap: () => _es.toggleAttribute(AppFlowyRichTextKeys.bold),
         ),
         _FormatToggleButton(
           label: 'I',
           style: const TextStyle(fontStyle: FontStyle.italic, fontSize: 18),
-          onTap: () { _ensureSelection(); widget.editorState.toggleAttribute(AppFlowyRichTextKeys.italic); },
+          onTap: () => _es.toggleAttribute(AppFlowyRichTextKeys.italic),
         ),
         _FormatToggleButton(
           label: 'U',
           style: const TextStyle(decoration: TextDecoration.underline, fontSize: 18),
-          onTap: () { _ensureSelection(); widget.editorState.toggleAttribute(AppFlowyRichTextKeys.underline); },
+          onTap: () => _es.toggleAttribute(AppFlowyRichTextKeys.underline),
+        ),
+        _FormatToggleButton(
+          label: 'S',
+          style: const TextStyle(decoration: TextDecoration.lineThrough, fontSize: 18),
+          onTap: () => _es.toggleAttribute(AppFlowyRichTextKeys.strikethrough),
         ),
         const Spacer(),
         _AlignButton(
@@ -169,11 +159,6 @@ class _StylePickerContentState extends State<_StylePickerContent> {
           icon: Icons.format_list_numbered,
           label: '有序',
           onTap: () => _toggleBlockType(NumberedListBlockKeys.type),
-        ),
-        _ActionButton(
-          icon: Icons.checklist,
-          label: '清单',
-          onTap: () => _toggleBlockType(TodoListBlockKeys.type),
         ),
         _ActionButton(
           icon: Icons.format_quote,
@@ -303,43 +288,35 @@ class _StylePickerContentState extends State<_StylePickerContent> {
   }
 
   void _setAlign(String align) {
-    _ensureSelection();
-    final es = widget.editorState;
-    final selection = _activeSelection;
+    final selection = _es.selection;
     if (selection == null) return;
-    final nodes = es.getNodesInSelection(selection);
-    final transaction = es.transaction;
+    final nodes = _es.getNodesInSelection(selection);
+    final transaction = _es.transaction;
     for (final node in nodes) {
       transaction.updateNode(node, {blockComponentAlign: align});
     }
     transaction.afterSelection = selection;
-    es.apply(transaction);
+    _es.apply(transaction);
   }
 
   void _indent() {
-    _ensureSelection();
-    indentCommand.handler(widget.editorState);
+    indentCommand.handler(_es);
   }
 
   void _outdent() {
-    _ensureSelection();
-    outdentCommand.handler(widget.editorState);
+    outdentCommand.handler(_es);
   }
 
   void _toggleBlockType(String type) {
-    _ensureSelection();
-    final es = widget.editorState;
-    final selection = _activeSelection;
+    final selection = _es.selection;
     if (selection == null) return;
-    final nodes = es.getNodesInSelection(selection);
+    final nodes = _es.getNodesInSelection(selection);
     if (nodes.isEmpty) return;
 
-    final transaction = es.transaction;
+    final transaction = _es.transaction;
     for (final node in nodes) {
       if (node.type == type) {
-        final newNode = paragraphNode(
-          delta: node.delta,
-        );
+        final newNode = paragraphNode(delta: node.delta);
         transaction
           ..insertNode(node.path, newNode)
           ..deleteNode(node);
@@ -350,8 +327,6 @@ class _StylePickerContentState extends State<_StylePickerContent> {
             newNode = bulletedListNode(delta: node.delta);
           case 'numbered_list':
             newNode = numberedListNode(delta: node.delta);
-          case 'todo_list':
-            newNode = todoListNode(checked: false, delta: node.delta);
           case 'quote':
             newNode = quoteNode(delta: node.delta);
           default:
@@ -363,28 +338,32 @@ class _StylePickerContentState extends State<_StylePickerContent> {
       }
     }
     transaction.afterSelection = selection;
-    es.apply(transaction);
+    _es.apply(transaction);
   }
 
   void _applyFontSize(double size) {
-    _ensureSelection();
-    final es = widget.editorState;
-    final selection = _activeSelection;
+    final selection = _es.selection;
     if (selection == null) return;
-    es.formatDelta(selection, {AppFlowyRichTextKeys.fontSize: size});
+    if (selection.isCollapsed) {
+      _es.updateToggledStyle(AppFlowyRichTextKeys.fontSize, size);
+    } else {
+      _es.formatDelta(selection, {AppFlowyRichTextKeys.fontSize: size});
+    }
   }
 
   void _applyTextColor(Color color) {
-    _ensureSelection();
-    final es = widget.editorState;
-    final selection = _activeSelection;
+    final selection = _es.selection;
     if (selection == null) return;
     final a = (color.a * 255).round();
     final r = (color.r * 255).round();
     final g = (color.g * 255).round();
     final b = (color.b * 255).round();
     final hex = '#${((a << 24) | (r << 16) | (g << 8) | b).toRadixString(16).padLeft(8, '0')}';
-    es.formatDelta(selection, {AppFlowyRichTextKeys.textColor: hex});
+    if (selection.isCollapsed) {
+      _es.updateToggledStyle(AppFlowyRichTextKeys.textColor, hex);
+    } else {
+      _es.formatDelta(selection, {AppFlowyRichTextKeys.textColor: hex});
+    }
   }
 }
 
@@ -420,11 +399,13 @@ class _AlignButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return IconButton(
-      icon: Icon(icon, size: 20, color: AppColors.editorIconActive),
-      onPressed: onTap,
-      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-      padding: EdgeInsets.zero,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 36, height: 36,
+        alignment: Alignment.center,
+        child: Icon(icon, size: 20, color: AppColors.editorIconActive),
+      ),
     );
   }
 }

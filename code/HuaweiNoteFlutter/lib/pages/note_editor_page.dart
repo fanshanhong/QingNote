@@ -11,10 +11,12 @@ import '../widgets/editor/metadata_strip.dart';
 import '../widgets/editor/browse_bottom_bar.dart';
 import '../widgets/editor/style_picker_sheet.dart';
 import '../widgets/editor/text_toolbar.dart';
+import '../editor/handwriting/handwriting_painter.dart';
 import 'package:path_provider/path_provider.dart';
 import '../editor/audio_block_component.dart';
 import '../services/audio_player_service.dart';
 import '../editor/handwriting/handwriting_controller.dart';
+import '../models/stroke.dart';
 import '../editor/handwriting/handwriting_overlay.dart';
 import '../widgets/editor/handwriting_toolbar.dart';
 import '../widgets/editor/handwriting_style_picker_sheet.dart';
@@ -37,6 +39,7 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
   final _audioPlayer = AudioPlayerService();
   final _handwritingController = HandwritingOverlayController();
   String _appDocPath = '';
+  bool _showStylePanel = false;
 
   @override
   void initState() {
@@ -127,7 +130,7 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
         if (!didPop) _onBack();
       },
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: _bgColorForKey(state.pendingBackground),
         body: SafeArea(
           child: Column(
             children: [
@@ -215,6 +218,20 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
                         currentColor: state.currentBrushColor,
                         currentWidth: state.currentBrushWidth,
                         isErasing: state.isErasing,
+                      ),
+                    if (!state.isHandwritingMode && _handwritingController.strokes.isNotEmpty)
+                      IgnorePointer(
+                        child: CustomPaint(
+                          painter: HandwritingPainter(
+                            strokes: _handwritingController.strokes,
+                            inProgressPoints: const [],
+                            currentBrush: BrushType.pen,
+                            currentColor: '#000000',
+                            currentWidth: 3,
+                            devicePixelRatio: MediaQuery.of(context).devicePixelRatio,
+                          ),
+                          size: Size.infinite,
+                        ),
                       ),
                     if (!state.isEditing)
                       Positioned.fill(
@@ -376,11 +393,21 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
         onEraserTap: notifier.toggleEraser,
       );
     }
+    if (state.isEditing && _showStylePanel) {
+      final es = notifier.editorState;
+      if (es != null) {
+        return StylePickerPanel(
+          editorState: es,
+          onBackgroundChanged: notifier.setBackground,
+          onClose: () => setState(() => _showStylePanel = false),
+        );
+      }
+    }
     if (state.isEditing) {
       return TextToolbar(
         editorState: notifier.editorState,
-        onStyleTap: () => _showStylePicker(notifier),
-        onImageTap: () => notifier.insertImage(),
+        onStyleTap: () => setState(() => _showStylePanel = true),
+        onImageTap: () => _showImageSourcePicker(notifier),
         onRecordTap: () => notifier.startRecording(context),
         onHandwritingTap: () => notifier.enterHandwritingMode(),
       );
@@ -400,16 +427,42 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
     );
   }
 
-  void _showStylePicker(NoteEditorNotifier notifier) {
-    final es = notifier.editorState;
-    if (es == null) return;
-    final savedSelection = es.selection;
-    showStylePickerSheet(
-      context,
-      editorState: es,
-      savedSelection: savedSelection,
-      onBackgroundChanged: notifier.setBackground,
+  Future<void> _showImageSourcePicker(NoteEditorNotifier notifier) async {
+    final source = await showModalBottomSheet<String>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('从相册选择'),
+              onTap: () => Navigator.pop(ctx, 'gallery'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt_outlined),
+              title: const Text('拍照'),
+              onTap: () => Navigator.pop(ctx, 'camera'),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
     );
+    if (source == null) return;
+    await notifier.insertImage(useCamera: source == 'camera');
+  }
+
+  Color _bgColorForKey(String key) {
+    switch (key) {
+      case 'linen': return AppColors.bgLinen;
+      case 'kraft': return AppColors.bgKraft;
+      case 'grid': return AppColors.bgGrid;
+      default: return Colors.white;
+    }
   }
 
   void _showHandwritingStylePicker(NoteEditorNotifier notifier, NoteEditorState state) {
