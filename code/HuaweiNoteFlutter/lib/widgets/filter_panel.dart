@@ -41,12 +41,18 @@ class _FilterPanelState extends ConsumerState<FilterPanel> {
       future: _rowsFuture,
       builder: (context, snapshot) {
         if (!snapshot.hasData) return const SizedBox.shrink();
-        return Container(
+        final rows = snapshot.data!;
+        return Material(
           color: Colors.white,
+          borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
+          elevation: 4,
+          shadowColor: Colors.black26,
           child: ListView.builder(
-            itemCount: snapshot.data!.length,
+            shrinkWrap: true,
+            padding: EdgeInsets.zero,
+            itemCount: rows.length,
             itemBuilder: (context, index) =>
-                _buildRowWidget(context, snapshot.data![index], listState.filter),
+                _buildRowWidget(context, rows[index], listState.filter),
           ),
         );
       },
@@ -88,7 +94,7 @@ class _FilterPanelState extends ConsumerState<FilterPanel> {
   Widget _buildRowWidget(BuildContext ctx, _FilterRow row, NoteListFilter current) {
     return switch (row) {
       _PseudoRow r => _buildPseudoTile(ctx, r, current),
-      _DividerRow _ => const Divider(height: 1, indent: 16, endIndent: 16),
+      _DividerRow _ => const Divider(height: 1, thickness: 0.5, color: AppColors.divider, indent: 16, endIndent: 16),
       _SectionHeaderRow _ => _buildSectionHeader(ctx),
       _FolderHeadRow r => _buildFolderHead(r),
       _NotebookRow r => _buildNotebookTile(ctx, r, current),

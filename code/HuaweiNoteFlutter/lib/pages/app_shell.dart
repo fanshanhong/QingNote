@@ -20,29 +20,26 @@ class AppShell extends StatelessWidget {
     return Scaffold(
       body: child,
       bottomNavigationBar: bottomNavVisible
-          ? SizedBox(
-              height: AppDimens.bottomNavHeight,
-              child: BottomNavigationBar(
-                currentIndex: currentIndex,
-                onTap: onTabChanged,
-                selectedItemColor: AppColors.primary,
-                unselectedItemColor: AppColors.textHint,
-                selectedFontSize: AppDimens.textHint,
-                unselectedFontSize: AppDimens.textHint,
-                type: BottomNavigationBarType.fixed,
-                items: const [
-                  BottomNavigationBarItem(
-                    icon: Icon(Icons.note_outlined),
-                    activeIcon: Icon(Icons.note),
-                    label: '笔记',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: Icon(Icons.check_box_outlined),
-                    activeIcon: Icon(Icons.check_box),
-                    label: '待办',
-                  ),
-                ],
-              ),
+          ? BottomNavigationBar(
+              currentIndex: currentIndex,
+              onTap: onTabChanged,
+              selectedItemColor: AppColors.primary,
+              unselectedItemColor: AppColors.textHint,
+              selectedFontSize: AppDimens.textHint,
+              unselectedFontSize: AppDimens.textHint,
+              type: BottomNavigationBarType.fixed,
+              items: const [
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.note_outlined),
+                  activeIcon: Icon(Icons.note),
+                  label: '笔记',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.check_box_outlined),
+                  activeIcon: Icon(Icons.check_box),
+                  label: '待办',
+                ),
+              ],
             )
           : null,
     );

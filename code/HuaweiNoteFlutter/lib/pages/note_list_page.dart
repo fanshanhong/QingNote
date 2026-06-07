@@ -53,11 +53,25 @@ class _NoteListPageState extends ConsumerState<NoteListPage> {
               onQueryChanged: (q) => notifier.setQuery(q),
             ),
           Expanded(
-            child: s.filterPanelVisible
-                ? const FilterPanel()
-                : (s.notes.isEmpty && !s.isLoading)
+            child: Stack(
+              children: [
+                (s.notes.isEmpty && !s.isLoading)
                     ? _buildEmptyState()
                     : _buildNoteList(s, notifier),
+                if (s.filterPanelVisible) ...[
+                  GestureDetector(
+                    onTap: notifier.toggleFilterPanel,
+                    child: Container(color: Colors.black.withValues(alpha: 0.3)),
+                  ),
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxHeight: MediaQuery.of(context).size.height * 0.7,
+                    ),
+                    child: const FilterPanel(),
+                  ),
+                ],
+              ],
+            ),
           ),
           if (s.isBatchMode) _buildBatchBottomBar(s, notifier),
         ]),
