@@ -175,7 +175,7 @@ class FolderManagerNotifier extends StateNotifier<FolderManagerState> {
     }
 
     if (moving is NotebookItemRow) {
-      if (moving.notebook.id == 1) return;
+      if (moving.notebook.isDefault) return;
       final folderId = moving.notebook.folderId;
       final notebookIndices = <int>[];
       for (var i = 0; i < rows.length; i++) {

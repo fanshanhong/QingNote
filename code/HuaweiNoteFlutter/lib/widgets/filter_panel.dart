@@ -156,8 +156,9 @@ class _FilterPanelState extends ConsumerState<FilterPanel> {
         ))),
         GestureDetector(
           onTap: () async {
+            ref.read(noteListProvider.notifier).toggleFilterPanel();
             final result = await ctx.push<bool>('/folder-manager');
-            if (result == true) {
+            if (result == true && mounted) {
               setState(() {
                 _rowsFuture = _buildRows();
               });

@@ -251,6 +251,8 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
                   }
                   await notifier.saveNote(handwritingStrokes: _handwritingController.strokes);
                   notifier.exitEditMode();
+                  _titleFocusNode.unfocus();
+                  _editorFocusNode.unfocus();
                 },
               ),
               Padding(
@@ -425,13 +427,13 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
       final deletedPath = node.path;
       final transaction = es.transaction;
       transaction.deleteNode(node);
-      if (prev != null && prev.delta != null) {
-        transaction.afterSelection = Selection.collapsed(
-          Position(path: prev.path, offset: prev.delta!.toPlainText().length),
-        );
-      } else if (next != null && next.delta != null) {
+      if (next != null && next.delta != null) {
         transaction.afterSelection = Selection.collapsed(
           Position(path: deletedPath, offset: 0),
+        );
+      } else if (prev != null && prev.delta != null) {
+        transaction.afterSelection = Selection.collapsed(
+          Position(path: prev.path, offset: prev.delta!.toPlainText().length),
         );
       }
       es.apply(transaction);

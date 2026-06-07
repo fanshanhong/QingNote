@@ -55,7 +55,7 @@ class _FolderManagerPageState extends ConsumerState<FolderManagerPage> {
             ),
           ],
         ),
-        body: state.isLoading
+        body: state.isLoading && state.rows.isEmpty
             ? const Center(child: CircularProgressIndicator())
             : ReorderableListView.builder(
                 itemCount: state.rows.length,
@@ -113,7 +113,7 @@ class _FolderManagerPageState extends ConsumerState<FolderManagerPage> {
   }
 
   Widget _buildNotebookItem(NotebookItemRow row, int index) {
-    final canDrag = row.notebook.id != 1;
+    final canDrag = !row.notebook.isDefault;
     final cleaned = row.notebook.color.replaceFirst('#', '');
     final dotColor = int.tryParse(cleaned, radix: 16);
     return ReorderableDragStartListener(
@@ -214,7 +214,7 @@ class _FolderManagerPageState extends ConsumerState<FolderManagerPage> {
               _onEditNotebook(nb);
             },
           ),
-          if (nb.id != 1)
+          if (!nb.isDefault)
             ListTile(
               leading: const Icon(Icons.drive_file_move_outlined),
               title: const Text('移动到'),
@@ -223,7 +223,7 @@ class _FolderManagerPageState extends ConsumerState<FolderManagerPage> {
                 _onMoveNotebook(nb);
               },
             ),
-          if (nb.id != 1)
+          if (!nb.isDefault)
             ListTile(
               leading: const Icon(Icons.delete_outline, color: AppColors.danger),
               title: const Text('删除', style: TextStyle(color: AppColors.danger)),
