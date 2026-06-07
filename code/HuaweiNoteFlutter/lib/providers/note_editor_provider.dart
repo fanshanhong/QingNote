@@ -121,7 +121,7 @@ class NoteEditorNotifier extends StateNotifier<NoteEditorState> {
 
   Future<void> loadNote() async {
     if (state.noteId == 0) {
-      final doc = Document.blank();
+      final doc = Document.blank(withInitialText: true);
       _editorState = EditorState(document: doc);
       return;
     }
@@ -129,9 +129,15 @@ class NoteEditorNotifier extends StateNotifier<NoteEditorState> {
     if (note == null) return;
     final content = note.content;
     final docJson = content.documentJson['document'] as Map<String, dynamic>?;
-    final doc = docJson != null
-        ? Document.fromJson(docJson)
-        : Document.blank();
+    Document doc;
+    if (docJson != null) {
+      doc = Document.fromJson(docJson);
+    } else {
+      doc = Document.blank(withInitialText: true);
+    }
+    if (doc.root.children.isEmpty) {
+      doc.insert([0], [paragraphNode()]);
+    }
     _editorState = EditorState(document: doc);
 
     String? nbName;
