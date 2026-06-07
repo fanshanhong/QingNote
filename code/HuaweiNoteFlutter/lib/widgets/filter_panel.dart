@@ -41,29 +41,12 @@ class _FilterPanelState extends ConsumerState<FilterPanel> {
       future: _rowsFuture,
       builder: (context, snapshot) {
         if (!snapshot.hasData) return const SizedBox.shrink();
-        final rows = snapshot.data!;
-        return Align(
-          alignment: Alignment.topCenter,
-          child: Material(
-            elevation: 4,
-            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
-            child: Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(bottom: Radius.circular(12)),
-              ),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxHeight: MediaQuery.of(context).size.height * 0.7,
-                ),
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: rows.length,
-                  itemBuilder: (context, index) =>
-                      _buildRowWidget(context, rows[index], listState.filter),
-                ),
-              ),
-            ),
+        return Container(
+          color: Colors.white,
+          child: ListView.builder(
+            itemCount: snapshot.data!.length,
+            itemBuilder: (context, index) =>
+                _buildRowWidget(context, snapshot.data![index], listState.filter),
           ),
         );
       },
