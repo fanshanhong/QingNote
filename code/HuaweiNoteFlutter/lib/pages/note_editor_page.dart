@@ -425,30 +425,25 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
     void deleteNode(Node node) {
       final es = notifier.editorState;
       if (es == null) return;
-      final targetPath = List<int>.from(node.path);
-      final hasNext = node.next != null;
       final prevPath = node.previous != null ? List<int>.from(node.previous!.path) : null;
       final prevOffset = node.previous?.delta?.toPlainText().length;
+      final targetPath = List<int>.from(node.path);
 
       final transaction = es.transaction;
       transaction.deleteNode(node);
 
       Selection? targetSel;
-      if (hasNext) {
-        targetSel = Selection.collapsed(Position(path: targetPath, offset: 0));
-      } else if (prevPath != null && prevOffset != null) {
+      if (prevPath != null && prevOffset != null) {
         targetSel = Selection.collapsed(Position(path: prevPath, offset: prevOffset));
+      } else {
+        targetSel = Selection.collapsed(Position(path: targetPath, offset: 0));
       }
-      if (targetSel != null) {
-        transaction.afterSelection = targetSel;
-      }
+      transaction.afterSelection = targetSel;
       es.apply(transaction);
 
-      if (targetSel != null) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          es.updateSelectionWithReason(targetSel, reason: SelectionUpdateReason.uiEvent);
-        });
-      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        es.updateSelectionWithReason(targetSel, reason: SelectionUpdateReason.uiEvent);
+      });
     }
     return {
       ...standardBlockComponentBuilderMap,

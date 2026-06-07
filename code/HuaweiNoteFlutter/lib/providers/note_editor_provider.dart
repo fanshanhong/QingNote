@@ -324,10 +324,14 @@ class NoteEditorNotifier extends StateNotifier<NoteEditorState> {
     final transaction = es.transaction;
     transaction.insertNode(insertPath, imageNode(url: savedFile.path));
     transaction.insertNode(insertPath.next, paragraphNode());
-    transaction.afterSelection = Selection.collapsed(
+    final sel = Selection.collapsed(
       Position(path: insertPath.next, offset: 0),
     );
+    transaction.afterSelection = sel;
     await es.apply(transaction);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      es.updateSelectionWithReason(sel, reason: SelectionUpdateReason.uiEvent);
+    });
   }
 
   Future<void> startRecording(BuildContext context) async {
@@ -359,10 +363,14 @@ class NoteEditorNotifier extends StateNotifier<NoteEditorState> {
       audioNode(fileName: fileName, durationMs: result.durationMs),
     );
     transaction.insertNode(insertPath.next, paragraphNode());
-    transaction.afterSelection = Selection.collapsed(
+    final sel = Selection.collapsed(
       Position(path: insertPath.next, offset: 0),
     );
+    transaction.afterSelection = sel;
     await es.apply(transaction);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      es.updateSelectionWithReason(sel, reason: SelectionUpdateReason.uiEvent);
+    });
   }
 
   Set<String> _extractImagePaths(Document document) {
