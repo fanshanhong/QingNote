@@ -8,8 +8,15 @@ class NotebookSheetResult {
 }
 
 const notebookPalette = [
-  '#9E9E9E', '#E53935', '#FB8C00', '#FBC02D',
-  '#43A047', '#00ACC1', '#1E88E5', '#8E24AA',
+  '#E53935', // 红
+  '#FB8C00', // 橙
+  '#FBC02D', // 黄
+  '#43A047', // 绿
+  '#66BB6A', // 浅绿
+  '#00ACC1', // 青
+  '#42A5F5', // 浅蓝
+  '#8E24AA', // 紫
+  '#1E88E5', // 蓝
 ];
 
 Future<NotebookSheetResult?> showNewNotebookSheet(
@@ -96,16 +103,17 @@ class _NewNotebookContentState extends State<_NewNotebookContent> {
             onChanged: (_) => setState(() {}),
           ),
           const SizedBox(height: AppDimens.spacingL),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
             children: notebookPalette.map((hex) {
               final selected = hex == _selectedColor;
               return GestureDetector(
                 onTap: () => setState(() => _selectedColor = hex),
                 child: Container(
-                  width: 32,
-                  height: 32,
-                  margin: const EdgeInsets.symmetric(horizontal: 6),
+                  width: 28,
+                  height: 28,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: _parseHex(hex),
@@ -114,7 +122,7 @@ class _NewNotebookContentState extends State<_NewNotebookContent> {
                         : null,
                   ),
                   child: selected
-                      ? const Icon(Icons.check, size: 16, color: Colors.white)
+                      ? const Icon(Icons.check, size: 14, color: Colors.white)
                       : null,
                 ),
               );
