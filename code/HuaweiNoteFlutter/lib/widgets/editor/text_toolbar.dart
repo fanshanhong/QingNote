@@ -107,9 +107,13 @@ class _ToolbarButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return IconButton(
-      icon: Icon(icon, color: color, size: 24),
-      onPressed: onTap,
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: SizedBox(
+        width: 48, height: 48,
+        child: Center(child: Icon(icon, color: color, size: 24)),
+      ),
     );
   }
 }

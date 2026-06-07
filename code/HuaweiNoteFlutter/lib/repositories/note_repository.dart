@@ -80,6 +80,10 @@ class NoteRepository {
   Future<int> save(Note note) async {
     final db = await _dbHelper.database;
     final now = DateTime.now().millisecondsSinceEpoch;
+
+    final firstImage = _extractFirstImagePath(note.content);
+    final hasTodo = _hasTodoBlock(note.content);
+
     final values = <String, Object?>{
       'title': note.title,
       'plain_text': note.content.toPlainText(),
@@ -90,6 +94,8 @@ class NoteRepository {
       'deleted_at': note.deletedAt,
       'notebook_id': note.notebookId,
       'background': note.background,
+      'first_image_path': firstImage,
+      'has_todo': hasTodo ? 1 : 0,
     };
     if (note.id == 0) {
       values['created_at'] = note.createdAt > 0 ? note.createdAt : now;
@@ -176,6 +182,33 @@ class NoteRepository {
       where: 'deleted_at > 0 AND deleted_at < ?', whereArgs: [cutoff]);
   }
 
+  static String? _extractFirstImagePath(NoteContent content) {
+    final doc = content.documentJson['document'] as Map<String, dynamic>?;
+    if (doc == null) return null;
+    final children = doc['children'] as List<dynamic>? ?? [];
+    for (final node in children) {
+      final map = node as Map<String, dynamic>;
+      if (map['type'] == 'image') {
+        final data = map['data'] as Map<String, dynamic>?;
+        if (data != null) {
+          return data['url'] as String?;
+        }
+      }
+    }
+    return null;
+  }
+
+  static bool _hasTodoBlock(NoteContent content) {
+    final doc = content.documentJson['document'] as Map<String, dynamic>?;
+    if (doc == null) return false;
+    final children = doc['children'] as List<dynamic>? ?? [];
+    for (final node in children) {
+      final map = node as Map<String, dynamic>;
+      if (map['type'] == 'todo_list') return true;
+    }
+    return false;
+  }
+
   Note _rowToNote(Map<String, Object?> row) {
     final contentJson = row['content_json'] as String? ?? '';
     return Note(
@@ -190,6 +223,8 @@ class NoteRepository {
       deletedAt: row['deleted_at'] as int? ?? 0,
       notebookId: row['notebook_id'] as int?,
       background: row['background'] as String? ?? 'plain',
+      firstImagePath: row['first_image_path'] as String?,
+      hasTodo: (row['has_todo'] as int? ?? 0) == 1,
     );
   }
 }

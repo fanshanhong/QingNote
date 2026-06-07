@@ -112,15 +112,18 @@ class NoteEditorNotifier extends StateNotifier<NoteEditorState> {
   final NoteRepository _noteRepo;
   final NotebookRepository _notebookRepo;
   final CategoryRepository _categoryRepo;
+  final int _initialNoteId;
   EditorState? _editorState;
 
   NoteEditorNotifier(this._noteRepo, this._notebookRepo, this._categoryRepo, int noteId)
-      : super(NoteEditorState.initial(noteId: noteId));
+      : _initialNoteId = noteId,
+        super(NoteEditorState.initial(noteId: noteId));
 
   EditorState? get editorState => _editorState;
 
   Future<void> loadNote() async {
-    if (state.noteId == 0) {
+    if (_initialNoteId == 0) {
+      state = NoteEditorState.initial(noteId: 0);
       final doc = Document.blank(withInitialText: true);
       _editorState = EditorState(document: doc);
       return;
@@ -296,7 +299,12 @@ class NoteEditorNotifier extends StateNotifier<NoteEditorState> {
     return state.noteId;
   }
 
-  Future<void> insertImage({bool useCamera = false}) async {
+  Future<void> insertImage({bool useCamera = false, Selection? insertAt}) async {
+    final es = _editorState;
+    if (es == null) return;
+    final selection = insertAt ?? es.selection;
+    final basePath = selection?.end.path ?? es.document.root.children.last.path;
+
     final noteId = await ensureNoteSaved();
     if (noteId == 0) return;
 
@@ -311,16 +319,11 @@ class NoteEditorNotifier extends StateNotifier<NoteEditorState> {
     if (compressed == null) return;
 
     final savedFile = await NoteFileStorage.saveImage(noteId, compressed);
-
-    final es = _editorState;
-    if (es == null) return;
-
-    final selection = es.selection;
-    final path = selection?.end.path ?? es.document.root.children.last.path;
-    final insertPath = path.next;
+    final insertPath = basePath.next;
 
     final transaction = es.transaction;
     transaction.insertNode(insertPath, imageNode(url: savedFile.path));
+    transaction.insertNode(insertPath.next, paragraphNode());
     transaction.afterSelection = Selection.collapsed(
       Position(path: insertPath.next, offset: 0),
     );
@@ -328,6 +331,11 @@ class NoteEditorNotifier extends StateNotifier<NoteEditorState> {
   }
 
   Future<void> startRecording(BuildContext context) async {
+    final es = _editorState;
+    if (es == null) return;
+    final selectionBeforeModal = es.selection;
+    final basePath = selectionBeforeModal?.end.path ?? es.document.root.children.last.path;
+
     final noteId = await ensureNoteSaved();
     if (noteId == 0) return;
 
@@ -342,19 +350,15 @@ class NoteEditorNotifier extends StateNotifier<NoteEditorState> {
     );
     if (result == null) return;
 
-    final es = _editorState;
-    if (es == null) return;
-
     final fileName = result.filePath.split('/').last;
-    final selection = es.selection;
-    final path = selection?.end.path ?? es.document.root.children.last.path;
-    final insertPath = path.next;
+    final insertPath = basePath.next;
 
     final transaction = es.transaction;
     transaction.insertNode(
       insertPath,
       audioNode(fileName: fileName, durationMs: result.durationMs),
     );
+    transaction.insertNode(insertPath.next, paragraphNode());
     transaction.afterSelection = Selection.collapsed(
       Position(path: insertPath.next, offset: 0),
     );

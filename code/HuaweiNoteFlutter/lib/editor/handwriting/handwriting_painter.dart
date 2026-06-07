@@ -12,6 +12,7 @@ class HandwritingPainter extends CustomPainter {
   final String currentColor;
   final int currentWidth;
   final double devicePixelRatio;
+  final double scrollOffset;
 
   HandwritingPainter({
     required this.strokes,
@@ -20,16 +21,20 @@ class HandwritingPainter extends CustomPainter {
     required this.currentColor,
     required this.currentWidth,
     required this.devicePixelRatio,
+    this.scrollOffset = 0,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
-    final clipRect = Offset.zero & size;
+    canvas.save();
+    canvas.translate(0, -scrollOffset);
+    final clipRect = Rect.fromLTWH(0, scrollOffset, size.width, size.height);
     for (final stroke in strokes) {
       if (stroke.points.isEmpty) continue;
       if (!_strokeIntersectsRect(stroke, clipRect)) continue;
       _drawStroke(canvas, stroke);
     }
+    canvas.restore();
     if (inProgressPoints.isNotEmpty) {
       _drawInProgress(canvas);
     }

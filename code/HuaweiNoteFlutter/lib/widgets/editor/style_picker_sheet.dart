@@ -19,7 +19,6 @@ class StylePickerPanel extends StatefulWidget {
 }
 
 class _StylePickerPanelState extends State<StylePickerPanel> {
-  int _fontSizeIndex = 2;
   String _selectedBg = 'plain';
 
   static const _fontSizes = [12.0, 14.0, 16.0, 20.0, 24.0];
@@ -45,34 +44,136 @@ class _StylePickerPanelState extends State<StylePickerPanel> {
   EditorState get _es => widget.editorState;
 
   @override
+  void initState() {
+    super.initState();
+    _es.toggledStyleNotifier.addListener(_onStateChanged);
+    _es.selectionNotifier.addListener(_onStateChanged);
+  }
+
+  @override
+  void didUpdateWidget(covariant StylePickerPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.editorState != widget.editorState) {
+      oldWidget.editorState.toggledStyleNotifier.removeListener(_onStateChanged);
+      oldWidget.editorState.selectionNotifier.removeListener(_onStateChanged);
+      _es.toggledStyleNotifier.addListener(_onStateChanged);
+      _es.selectionNotifier.addListener(_onStateChanged);
+    }
+  }
+
+  @override
+  void dispose() {
+    _es.toggledStyleNotifier.removeListener(_onStateChanged);
+    _es.selectionNotifier.removeListener(_onStateChanged);
+    super.dispose();
+  }
+
+  void _onStateChanged() {
+    if (mounted) setState(() {});
+  }
+
+  bool _isFormatActive(String key) {
+    if (_es.toggledStyle.containsKey(key)) {
+      return _es.toggledStyle[key] == true;
+    }
+    final selection = _es.selection;
+    if (selection == null) return false;
+    if (selection.isCollapsed) {
+      final attrs = _es.getDeltaAttributesInSelectionStart(selection);
+      return attrs?[key] == true;
+    }
+    return _es.getDeltaAttributeValueInSelection<bool>(key, selection) == true;
+  }
+
+  int _currentFontSizeIndex() {
+    double? size;
+    if (_es.toggledStyle.containsKey(AppFlowyRichTextKeys.fontSize)) {
+      size = _es.toggledStyle[AppFlowyRichTextKeys.fontSize] as double?;
+    } else {
+      final selection = _es.selection;
+      if (selection != null) {
+        size = _es.getDeltaAttributeValueInSelection<double>(
+          AppFlowyRichTextKeys.fontSize, selection,
+        );
+      }
+    }
+    if (size == null) return 2;
+    final idx = _fontSizes.indexOf(size);
+    return idx >= 0 ? idx : 2;
+  }
+
+  String _currentAlign() {
+    final selection = _es.selection;
+    if (selection == null) return 'left';
+    final node = _es.getNodeAtPath(selection.start.path);
+    if (node == null) return 'left';
+    return node.attributes[blockComponentAlign] as String? ?? 'left';
+  }
+
+  String _currentBlockType() {
+    final selection = _es.selection;
+    if (selection == null) return ParagraphBlockKeys.type;
+    final node = _es.getNodeAtPath(selection.start.path);
+    if (node == null) return ParagraphBlockKeys.type;
+    return node.type;
+  }
+
+  Color? _currentTextColor() {
+    String? hex;
+    if (_es.toggledStyle.containsKey(AppFlowyRichTextKeys.textColor)) {
+      hex = _es.toggledStyle[AppFlowyRichTextKeys.textColor] as String?;
+    } else {
+      final selection = _es.selection;
+      if (selection != null) {
+        hex = _es.getDeltaAttributeValueInSelection<String>(
+          AppFlowyRichTextKeys.textColor, selection,
+        );
+      }
+    }
+    if (hex == null) return null;
+    return _parseHexColor(hex);
+  }
+
+  Color? _parseHexColor(String hex) {
+    hex = hex.replaceFirst('#', '');
+    final v = int.tryParse(hex, radix: 16);
+    if (v == null) return null;
+    if (hex.length == 6) return Color(0xFF000000 | v);
+    return Color(v);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: AppColors.divider, width: 0.5)),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeader(),
-                const SizedBox(height: 12),
-                _buildFormatRow(),
-                const SizedBox(height: 12),
-                _buildListRow(),
-                const SizedBox(height: 12),
-                _buildFontSizeRow(),
-                const SizedBox(height: 12),
-                _buildTextColorRow(),
-                const SizedBox(height: 12),
-                _buildBackgroundRow(),
-                const SizedBox(height: 4),
-              ],
+    return TapRegion(
+      onTapOutside: (_) => widget.onClose(),
+      child: Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          border: Border(top: BorderSide(color: AppColors.divider, width: 0.5)),
+        ),
+        child: SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildHeader(),
+                  const SizedBox(height: 12),
+                  _buildFormatRow(),
+                  const SizedBox(height: 12),
+                  _buildListRow(),
+                  const SizedBox(height: 12),
+                  _buildFontSizeRow(),
+                  const SizedBox(height: 12),
+                  _buildTextColorRow(),
+                  const SizedBox(height: 12),
+                  _buildBackgroundRow(),
+                  const SizedBox(height: 4),
+                ],
+              ),
             ),
           ),
         ),
@@ -97,39 +198,47 @@ class _StylePickerPanelState extends State<StylePickerPanel> {
   }
 
   Widget _buildFormatRow() {
+    final currentAlign = _currentAlign();
     return Row(
       children: [
         _FormatToggleButton(
           label: 'B',
           style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+          isActive: _isFormatActive(AppFlowyRichTextKeys.bold),
           onTap: () => _es.toggleAttribute(AppFlowyRichTextKeys.bold),
         ),
         _FormatToggleButton(
           label: 'I',
           style: const TextStyle(fontStyle: FontStyle.italic, fontSize: 18),
+          isActive: _isFormatActive(AppFlowyRichTextKeys.italic),
           onTap: () => _es.toggleAttribute(AppFlowyRichTextKeys.italic),
         ),
         _FormatToggleButton(
           label: 'U',
           style: const TextStyle(decoration: TextDecoration.underline, fontSize: 18),
+          isActive: _isFormatActive(AppFlowyRichTextKeys.underline),
           onTap: () => _es.toggleAttribute(AppFlowyRichTextKeys.underline),
         ),
         _FormatToggleButton(
           label: 'S',
           style: const TextStyle(decoration: TextDecoration.lineThrough, fontSize: 18),
+          isActive: _isFormatActive(AppFlowyRichTextKeys.strikethrough),
           onTap: () => _es.toggleAttribute(AppFlowyRichTextKeys.strikethrough),
         ),
         const Spacer(),
         _AlignButton(
           icon: Icons.format_align_left,
+          isActive: currentAlign == 'left',
           onTap: () => _setAlign('left'),
         ),
         _AlignButton(
           icon: Icons.format_align_center,
+          isActive: currentAlign == 'center',
           onTap: () => _setAlign('center'),
         ),
         _AlignButton(
           icon: Icons.format_align_right,
+          isActive: currentAlign == 'right',
           onTap: () => _setAlign('right'),
         ),
       ],
@@ -137,6 +246,7 @@ class _StylePickerPanelState extends State<StylePickerPanel> {
   }
 
   Widget _buildListRow() {
+    final currentType = _currentBlockType();
     return Row(
       children: [
         _ActionButton(
@@ -153,16 +263,19 @@ class _StylePickerPanelState extends State<StylePickerPanel> {
         _ActionButton(
           icon: Icons.format_list_bulleted,
           label: '无序',
+          isActive: currentType == BulletedListBlockKeys.type,
           onTap: () => _toggleBlockType(BulletedListBlockKeys.type),
         ),
         _ActionButton(
           icon: Icons.format_list_numbered,
           label: '有序',
+          isActive: currentType == NumberedListBlockKeys.type,
           onTap: () => _toggleBlockType(NumberedListBlockKeys.type),
         ),
         _ActionButton(
           icon: Icons.format_quote,
           label: '引用',
+          isActive: currentType == QuoteBlockKeys.type,
           onTap: () => _toggleBlockType(QuoteBlockKeys.type),
         ),
       ],
@@ -170,6 +283,7 @@ class _StylePickerPanelState extends State<StylePickerPanel> {
   }
 
   Widget _buildFontSizeRow() {
+    final currentIdx = _currentFontSizeIndex();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -180,13 +294,10 @@ class _StylePickerPanelState extends State<StylePickerPanel> {
         const SizedBox(height: 4),
         Row(
           children: List.generate(_fontSizes.length, (i) {
-            final isSelected = i == _fontSizeIndex;
+            final isSelected = i == currentIdx;
             return Expanded(
               child: GestureDetector(
-                onTap: () {
-                  setState(() => _fontSizeIndex = i);
-                  _applyFontSize(_fontSizes[i]);
-                },
+                onTap: () => _applyFontSize(_fontSizes[i]),
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 8),
                   decoration: BoxDecoration(
@@ -213,10 +324,15 @@ class _StylePickerPanelState extends State<StylePickerPanel> {
   }
 
   Widget _buildTextColorRow() {
+    final activeColor = _currentTextColor();
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: _textColors.map((entry) {
         final (label, color) = entry;
+        final isActive = activeColor != null &&
+            activeColor.r == color.r &&
+            activeColor.g == color.g &&
+            activeColor.b == color.b;
         return GestureDetector(
           onTap: () => _applyTextColor(color),
           child: Column(
@@ -226,14 +342,23 @@ class _StylePickerPanelState extends State<StylePickerPanel> {
                 decoration: BoxDecoration(
                   color: color,
                   shape: BoxShape.circle,
-                  border: color == const Color(0xFF000000)
-                    ? null
-                    : Border.all(color: AppColors.divider, width: 0.5),
+                  border: isActive
+                      ? Border.all(color: AppColors.primary, width: 2.5)
+                      : (color == const Color(0xFF000000)
+                          ? null
+                          : Border.all(color: AppColors.divider, width: 0.5)),
                 ),
+                child: isActive
+                    ? Icon(Icons.check, size: 14,
+                        color: color == const Color(0xFF000000) || color == const Color(0xFF9900CC)
+                            ? Colors.white : Colors.black)
+                    : null,
               ),
               const SizedBox(height: 2),
-              Text(label, style: const TextStyle(
-                fontSize: 10, color: AppColors.textHint,
+              Text(label, style: TextStyle(
+                fontSize: 10,
+                color: isActive ? AppColors.primary : AppColors.textHint,
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
               )),
             ],
           ),
@@ -370,11 +495,13 @@ class _StylePickerPanelState extends State<StylePickerPanel> {
 class _FormatToggleButton extends StatelessWidget {
   final String label;
   final TextStyle style;
+  final bool isActive;
   final VoidCallback onTap;
 
   const _FormatToggleButton({
     required this.label,
     required this.style,
+    required this.isActive,
     required this.onTap,
   });
 
@@ -385,7 +512,14 @@ class _FormatToggleButton extends StatelessWidget {
       child: Container(
         width: 40, height: 40,
         alignment: Alignment.center,
-        child: Text(label, style: style),
+        decoration: BoxDecoration(
+          color: isActive ? AppColors.primary.withAlpha(30) : null,
+          borderRadius: BorderRadius.circular(6),
+          border: isActive ? Border.all(color: AppColors.primary, width: 1.5) : null,
+        ),
+        child: Text(label, style: style.copyWith(
+          color: isActive ? AppColors.primary : AppColors.textPrimary,
+        )),
       ),
     );
   }
@@ -393,9 +527,10 @@ class _FormatToggleButton extends StatelessWidget {
 
 class _AlignButton extends StatelessWidget {
   final IconData icon;
+  final bool isActive;
   final VoidCallback onTap;
 
-  const _AlignButton({required this.icon, required this.onTap});
+  const _AlignButton({required this.icon, required this.isActive, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -404,7 +539,13 @@ class _AlignButton extends StatelessWidget {
       child: Container(
         width: 36, height: 36,
         alignment: Alignment.center,
-        child: Icon(icon, size: 20, color: AppColors.editorIconActive),
+        decoration: BoxDecoration(
+          color: isActive ? AppColors.primary.withAlpha(25) : null,
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Icon(icon, size: 20,
+          color: isActive ? AppColors.primary : AppColors.editorIconActive,
+        ),
       ),
     );
   }
@@ -413,11 +554,13 @@ class _AlignButton extends StatelessWidget {
 class _ActionButton extends StatelessWidget {
   final IconData icon;
   final String label;
+  final bool isActive;
   final VoidCallback onTap;
 
   const _ActionButton({
     required this.icon,
     required this.label,
+    this.isActive = false,
     required this.onTap,
   });
 
@@ -426,14 +569,25 @@ class _ActionButton extends StatelessWidget {
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
-        child: Column(
-          children: [
-            Icon(icon, size: 20, color: AppColors.editorIconActive),
-            const SizedBox(height: 2),
-            Text(label, style: const TextStyle(
-              fontSize: 10, color: AppColors.textSecondary,
-            )),
-          ],
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          decoration: BoxDecoration(
+            color: isActive ? AppColors.primary.withAlpha(25) : null,
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Column(
+            children: [
+              Icon(icon, size: 20,
+                color: isActive ? AppColors.primary : AppColors.editorIconActive,
+              ),
+              const SizedBox(height: 2),
+              Text(label, style: TextStyle(
+                fontSize: 10,
+                color: isActive ? AppColors.primary : AppColors.textSecondary,
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+              )),
+            ],
+          ),
         ),
       ),
     );

@@ -3,7 +3,7 @@ import 'package:path/path.dart';
 
 class DatabaseHelper {
   static const _dbName = 'hwnote.db';
-  static const _dbVersion = 5;
+  static const _dbVersion = 6;
 
   final bool inMemory;
   Database? _database;
@@ -76,6 +76,14 @@ class DatabaseHelper {
       await db.execute(_sqlIndexTodosRemind);
       await db.execute(_sqlIndexTodosDeleted);
     }
+    if (oldVersion < 6) {
+      await db.execute(
+        'ALTER TABLE notes ADD COLUMN first_image_path TEXT',
+      );
+      await db.execute(
+        'ALTER TABLE notes ADD COLUMN has_todo INTEGER NOT NULL DEFAULT 0',
+      );
+    }
   }
 
   Future<void> _applyV3Tables(DatabaseExecutor db) async {
@@ -92,40 +100,47 @@ class DatabaseHelper {
   }) async {
     await db.insert('folders', {
       'id': 1,
-      'name': '默认',
+      'name': '我的笔记',
       'order_index': 0,
       'is_default': 1,
       'deleted_at': 0,
     });
-    await db.insert('notebooks', {
-      'id': 1,
-      'name': '默认',
-      'folder_id': 1,
-      'color': '#9E9E9E',
-      'order_index': 0,
-      'is_default': 1,
-      'deleted_at': 0,
-    });
+    final presetNotebooks = [
+      {'id': 1, 'name': '旅游', 'color': '#FBC02D', 'order_index': 0},
+      {'id': 2, 'name': '个人', 'color': '#43A047', 'order_index': 1},
+      {'id': 3, 'name': '生活', 'color': '#66BB6A', 'order_index': 2},
+      {'id': 4, 'name': '工作', 'color': '#E53935', 'order_index': 3},
+    ];
+    for (final nb in presetNotebooks) {
+      await db.insert('notebooks', {
+        ...nb,
+        'folder_id': 1,
+        'is_default': 0,
+        'deleted_at': 0,
+      });
+    }
     if (allNotesExist) {
       await db.execute('UPDATE notes SET notebook_id = 1');
     }
   }
 
   static const _sqlCreateNotes = '''
-    CREATE TABLE notes (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      title TEXT NOT NULL DEFAULT '',
-      plain_text TEXT NOT NULL DEFAULT '',
-      content_json TEXT NOT NULL DEFAULT '{"blocks":[],"handwriting":{"strokes":[]}}',
-      is_favorite INTEGER NOT NULL DEFAULT 0,
-      created_at INTEGER NOT NULL,
-      updated_at INTEGER NOT NULL,
-      category_id INTEGER,
-      deleted_at INTEGER NOT NULL DEFAULT 0,
-      notebook_id INTEGER,
-      background TEXT NOT NULL DEFAULT 'plain'
-    )
-  ''';
+  CREATE TABLE notes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL DEFAULT '',
+    plain_text TEXT NOT NULL DEFAULT '',
+    content_json TEXT NOT NULL DEFAULT '{"blocks":[],"handwriting":{"strokes":[]}}',
+    is_favorite INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    category_id INTEGER,
+    deleted_at INTEGER NOT NULL DEFAULT 0,
+    notebook_id INTEGER,
+    background TEXT NOT NULL DEFAULT 'plain',
+    first_image_path TEXT,
+    has_todo INTEGER NOT NULL DEFAULT 0
+  )
+''';
 
   static const _sqlCreateCategories = '''
     CREATE TABLE categories (

@@ -11,6 +11,7 @@ class HandwritingOverlay extends StatefulWidget {
   final String currentColor;
   final int currentWidth;
   final bool isErasing;
+  final double scrollOffset;
 
   const HandwritingOverlay({
     super.key,
@@ -20,6 +21,7 @@ class HandwritingOverlay extends StatefulWidget {
     required this.currentColor,
     required this.currentWidth,
     required this.isErasing,
+    this.scrollOffset = 0,
   });
 
   @override
@@ -81,6 +83,7 @@ class _HandwritingOverlayState extends State<HandwritingOverlay> {
             currentColor: widget.currentColor,
             currentWidth: widget.currentWidth,
             devicePixelRatio: dpr,
+            scrollOffset: widget.scrollOffset,
           ),
           size: Size.infinite,
         ),
@@ -133,13 +136,14 @@ class _HandwritingOverlayState extends State<HandwritingOverlay> {
       _gestureSnapshot = [];
     } else if (_inProgressPoints.isNotEmpty) {
       final totalMs = DateTime.now().millisecondsSinceEpoch - _gestureStartMs;
+      final so = widget.scrollOffset;
       final points = <StrokePoint>[];
       for (int i = 0; i < _inProgressPoints.length; i++) {
         final o = _inProgressPoints[i];
         final t = _inProgressPoints.length == 1
             ? 0
             : (totalMs * i ~/ (_inProgressPoints.length - 1));
-        points.add(StrokePoint(x: o.dx.toInt(), y: o.dy.toInt(), t: t));
+        points.add(StrokePoint(x: o.dx.toInt(), y: (o.dy + so).toInt(), t: t));
       }
       widget.controller.addStroke(Stroke(
         brush: widget.currentBrush,
@@ -158,8 +162,9 @@ class _HandwritingOverlayState extends State<HandwritingOverlay> {
     final visibleStrokes = widget.controller.strokes
         .where((s) => !_erasingHidden.contains(s))
         .toList();
-    final hits =
-        StrokeEraser.hitTest(position.dx, position.dy, radiusPx, visibleStrokes);
+    final hits = StrokeEraser.hitTest(
+      position.dx, position.dy + widget.scrollOffset, radiusPx, visibleStrokes,
+    );
     if (hits.isEmpty) return;
     _erasingHidden.addAll(hits);
   }
