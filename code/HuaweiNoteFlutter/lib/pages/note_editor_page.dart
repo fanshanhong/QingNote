@@ -128,6 +128,11 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
 
     _onCursorVisibilityChanged = () {
       if (editorState.selection == null) return;
+      final notifier = ref.read(noteEditorProvider(widget.noteId).notifier);
+      final state = ref.read(noteEditorProvider(widget.noteId));
+      if (!state.isEditing) {
+        notifier.enterEditMode();
+      }
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         _ensureCursorVisible();
@@ -318,7 +323,10 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
                 child: TextField(
                   controller: _titleController,
                   focusNode: _titleFocusNode,
-                  enabled: state.isEditing,
+                  enabled: true,
+                  onTap: () {
+                    if (!state.isEditing) notifier.enterEditMode();
+                  },
                   onChanged: notifier.updateTitle,
                   textInputAction: TextInputAction.next,
                   onSubmitted: (_) => _forceShowKeyboard(),
@@ -392,15 +400,6 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
                                 size: Size.infinite,
                               ),
                             );
-                          },
-                        ),
-                      ),
-                    if (!state.isEditing)
-                      Positioned.fill(
-                        child: GestureDetector(
-                          onTap: () {
-                            notifier.enterEditMode();
-                            WidgetsBinding.instance.addPostFrameCallback((_) => _forceShowKeyboard());
                           },
                         ),
                       ),
