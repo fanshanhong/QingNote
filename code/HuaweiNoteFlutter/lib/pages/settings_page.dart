@@ -34,7 +34,9 @@ class SettingsPage extends ConsumerWidget {
             context: context,
             icon: Icons.sort,
             title: '默认排序',
-            value: noteListState.sortBy == NoteSortBy.updatedDesc ? '按更新时间' : '按创建时间',
+            value: noteListState.sortBy == NoteSortBy.updatedDesc
+                ? '按更新时间'
+                : '按创建时间',
             onTap: () => _pickSortBy(context, ref, noteListState.sortBy),
           ),
           const Divider(height: 1, indent: 56),
@@ -63,12 +65,14 @@ class SettingsPage extends ConsumerWidget {
 
   Widget _sectionHeader(String title) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(AppDimens.spacingL, AppDimens.spacingL, AppDimens.spacingL, AppDimens.spacingS),
-      child: Text(title, style: const TextStyle(
-        fontSize: AppDimens.textCaption + 1,
-        color: AppColors.textSecondary,
-        fontWeight: FontWeight.w500,
-      )),
+      padding: const EdgeInsets.fromLTRB(AppDimens.spacingL, AppDimens.spacingL,
+          AppDimens.spacingL, AppDimens.spacingS),
+      child: Text(title,
+          style: const TextStyle(
+            fontSize: AppDimens.textCaption + 1,
+            color: AppColors.textSecondary,
+            fontWeight: FontWeight.w500,
+          )),
     );
   }
 
@@ -85,13 +89,15 @@ class SettingsPage extends ConsumerWidget {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(value, style: const TextStyle(
-            fontSize: AppDimens.textBody, color: AppColors.textHint,
-          )),
+          Text(value,
+              style: const TextStyle(
+                fontSize: AppDimens.textBody,
+                color: AppColors.textHint,
+              )),
+          if (onTap != null) const SizedBox(width: 4),
           if (onTap != null)
-            const SizedBox(width: 4),
-          if (onTap != null)
-            const Icon(Icons.chevron_right, size: 20, color: AppColors.textHint),
+            const Icon(Icons.chevron_right,
+                size: 20, color: AppColors.textHint),
         ],
       ),
       onTap: onTap,
@@ -99,12 +105,13 @@ class SettingsPage extends ConsumerWidget {
   }
 
   String _themeModeLabel(ThemeMode mode) => switch (mode) {
-    ThemeMode.light => '浅色',
-    ThemeMode.dark => '深色',
-    ThemeMode.system => '跟随系统',
-  };
+        ThemeMode.light => '浅色',
+        ThemeMode.dark => '深色',
+        ThemeMode.system => '跟随系统',
+      };
 
-  Future<void> _pickThemeMode(BuildContext context, WidgetRef ref, ThemeMode current) async {
+  Future<void> _pickThemeMode(
+      BuildContext context, WidgetRef ref, ThemeMode current) async {
     final result = await showDialog<ThemeMode>(
       context: context,
       builder: (ctx) => SimpleDialog(
@@ -121,7 +128,8 @@ class SettingsPage extends ConsumerWidget {
     }
   }
 
-  Future<void> _pickSortBy(BuildContext context, WidgetRef ref, NoteSortBy current) async {
+  Future<void> _pickSortBy(
+      BuildContext context, WidgetRef ref, NoteSortBy current) async {
     final result = await showDialog<NoteSortBy>(
       context: context,
       builder: (ctx) => SimpleDialog(
@@ -137,7 +145,8 @@ class SettingsPage extends ConsumerWidget {
     }
   }
 
-  Widget _dialogOption<T>(BuildContext context, String label, T value, T current) {
+  Widget _dialogOption<T>(
+      BuildContext context, String label, T value, T current) {
     return SimpleDialogOption(
       onPressed: () => Navigator.pop(context, value),
       child: Row(children: [

@@ -55,16 +55,16 @@ List<TodoGroupItem> groupTodos(List<Todo> todos) {
         todos: overdue));
   }
   if (today.isNotEmpty) {
-    groups.add(TodoGroupItem(
-        section: TodoSection.today, label: '今天', todos: today));
+    groups.add(
+        TodoGroupItem(section: TodoSection.today, label: '今天', todos: today));
   }
   if (tomorrow.isNotEmpty) {
     groups.add(TodoGroupItem(
         section: TodoSection.tomorrow, label: '明天', todos: tomorrow));
   }
   if (later.isNotEmpty) {
-    groups.add(TodoGroupItem(
-        section: TodoSection.later, label: '更晚', todos: later));
+    groups.add(
+        TodoGroupItem(section: TodoSection.later, label: '更晚', todos: later));
   }
   if (noDate.isNotEmpty) {
     groups.add(TodoGroupItem(

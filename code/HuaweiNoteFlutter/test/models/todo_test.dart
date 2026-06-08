@@ -34,7 +34,12 @@ void main() {
     });
 
     test('copyWith preserves unmodified fields', () {
-      final t = Todo(id: 5, title: 'Buy', createdAt: 100, updatedAt: 200, isImportant: true);
+      final t = Todo(
+          id: 5,
+          title: 'Buy',
+          createdAt: 100,
+          updatedAt: 200,
+          isImportant: true);
       final t2 = t.copyWith(title: 'Sell');
       expect(t2.id, 5);
       expect(t2.title, 'Sell');

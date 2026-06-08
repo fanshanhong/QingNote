@@ -44,7 +44,8 @@ class MetadataStrip extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.library_books_outlined, size: 14, color: AppColors.primary),
+                const Icon(Icons.library_books_outlined,
+                    size: 14, color: AppColors.primary),
                 const SizedBox(width: 4),
                 Text(
                   _displayName(),
@@ -54,7 +55,8 @@ class MetadataStrip extends StatelessWidget {
                   ),
                 ),
                 if (isEditing)
-                  const Icon(Icons.arrow_drop_down, size: 16, color: AppColors.primary),
+                  const Icon(Icons.arrow_drop_down,
+                      size: 16, color: AppColors.primary),
               ],
             ),
           ),

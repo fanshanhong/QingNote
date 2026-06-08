@@ -28,8 +28,11 @@ class TodoFilterPanel extends StatelessWidget {
       (TodoAllFilter(), TodoAllFilter()) => true,
       (TodoUncategorizedFilter(), TodoUncategorizedFilter()) => true,
       (TodoDeletedFilter(), TodoDeletedFilter()) => true,
-      (TodoFolderFilter(folderId: final a), TodoFolderFilter(folderId: final b))
-          => a == b,
+      (
+        TodoFolderFilter(folderId: final a),
+        TodoFolderFilter(folderId: final b)
+      ) =>
+        a == b,
       _ => false,
     };
   }
@@ -39,12 +42,11 @@ class TodoFilterPanel extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: AppDimens.spacingS),
       children: [
-        _buildRow(
-            Icons.list_alt, '全部待办', allCount, TodoListFilter.all),
+        _buildRow(Icons.list_alt, '全部待办', allCount, TodoListFilter.all),
         _buildRow(Icons.article_outlined, '未分类', uncategorizedCount,
             TodoListFilter.uncategorized),
-        _buildRow(Icons.delete_outline, '最近删除', deletedCount,
-            TodoListFilter.deleted),
+        _buildRow(
+            Icons.delete_outline, '最近删除', deletedCount, TodoListFilter.deleted),
         const Divider(height: 1),
         Padding(
           padding: const EdgeInsets.fromLTRB(AppDimens.spacingL,

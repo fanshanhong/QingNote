@@ -6,7 +6,8 @@ class NotebookIndicator extends StatelessWidget {
   final String? notebookName;
   final String? notebookColor;
   final bool isEditing;
-  final Future<List<({int id, String name, String color})>> Function() onLoadNotebooks;
+  final Future<List<({int id, String name, String color})>> Function()
+      onLoadNotebooks;
   final ValueChanged<int?> onNotebookSelected;
 
   const NotebookIndicator({

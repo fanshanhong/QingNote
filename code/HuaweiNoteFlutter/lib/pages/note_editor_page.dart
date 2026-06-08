@@ -416,7 +416,7 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
         _backspaceDeleteMediaCommand(editorState),
         ...standardCommandShortcutEvents,
       ],
-      footer: SizedBox(height: MediaQuery.of(context).size.height * 0.25),
+      footer: SizedBox(height: MediaQuery.of(context).size.height * 0.4),
       editorStyle: EditorStyle.mobile(
         padding: const EdgeInsets.symmetric(
           horizontal: AppDimens.editorContentPadding,
@@ -450,7 +450,11 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
             prev.type == AudioBlockKeys.type) {
           final transaction = editorState.transaction;
           transaction.deleteNode(prev);
-          transaction.afterSelection = selection;
+          final newPath = List<int>.from(selection.start.path);
+          newPath[newPath.length - 1] -= 1;
+          transaction.afterSelection = Selection.collapsed(
+            Position(path: newPath, offset: 0),
+          );
           editorState.apply(transaction);
           return KeyEventResult.handled;
         }
@@ -465,33 +469,24 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
     void deleteNode(Node node) {
       final es = notifier.editorState;
       if (es == null) return;
-      final prev = node.previous;
-      final targetPath = prev?.path.toList();
-      final targetOffset = prev?.delta?.toPlainText().length ?? 0;
+      final nodePath = List<int>.from(node.path);
+      final hasNext = node.next != null;
+      final prevPath = node.previous != null ? List<int>.from(node.previous!.path) : null;
+      final prevOffset = node.previous?.delta?.toPlainText().length;
 
       final transaction = es.transaction;
       transaction.deleteNode(node);
-      if (targetPath != null) {
-        transaction.afterSelection = Selection.collapsed(
-          Position(path: targetPath, offset: targetOffset),
-        );
+
+      Selection? sel;
+      if (hasNext) {
+        sel = Selection.collapsed(Position(path: nodePath, offset: 0));
+      } else if (prevPath != null && prevOffset != null) {
+        sel = Selection.collapsed(Position(path: prevPath, offset: prevOffset));
+      }
+      if (sel != null) {
+        transaction.afterSelection = sel;
       }
       es.apply(transaction);
-
-      if (targetPath != null) {
-        Future.delayed(const Duration(milliseconds: 50), () {
-          final sel = Selection.collapsed(
-            Position(path: targetPath, offset: targetOffset),
-          );
-          es.updateSelectionWithReason(
-            sel,
-            reason: SelectionUpdateReason.uiEvent,
-          );
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) _ensureCursorVisible();
-          });
-        });
-      }
     }
     return {
       ...standardBlockComponentBuilderMap,

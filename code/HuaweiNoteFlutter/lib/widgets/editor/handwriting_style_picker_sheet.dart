@@ -166,7 +166,8 @@ class _ContentState extends State<_Content> {
             child: Icon(
               icon,
               size: 22,
-              color: isSelected ? AppColors.primary : AppColors.editorIconActive,
+              color:
+                  isSelected ? AppColors.primary : AppColors.editorIconActive,
             ),
           ),
           const SizedBox(height: 4),

@@ -25,7 +25,9 @@ void main() {
         ..writeAsBytesSync([0x00, 0x01, 0x02, 0x03]);
 
       final saved = await NoteFileStorage.saveAudioToBase(
-        tempDir.path, 10, srcFile.path,
+        tempDir.path,
+        10,
+        srcFile.path,
       );
       expect(saved.existsSync(), true);
       expect(saved.path.endsWith('.m4a'), true);

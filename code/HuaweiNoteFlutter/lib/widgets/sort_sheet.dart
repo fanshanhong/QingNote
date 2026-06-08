@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import '../repositories/note_repository.dart';
 import '../theme.dart';
 
-Future<NoteSortBy?> showSortSheet(BuildContext context, {required NoteSortBy current}) {
+Future<NoteSortBy?> showSortSheet(BuildContext context,
+    {required NoteSortBy current}) {
   return showModalBottomSheet<NoteSortBy>(
     context: context,
     shape: const RoundedRectangleBorder(
@@ -11,7 +12,10 @@ Future<NoteSortBy?> showSortSheet(BuildContext context, {required NoteSortBy cur
     builder: (context) => SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(
-          AppDimens.spacingL, AppDimens.spacingL, AppDimens.spacingL, AppDimens.spacingM,
+          AppDimens.spacingL,
+          AppDimens.spacingL,
+          AppDimens.spacingL,
+          AppDimens.spacingM,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -19,14 +23,18 @@ Future<NoteSortBy?> showSortSheet(BuildContext context, {required NoteSortBy cur
           children: [
             const Padding(
               padding: EdgeInsets.only(bottom: AppDimens.spacingM),
-              child: Text('排序方式', style: TextStyle(
-                fontSize: AppDimens.textTitle, fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              )),
+              child: Text('排序方式',
+                  style: TextStyle(
+                    fontSize: AppDimens.textTitle,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  )),
             ),
             RadioListTile<NoteSortBy>(
-              title: const Text('按编辑时间', style: TextStyle(
-                fontSize: AppDimens.textBody, color: AppColors.textPrimary)),
+              title: const Text('按编辑时间',
+                  style: TextStyle(
+                      fontSize: AppDimens.textBody,
+                      color: AppColors.textPrimary)),
               value: NoteSortBy.updatedDesc,
               groupValue: current,
               onChanged: (v) {
@@ -35,8 +43,10 @@ Future<NoteSortBy?> showSortSheet(BuildContext context, {required NoteSortBy cur
               activeColor: AppColors.primary,
             ),
             RadioListTile<NoteSortBy>(
-              title: const Text('按创建时间', style: TextStyle(
-                fontSize: AppDimens.textBody, color: AppColors.textPrimary)),
+              title: const Text('按创建时间',
+                  style: TextStyle(
+                      fontSize: AppDimens.textBody,
+                      color: AppColors.textPrimary)),
               value: NoteSortBy.createdDesc,
               groupValue: current,
               onChanged: (v) {
@@ -45,11 +55,14 @@ Future<NoteSortBy?> showSortSheet(BuildContext context, {required NoteSortBy cur
               activeColor: AppColors.primary,
             ),
             const Divider(height: 1),
-            Center(child: TextButton(
+            Center(
+                child: TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('取消', style: TextStyle(
-                color: AppColors.primary, fontSize: AppDimens.textBody,
-              )),
+              child: const Text('取消',
+                  style: TextStyle(
+                    color: AppColors.primary,
+                    fontSize: AppDimens.textBody,
+                  )),
             )),
           ],
         ),

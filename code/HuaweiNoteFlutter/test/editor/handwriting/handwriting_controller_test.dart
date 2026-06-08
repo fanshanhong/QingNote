@@ -3,9 +3,11 @@ import 'package:hwnote/editor/handwriting/handwriting_controller.dart';
 import 'package:hwnote/models/stroke.dart';
 
 Stroke _makeStroke(int x) => Stroke(
-  brush: BrushType.pen, color: '#000000', width: 3,
-  points: [StrokePoint(x: x, y: 0, t: 0)],
-);
+      brush: BrushType.pen,
+      color: '#000000',
+      width: 3,
+      points: [StrokePoint(x: x, y: 0, t: 0)],
+    );
 
 void main() {
   late HandwritingOverlayController controller;

@@ -17,15 +17,17 @@ class TodoNotificationService {
   Future<void> init() async {
     tz_data.initializeTimeZones();
 
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
-    const iosSettings = DarwinInitializationSettings(
+    const androidSettings =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
+    const darwinSettings = DarwinInitializationSettings(
       requestAlertPermission: false,
       requestBadgePermission: false,
       requestSoundPermission: false,
     );
     const settings = InitializationSettings(
       android: androidSettings,
-      iOS: iosSettings,
+      iOS: darwinSettings,
+      macOS: darwinSettings,
     );
 
     await _plugin.initialize(
@@ -74,7 +76,8 @@ class TodoNotificationService {
     snooze(todoId, '');
   }
 
-  Future<void> scheduleReminder(int todoId, String title, int remindAtMs) async {
+  Future<void> scheduleReminder(
+      int todoId, String title, int remindAtMs) async {
     final now = DateTime.now().millisecondsSinceEpoch;
     if (remindAtMs <= now) return;
 
@@ -141,7 +144,8 @@ class TodoNotificationService {
     final ios = _plugin.resolvePlatformSpecificImplementation<
         IOSFlutterLocalNotificationsPlugin>();
     if (ios != null) {
-      final granted = await ios.requestPermissions(alert: true, badge: true, sound: true);
+      final granted =
+          await ios.requestPermissions(alert: true, badge: true, sound: true);
       return granted ?? false;
     }
     return true;

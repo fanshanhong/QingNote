@@ -8,21 +8,21 @@ class NoteContent {
   const NoteContent({required this.documentJson, required this.handwriting});
 
   factory NoteContent.empty() => NoteContent(
-    documentJson: _emptyDocument(),
-    handwriting: const [],
-  );
+        documentJson: _emptyDocument(),
+        handwriting: const [],
+      );
 
   static Map<String, dynamic> _emptyDocument() => {
-    'document': {
-      'type': 'page',
-      'children': [
-        {
-          'type': 'paragraph',
-          'data': {'delta': []},
+        'document': {
+          'type': 'page',
+          'children': [
+            {
+              'type': 'paragraph',
+              'data': {'delta': []},
+            },
+          ],
         },
-      ],
-    },
-  };
+      };
 
   String toPlainText() {
     final buf = StringBuffer();
@@ -58,11 +58,11 @@ class NoteContent {
   }
 
   String toJson() => jsonEncode({
-    ...documentJson,
-    'handwriting': {
-      'strokes': handwriting.map((s) => s.toJson()).toList(),
-    },
-  });
+        ...documentJson,
+        'handwriting': {
+          'strokes': handwriting.map((s) => s.toJson()).toList(),
+        },
+      });
 
   static NoteContent fromJson(String s) {
     try {
@@ -74,9 +74,7 @@ class NoteContent {
           .whereType<Stroke>()
           .toList();
 
-      final docJson = root.containsKey('document')
-          ? root
-          : _emptyDocument();
+      final docJson = root.containsKey('document') ? root : _emptyDocument();
 
       return NoteContent(documentJson: docJson, handwriting: strokes);
     } catch (_) {

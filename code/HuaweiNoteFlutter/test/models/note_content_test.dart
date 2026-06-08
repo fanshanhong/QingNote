@@ -22,7 +22,9 @@ void main() {
                 'type': 'heading',
                 'data': {
                   'level': 1,
-                  'delta': [{'insert': 'Title'}],
+                  'delta': [
+                    {'insert': 'Title'}
+                  ],
                 },
               },
               {
@@ -30,7 +32,10 @@ void main() {
                 'data': {
                   'delta': [
                     {'insert': 'Hello '},
-                    {'insert': 'world', 'attributes': {'bold': true}},
+                    {
+                      'insert': 'world',
+                      'attributes': {'bold': true}
+                    },
                   ],
                 },
               },
@@ -38,7 +43,9 @@ void main() {
                 'type': 'todo_list',
                 'data': {
                   'checked': false,
-                  'delta': [{'insert': 'Buy milk'}],
+                  'delta': [
+                    {'insert': 'Buy milk'}
+                  ],
                 },
               },
             ],
@@ -63,7 +70,9 @@ void main() {
               {
                 'type': 'paragraph',
                 'data': {
-                  'delta': [{'insert': 'Test content'}],
+                  'delta': [
+                    {'insert': 'Test content'}
+                  ],
                 },
               },
             ],
@@ -94,14 +103,26 @@ void main() {
         'document': {
           'type': 'page',
           'children': [
-            {'type': 'paragraph', 'data': {'delta': [{'insert': 'Hi'}]}},
+            {
+              'type': 'paragraph',
+              'data': {
+                'delta': [
+                  {'insert': 'Hi'}
+                ]
+              }
+            },
           ],
         },
         'handwriting': {
           'strokes': [
-            {'brush': 'pen', 'color': '#212121', 'width': 3, 'points': [
-              {'x': 10.0, 'y': 20.0, 't': 100},
-            ]},
+            {
+              'brush': 'pen',
+              'color': '#212121',
+              'width': 3,
+              'points': [
+                {'x': 10.0, 'y': 20.0, 't': 100},
+              ]
+            },
           ],
         },
       });
@@ -117,7 +138,14 @@ void main() {
           'document': {
             'type': 'page',
             'children': [
-              {'type': 'paragraph', 'data': {'delta': [{'insert': 'Hi'}]}},
+              {
+                'type': 'paragraph',
+                'data': {
+                  'delta': [
+                    {'insert': 'Hi'}
+                  ]
+                }
+              },
             ],
           },
         },

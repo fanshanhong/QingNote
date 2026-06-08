@@ -11,8 +11,7 @@ class AudioPlayerService {
 
   String? get currentToken => _currentToken;
 
-  bool isPlaying(String token) =>
-      _currentToken == token && _player.playing;
+  bool isPlaying(String token) => _currentToken == token && _player.playing;
 
   Future<bool> play(
     String filePath,

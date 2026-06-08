@@ -325,7 +325,11 @@ class NoteEditorNotifier extends StateNotifier<NoteEditorState> {
 
     final transaction = es.transaction;
     transaction.insertNode(insertPath, imageNode(url: savedFile.path));
-    transaction.insertNode(insertPath.next, paragraphNode());
+    final nodeAtInsert = es.document.nodeAtPath(insertPath);
+    final hasNext = nodeAtInsert != null && nodeAtInsert.next != null;
+    if (!hasNext) {
+      transaction.insertNode(insertPath.next, paragraphNode());
+    }
     final sel = Selection.collapsed(
       Position(path: insertPath.next, offset: 0),
     );
@@ -361,7 +365,11 @@ class NoteEditorNotifier extends StateNotifier<NoteEditorState> {
       insertPath,
       audioNode(fileName: fileName, durationMs: result.durationMs),
     );
-    transaction.insertNode(insertPath.next, paragraphNode());
+    final nodeAtInsert = es.document.nodeAtPath(insertPath);
+    final hasNext = nodeAtInsert != null && nodeAtInsert.next != null;
+    if (!hasNext) {
+      transaction.insertNode(insertPath.next, paragraphNode());
+    }
     final sel = Selection.collapsed(
       Position(path: insertPath.next, offset: 0),
     );

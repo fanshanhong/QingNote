@@ -37,9 +37,8 @@ class TodoDetailState {
     if (remindAt <= 0) return '添加提醒';
     final dt = DateTime.fromMillisecondsSinceEpoch(remindAt);
     final now = DateTime.now();
-    final isToday = dt.year == now.year &&
-        dt.month == now.month &&
-        dt.day == now.day;
+    final isToday =
+        dt.year == now.year && dt.month == now.month && dt.day == now.day;
     final amPm = dt.hour < 12 ? '上午' : '下午';
     final hour = dt.hour == 0 ? 12 : (dt.hour > 12 ? dt.hour - 12 : dt.hour);
     final minute = dt.minute.toString().padLeft(2, '0');
@@ -182,8 +181,10 @@ class TodoDetailNotifier extends StateNotifier<TodoDetailState> {
   }
 
   void _scheduleOrCancel(int todoId) {
-    if (state.remindAt > DateTime.now().millisecondsSinceEpoch && !state.isCompleted) {
-      TodoNotificationService.instance.scheduleReminder(todoId, state.title.trim(), state.remindAt);
+    if (state.remindAt > DateTime.now().millisecondsSinceEpoch &&
+        !state.isCompleted) {
+      TodoNotificationService.instance
+          .scheduleReminder(todoId, state.title.trim(), state.remindAt);
     } else {
       TodoNotificationService.instance.cancelReminder(todoId);
     }

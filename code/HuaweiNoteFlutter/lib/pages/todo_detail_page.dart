@@ -79,8 +79,8 @@ class _TodoDetailPageState extends ConsumerState<TodoDetailPage>
 
   Future<void> _pickRemindTime() async {
     final state = ref.read(todoDetailProvider(widget.todoId));
-    final result = await showDateTimePickerSheet(context,
-        initialEpochMs: state.remindAt);
+    final result =
+        await showDateTimePickerSheet(context, initialEpochMs: state.remindAt);
     if (result != null) {
       ref.read(todoDetailProvider(widget.todoId).notifier).setRemindAt(result);
     }
@@ -88,10 +88,12 @@ class _TodoDetailPageState extends ConsumerState<TodoDetailPage>
 
   Future<void> _pickRepeatType() async {
     final state = ref.read(todoDetailProvider(widget.todoId));
-    final result = await showRepeatPickerSheet(context,
-        current: state.repeatType);
+    final result =
+        await showRepeatPickerSheet(context, current: state.repeatType);
     if (result != null) {
-      ref.read(todoDetailProvider(widget.todoId).notifier).setRepeatType(result);
+      ref
+          .read(todoDetailProvider(widget.todoId).notifier)
+          .setRepeatType(result);
     }
   }
 
@@ -113,16 +115,19 @@ class _TodoDetailPageState extends ConsumerState<TodoDetailPage>
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            children: List.generate(names.length, (i) => RadioListTile<int>(
-              title: Text(names[i]),
-              value: i,
-              groupValue: currentIdx,
-              onChanged: (val) {
-                ref.read(todoDetailProvider(widget.todoId).notifier)
-                    .setFolder(ids[val!]);
-                Navigator.pop(ctx);
-              },
-            )),
+            children: List.generate(
+                names.length,
+                (i) => RadioListTile<int>(
+                      title: Text(names[i]),
+                      value: i,
+                      groupValue: currentIdx,
+                      onChanged: (val) {
+                        ref
+                            .read(todoDetailProvider(widget.todoId).notifier)
+                            .setFolder(ids[val!]);
+                        Navigator.pop(ctx);
+                      },
+                    )),
           ),
         ),
         actions: [
@@ -228,13 +233,15 @@ class _TodoDetailPageState extends ConsumerState<TodoDetailPage>
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.folder_outlined, size: 16, color: AppColors.textHint),
+          const Icon(Icons.folder_outlined,
+              size: 16, color: AppColors.textHint),
           const SizedBox(width: 4),
           Text(state.folderName,
               style: const TextStyle(
                   fontSize: AppDimens.textCaption, color: AppColors.textHint)),
           const SizedBox(width: 2),
-          const Icon(Icons.arrow_drop_down, size: 16, color: AppColors.textHint),
+          const Icon(Icons.arrow_drop_down,
+              size: 16, color: AppColors.textHint),
         ],
       ),
     );
@@ -267,8 +274,7 @@ class _TodoDetailPageState extends ConsumerState<TodoDetailPage>
               border: InputBorder.none,
               hintStyle: TextStyle(color: AppColors.textHint),
             ),
-            style: const TextStyle(
-                fontSize: 18, color: AppColors.textPrimary),
+            style: const TextStyle(fontSize: 18, color: AppColors.textPrimary),
           ),
         ),
       ],
@@ -288,14 +294,16 @@ class _TodoDetailPageState extends ConsumerState<TodoDetailPage>
           const SizedBox(width: AppDimens.spacingM),
           Expanded(
             child: Text(state.remindTimeText,
-                style: TextStyle(fontSize: AppDimens.textBody, color: textColor)),
+                style:
+                    TextStyle(fontSize: AppDimens.textBody, color: textColor)),
           ),
           if (hasRemind)
             GestureDetector(
               onTap: () => ref
                   .read(todoDetailProvider(widget.todoId).notifier)
                   .clearRemind(),
-              child: const Icon(Icons.close, size: 20, color: AppColors.textHint),
+              child:
+                  const Icon(Icons.close, size: 20, color: AppColors.textHint),
             ),
         ],
       ),
@@ -312,7 +320,8 @@ class _TodoDetailPageState extends ConsumerState<TodoDetailPage>
           const Expanded(
             child: Text('重复',
                 style: TextStyle(
-                    fontSize: AppDimens.textBody, color: AppColors.textPrimary)),
+                    fontSize: AppDimens.textBody,
+                    color: AppColors.textPrimary)),
           ),
           Text(state.repeatTypeText,
               style: const TextStyle(
@@ -354,7 +363,8 @@ class _TodoDetailPageState extends ConsumerState<TodoDetailPage>
             const SizedBox(width: AppDimens.spacingM),
             const Text('备注',
                 style: TextStyle(
-                    fontSize: AppDimens.textBody, color: AppColors.textPrimary)),
+                    fontSize: AppDimens.textBody,
+                    color: AppColors.textPrimary)),
           ],
         ),
         Padding(

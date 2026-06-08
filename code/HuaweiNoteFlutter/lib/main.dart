@@ -6,9 +6,16 @@ import 'theme.dart';
 import 'services/todo_notification_service.dart';
 import 'providers/repository_providers.dart';
 import 'providers/theme_provider.dart';
+import 'src/rust/frb_generated.dart';
+import 'services/search_service.dart';
+import 'db/database_helper.dart';
+import 'repositories/note_repository.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await RustLib.init();
+  await SearchService.instance.init();
+  _rebuildSearchIndexIfNeeded();
   await TodoNotificationService.instance.init();
   final prefs = await SharedPreferences.getInstance();
   final savedTab = prefs.getInt('active_tab') ?? 0;
@@ -63,5 +70,17 @@ class _HwNoteAppState extends ConsumerState<HwNoteApp> {
       routerConfig: router,
       debugShowCheckedModeBanner: false,
     );
+  }
+}
+
+void _rebuildSearchIndexIfNeeded() async {
+  try {
+    final dbHelper = DatabaseHelper();
+    final repo = NoteRepository(dbHelper);
+    final notes = await repo.list();
+    await SearchService.instance.rebuildIndex(notes);
+    debugPrint('[Search] Index rebuilt with ${notes.length} notes');
+  } catch (e) {
+    debugPrint('[Search] rebuild failed: $e');
   }
 }

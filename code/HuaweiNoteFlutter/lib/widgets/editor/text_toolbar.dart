@@ -91,7 +91,6 @@ class TextToolbar extends StatelessWidget {
     }
     es.apply(transaction);
   }
-
 }
 
 class _ToolbarButton extends StatelessWidget {

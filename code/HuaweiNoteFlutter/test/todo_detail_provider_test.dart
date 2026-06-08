@@ -41,13 +41,19 @@ void main() {
       final state = TodoDetailState.initial(todoId: 0);
       expect(state.copyWith(repeatType: RepeatType.none).repeatTypeText, '不重复');
       expect(state.copyWith(repeatType: RepeatType.daily).repeatTypeText, '每天');
-      expect(state.copyWith(repeatType: RepeatType.weekly).repeatTypeText, '每周');
-      expect(state.copyWith(repeatType: RepeatType.monthly).repeatTypeText, '每月');
-      expect(state.copyWith(repeatType: RepeatType.yearly).repeatTypeText, '每年');
+      expect(
+          state.copyWith(repeatType: RepeatType.weekly).repeatTypeText, '每周');
+      expect(
+          state.copyWith(repeatType: RepeatType.monthly).repeatTypeText, '每月');
+      expect(
+          state.copyWith(repeatType: RepeatType.yearly).repeatTypeText, '每年');
     });
 
-    test('isOverdue returns true when remind time is past and not completed', () {
-      final pastTime = DateTime.now().subtract(const Duration(hours: 1)).millisecondsSinceEpoch;
+    test('isOverdue returns true when remind time is past and not completed',
+        () {
+      final pastTime = DateTime.now()
+          .subtract(const Duration(hours: 1))
+          .millisecondsSinceEpoch;
       final state = TodoDetailState.initial(todoId: 0).copyWith(
         remindAt: pastTime,
         isCompleted: false,
@@ -56,7 +62,9 @@ void main() {
     });
 
     test('isOverdue returns false when completed', () {
-      final pastTime = DateTime.now().subtract(const Duration(hours: 1)).millisecondsSinceEpoch;
+      final pastTime = DateTime.now()
+          .subtract(const Duration(hours: 1))
+          .millisecondsSinceEpoch;
       final state = TodoDetailState.initial(todoId: 0).copyWith(
         remindAt: pastTime,
         isCompleted: true,

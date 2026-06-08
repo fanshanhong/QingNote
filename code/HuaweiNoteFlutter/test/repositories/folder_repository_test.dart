@@ -48,7 +48,8 @@ void main() {
       expect(folder!.name, 'New');
     });
 
-    test('softDelete marks folder and its notebooks/notes as deleted', () async {
+    test('softDelete marks folder and its notebooks/notes as deleted',
+        () async {
       final id = await repo.insert('ToDelete');
       await repo.softDelete(id);
       final folders = await repo.list();
