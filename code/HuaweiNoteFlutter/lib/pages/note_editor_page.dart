@@ -49,6 +49,7 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
   EditorState? _editorStateRef;
   VoidCallback? _onToggledStyleChanged;
   VoidCallback? _onSelectionChanged;
+  VoidCallback? _onCursorVisibilityChanged;
 
   @override
   void initState() {
@@ -80,10 +81,18 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
     _scrollController = EditorScrollController(editorState: editorState);
     _transactionSub = editorState.transactionStream.listen((_) {
       final doc = editorState.document;
-      final hasContent = doc.root.children.any((node) {
+      var hasContent = false;
+      for (final node in doc.root.children) {
+        if (node.type != ParagraphBlockKeys.type) {
+          hasContent = true;
+          break;
+        }
         final delta = node.delta;
-        return delta != null && delta.toPlainText().isNotEmpty;
-      });
+        if (delta != null && delta.toPlainText().isNotEmpty) {
+          hasContent = true;
+          break;
+        }
+      }
       notifier.updateDocumentHasContent(hasContent);
       notifier.updateUndoRedoState(
         editorState.undoManager.undoStack.isNonEmpty,
@@ -116,6 +125,15 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
       }
     };
     editorState.selectionNotifier.addListener(_onSelectionChanged!);
+
+    _onCursorVisibilityChanged = () {
+      if (editorState.selection == null) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _ensureCursorVisible();
+      });
+    };
+    editorState.selectionNotifier.addListener(_onCursorVisibilityChanged!);
 
     if (mounted) setState(() => _editorReady = true);
   }
@@ -167,6 +185,9 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
       if (_onSelectionChanged != null) {
         _editorStateRef!.selectionNotifier.removeListener(_onSelectionChanged!);
       }
+      if (_onCursorVisibilityChanged != null) {
+        _editorStateRef!.selectionNotifier.removeListener(_onCursorVisibilityChanged!);
+      }
     }
     _scrollController?.dispose();
     _editorFocusNode.dispose();
@@ -209,6 +230,38 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
       }
     }
     return null;
+  }
+
+  void _ensureCursorVisible() {
+    final es = _editorStateRef;
+    final sc = _scrollController;
+    if (es == null || sc == null || es.selection == null) return;
+
+    final rects = es.selectionRects();
+    if (rects.isEmpty) return;
+
+    final cursorRect = rects.last;
+    final editorBox = _editorFocusNode.context?.findRenderObject() as RenderBox?;
+    if (editorBox == null) return;
+
+    final editorTop = editorBox.localToGlobal(Offset.zero).dy;
+    final editorHeight = editorBox.size.height;
+    final editorBottom = editorTop + editorHeight;
+    const margin = 40.0;
+
+    if (cursorRect.bottom > editorBottom - margin) {
+      final overshoot = cursorRect.bottom - editorBottom + margin;
+      sc.scrollOffsetController.animateScroll(
+        offset: overshoot,
+        duration: const Duration(milliseconds: 120),
+      );
+    } else if (cursorRect.top < editorTop + margin) {
+      final overshoot = editorTop + margin - cursorRect.top;
+      sc.scrollOffsetController.animateScroll(
+        offset: -overshoot,
+        duration: const Duration(milliseconds: 120),
+      );
+    }
   }
 
   @override
@@ -376,7 +429,7 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
         _backspaceDeleteMediaCommand(editorState),
         ...standardCommandShortcutEvents,
       ],
-      footer: SizedBox(height: MediaQuery.of(context).size.height * 0.4),
+      footer: SizedBox(height: MediaQuery.of(context).size.height * 0.25),
       editorStyle: EditorStyle.mobile(
         padding: const EdgeInsets.symmetric(
           horizontal: AppDimens.editorContentPadding,
@@ -425,30 +478,22 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
     void deleteNode(Node node) {
       final es = notifier.editorState;
       if (es == null) return;
-      final targetPath = List<int>.from(node.path);
-      final hasNext = node.next != null;
-      final prevPath = node.previous != null ? List<int>.from(node.previous!.path) : null;
-      final prevOffset = node.previous?.delta?.toPlainText().length;
+      final prev = node.previous;
 
       final transaction = es.transaction;
       transaction.deleteNode(node);
-
-      Selection? targetSel;
-      if (hasNext) {
-        targetSel = Selection.collapsed(Position(path: targetPath, offset: 0));
-      } else if (prevPath != null && prevOffset != null) {
-        targetSel = Selection.collapsed(Position(path: prevPath, offset: prevOffset));
-      }
-      if (targetSel != null) {
-        transaction.afterSelection = targetSel;
-      }
       es.apply(transaction);
 
-      if (targetSel != null) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          es.updateSelectionWithReason(targetSel, reason: SelectionUpdateReason.uiEvent);
-        });
-      }
+      // 编辑器的 TapGestureRecognizer 会在同一事件循环中根据点击坐标覆盖 selection，
+      // 必须延迟到下一帧才能稳定地设置光标到前一行
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (prev != null) {
+          final offset = prev.delta?.toPlainText().length ?? 0;
+          es.selection = Selection.collapsed(
+            Position(path: prev.path, offset: offset),
+          );
+        }
+      });
     }
     return {
       ...standardBlockComponentBuilderMap,
@@ -462,6 +507,7 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
       ImageBlockKeys.type: CustomImageBlockComponentBuilder(
         editable: state.isEditing,
         onDelete: deleteNode,
+        onImageLoaded: _ensureCursorVisible,
       ),
       AudioBlockKeys.type: AudioBlockComponentBuilder(
         noteId: state.noteId,

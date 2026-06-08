@@ -7,11 +7,13 @@ class CustomImageBlockComponentBuilder extends BlockComponentBuilder {
   CustomImageBlockComponentBuilder({
     required this.editable,
     required this.onDelete,
+    this.onImageLoaded,
     super.configuration,
   });
 
   final bool editable;
   final void Function(Node node) onDelete;
+  final VoidCallback? onImageLoaded;
 
   @override
   BlockComponentWidget build(BlockComponentContext blockComponentContext) {
@@ -22,6 +24,7 @@ class CustomImageBlockComponentBuilder extends BlockComponentBuilder {
       configuration: configuration,
       editable: editable,
       onDelete: onDelete,
+      onImageLoaded: onImageLoaded,
     );
   }
 
@@ -37,10 +40,12 @@ class CustomImageBlockWidget extends BlockComponentStatefulWidget {
     super.configuration = const BlockComponentConfiguration(),
     required this.editable,
     required this.onDelete,
+    this.onImageLoaded,
   });
 
   final bool editable;
   final void Function(Node node) onDelete;
+  final VoidCallback? onImageLoaded;
 
   @override
   State<CustomImageBlockWidget> createState() => _CustomImageBlockWidgetState();
@@ -60,7 +65,19 @@ class _CustomImageBlockWidgetState extends State<CustomImageBlockWidget> {
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: file.existsSync()
-                ? Image.file(file, fit: BoxFit.cover, width: double.infinity)
+                ? Image.file(
+                    file,
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    frameBuilder: (context, child, frame, loaded) {
+                      if (frame != null && !loaded) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          widget.onImageLoaded?.call();
+                        });
+                      }
+                      return child;
+                    },
+                  )
                 : Container(
                     height: 100,
                     decoration: BoxDecoration(

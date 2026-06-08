@@ -125,20 +125,16 @@ class _FolderManagerPageState extends ConsumerState<FolderManagerPage> {
   }
 
   Widget _buildNotebookItem(NotebookItemRow row, int index) {
-    final canDrag = !row.notebook.isDefault;
     final cleaned = row.notebook.color.replaceFirst('#', '');
     final dotColor = int.tryParse(cleaned, radix: 16);
     return ReorderableDragStartListener(
       key: ValueKey('notebook_${row.notebook.id}'),
       index: index,
-      enabled: canDrag,
+      enabled: true,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(48, 10, AppDimens.spacingL, 10),
         child: Row(children: [
-          if (canDrag)
-            const Icon(Icons.drag_handle, size: 18, color: AppColors.textHint)
-          else
-            const SizedBox(width: 18),
+          const Icon(Icons.drag_handle, size: 18, color: AppColors.textHint),
           const SizedBox(width: AppDimens.spacingS),
           Container(
               width: 10,
@@ -236,21 +232,17 @@ class _FolderManagerPageState extends ConsumerState<FolderManagerPage> {
               _onEditNotebook(nb);
             },
           ),
-          if (!nb.isDefault)
-            ListTile(
-              leading: const Icon(Icons.drive_file_move_outlined),
-              title: const Text('移动到'),
-              onTap: () {
-                Navigator.pop(ctx);
-                _onMoveNotebook(nb);
-              },
-            ),
-          if (!nb.isDefault)
-            ListTile(
-              leading:
-                  const Icon(Icons.delete_outline, color: AppColors.danger),
-              title:
-                  const Text('删除', style: TextStyle(color: AppColors.danger)),
+          ListTile(
+            leading: const Icon(Icons.drive_file_move_outlined),
+            title: const Text('移动到'),
+            onTap: () {
+              Navigator.pop(ctx);
+              _onMoveNotebook(nb);
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.delete_outline, color: AppColors.danger),
+            title: const Text('删除', style: TextStyle(color: AppColors.danger)),
               onTap: () {
                 Navigator.pop(ctx);
                 _onDeleteNotebook(nb);

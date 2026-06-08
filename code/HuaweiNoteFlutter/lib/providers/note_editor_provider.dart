@@ -226,10 +226,12 @@ class NoteEditorNotifier extends StateNotifier<NoteEditorState> {
   }
 
   void updateDocumentHasContent(bool hasContent) {
+    if (state.documentHasContent == hasContent) return;
     state = state.copyWith(documentHasContent: hasContent);
   }
 
   void updateUndoRedoState(bool canUndo, bool canRedo) {
+    if (state.canUndo == canUndo && state.canRedo == canRedo) return;
     state = state.copyWith(canUndo: canUndo, canRedo: canRedo);
   }
 
@@ -324,9 +326,10 @@ class NoteEditorNotifier extends StateNotifier<NoteEditorState> {
     final transaction = es.transaction;
     transaction.insertNode(insertPath, imageNode(url: savedFile.path));
     transaction.insertNode(insertPath.next, paragraphNode());
-    transaction.afterSelection = Selection.collapsed(
+    final sel = Selection.collapsed(
       Position(path: insertPath.next, offset: 0),
     );
+    transaction.afterSelection = sel;
     await es.apply(transaction);
   }
 
@@ -359,9 +362,10 @@ class NoteEditorNotifier extends StateNotifier<NoteEditorState> {
       audioNode(fileName: fileName, durationMs: result.durationMs),
     );
     transaction.insertNode(insertPath.next, paragraphNode());
-    transaction.afterSelection = Selection.collapsed(
+    final sel = Selection.collapsed(
       Position(path: insertPath.next, offset: 0),
     );
+    transaction.afterSelection = sel;
     await es.apply(transaction);
   }
 
