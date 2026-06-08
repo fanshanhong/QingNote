@@ -49,6 +49,7 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
   EditorState? _editorStateRef;
   VoidCallback? _onToggledStyleChanged;
   VoidCallback? _onSelectionChanged;
+  VoidCallback? _onCursorVisibilityChanged;
 
   @override
   void initState() {
@@ -125,6 +126,15 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
     };
     editorState.selectionNotifier.addListener(_onSelectionChanged!);
 
+    _onCursorVisibilityChanged = () {
+      if (editorState.selection == null) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _ensureCursorVisible();
+      });
+    };
+    editorState.selectionNotifier.addListener(_onCursorVisibilityChanged!);
+
     if (mounted) setState(() => _editorReady = true);
   }
 
@@ -174,6 +184,9 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
       }
       if (_onSelectionChanged != null) {
         _editorStateRef!.selectionNotifier.removeListener(_onSelectionChanged!);
+      }
+      if (_onCursorVisibilityChanged != null) {
+        _editorStateRef!.selectionNotifier.removeListener(_onCursorVisibilityChanged!);
       }
     }
     _scrollController?.dispose();
@@ -234,16 +247,17 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
     final editorTop = editorBox.localToGlobal(Offset.zero).dy;
     final editorHeight = editorBox.size.height;
     final editorBottom = editorTop + editorHeight;
-    const margin = 40.0;
+    const topMargin = 0.0;
+    const bottomMargin = 0.0;
 
-    if (cursorRect.bottom > editorBottom - margin) {
-      final overshoot = cursorRect.bottom - editorBottom + margin;
+    if (cursorRect.bottom > editorBottom - bottomMargin) {
+      final overshoot = cursorRect.bottom - editorBottom + bottomMargin;
       sc.scrollOffsetController.animateScroll(
         offset: overshoot,
         duration: const Duration(milliseconds: 120),
       );
-    } else if (cursorRect.top < editorTop + margin) {
-      final overshoot = editorTop + margin - cursorRect.top;
+    } else if (cursorRect.top < editorTop + topMargin) {
+      final overshoot = editorTop + topMargin - cursorRect.top;
       sc.scrollOffsetController.animateScroll(
         offset: -overshoot,
         duration: const Duration(milliseconds: 120),
@@ -409,6 +423,7 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
     return AppFlowyEditor(
       editorState: editorState,
       editable: true,
+      autoScrollEdgeOffset: 0,
       focusNode: _editorFocusNode,
       editorScrollController: _scrollController,
       blockComponentBuilders: _buildBlockComponentBuilders(),
@@ -500,6 +515,7 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
       ImageBlockKeys.type: CustomImageBlockComponentBuilder(
         editable: state.isEditing,
         onDelete: deleteNode,
+        onImageLoaded: _ensureCursorVisible,
       ),
       AudioBlockKeys.type: AudioBlockComponentBuilder(
         noteId: state.noteId,
