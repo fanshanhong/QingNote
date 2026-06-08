@@ -26,9 +26,9 @@
 
 ---
 
-## 为什么选择 QingNote？
+## QingNote
 
-> 市面上的笔记应用要么功能强大但体积臃肿，要么轻巧但功能单一。QingNote 追求**恰到好处** — 用 Flutter 统一五端 UI 体验，用 Rust 在性能关键路径上做到极致。
+> QingNote  — 用 Flutter 统一五端 UI 体验，用 Rust 在性能关键路径上做到极致。
 
 | 特性 | 说明 |
 |:---|:---|
@@ -40,6 +40,13 @@
 ---
 
 ## 核心功能
+
+![描述文字](assets/pict1.jpeg)
+
+![描述文字](assets/pict2.png)
+
+![描述文字](assets/pict3.png)
+
 
 ### 富文本编辑
 
