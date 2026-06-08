@@ -5,7 +5,7 @@
 <h1 align="center">轻记 / QingNote</h1>
 
 <p align="center">
-  <b>一套代码，五端运行 — Flutter + Rust 驱动的全平台智能笔记</b>
+  <b>一套代码，五端运行（Android、iOS、鸿蒙NEXT、Mac、Windows） — Flutter + Rust 驱动的全平台智能笔记</b>
 </p>
 
 <p align="center">
