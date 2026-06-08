@@ -26,8 +26,12 @@ class NoteContent {
 
   String toPlainText() {
     final buf = StringBuffer();
-    final doc = documentJson['document'] as Map<String, dynamic>?;
+    var doc = documentJson['document'] as Map<String, dynamic>?;
     if (doc == null) return '';
+    if (doc.containsKey('document') && !doc.containsKey('children')) {
+      doc = doc['document'] as Map<String, dynamic>?;
+      if (doc == null) return '';
+    }
     final children = doc['children'] as List<dynamic>? ?? [];
     for (final node in children) {
       _extractText(node as Map<String, dynamic>, buf);
