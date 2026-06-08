@@ -52,36 +52,48 @@ class _TodoDetailPageState extends ConsumerState<TodoDetailPage>
   }
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.inactive) {
-      _save();
+  void didChangeAppLifecycleState(AppLifecycleState lifecycleState) {
+    if (lifecycleState == AppLifecycleState.inactive && _loaded) {
+      final notifier = ref.read(todoDetailProvider(widget.todoId).notifier);
+      notifier.setTitle(_titleController.text);
+      notifier.setMemo(_memoController.text);
+      notifier.save();
     }
   }
 
   @override
   void deactivate() {
-    _saveSync();
+    _saveBeforePop();
     super.deactivate();
   }
 
-  void _saveSync() {
-    if (!_loaded) return;
+  bool _savedBeforePop = false;
+
+  void _saveBeforePop() {
+    if (!_loaded || _savedBeforePop) return;
+    _savedBeforePop = true;
     final notifier = ref.read(todoDetailProvider(widget.todoId).notifier);
-    notifier.setTitle(_titleController.text);
-    notifier.setMemo(_memoController.text);
-    Future.microtask(() => notifier.save());
+    final title = _titleController.text;
+    final memo = _memoController.text;
+    Future.microtask(() {
+      try {
+        notifier.setTitle(title);
+        notifier.setMemo(memo);
+        notifier.save();
+      } catch (_) {}
+    });
   }
 
-  void _save() {
-    if (!_loaded) return;
+  void _onBack() {
+    if (!_loaded) {
+      context.pop(false);
+      return;
+    }
+    _savedBeforePop = true;
     final notifier = ref.read(todoDetailProvider(widget.todoId).notifier);
     notifier.setTitle(_titleController.text);
     notifier.setMemo(_memoController.text);
     notifier.save();
-  }
-
-  void _onBack() {
-    _save();
     context.pop(true);
   }
 

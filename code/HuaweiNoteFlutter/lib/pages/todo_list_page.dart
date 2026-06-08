@@ -1,12 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../models/folder.dart';
 import '../models/todo.dart';
 import '../providers/todo_list_provider.dart';
-import '../providers/repository_providers.dart';
-import '../repositories/todo_repository.dart';
-import '../repositories/folder_repository.dart';
 import '../theme.dart';
 import '../utils/todo_group_utils.dart';
 import '../widgets/delete_confirm_sheet.dart';
@@ -136,9 +132,25 @@ class _TodoListPageState extends ConsumerState<TodoListPage> {
                   ref.read(todoListProvider.notifier).exitBatchMode(),
             ),
             Expanded(
-              child: state.filterPanelVisible
-                  ? _buildFilterPanel(state)
-                  : _buildTodoList(state, isDeletedView),
+              child: Stack(
+                children: [
+                  _buildTodoList(state, isDeletedView),
+                  if (state.filterPanelVisible) ...[
+                    GestureDetector(
+                      onTap: () => ref
+                          .read(todoListProvider.notifier)
+                          .toggleFilterPanel(),
+                      child: Container(color: Colors.transparent),
+                    ),
+                    ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxHeight: MediaQuery.of(context).size.height * 0.7,
+                      ),
+                      child: const TodoFilterPanel(),
+                    ),
+                  ],
+                ],
+              ),
             ),
             if (state.isBatchMode) _buildBatchBottomBar(state),
           ],
@@ -151,51 +163,6 @@ class _TodoListPageState extends ConsumerState<TodoListPage> {
               onPressed: _showQuickAddSheet,
               child: const Icon(Icons.add))
           : null,
-    );
-  }
-
-  Widget _buildFilterPanel(TodoListState state) {
-    final todoRepo = ref.read(todoRepositoryProvider);
-    final folderRepo = ref.read(folderRepositoryProvider);
-    return FutureBuilder(
-      future: _loadFilterPanelData(todoRepo, folderRepo),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        final data = snapshot.data!;
-        return TodoFilterPanel(
-          currentFilter: state.filter,
-          allCount: data.allCount,
-          uncategorizedCount: data.uncategorizedCount,
-          deletedCount: data.deletedCount,
-          folders: data.folders,
-          folderCounts: data.folderCounts,
-          onFilterSelected: (f) =>
-              ref.read(todoListProvider.notifier).setFilter(f),
-        );
-      },
-    );
-  }
-
-  Future<_FilterPanelData> _loadFilterPanelData(
-    TodoRepository todoRepo,
-    FolderRepository folderRepo,
-  ) async {
-    final allCount = await todoRepo.count();
-    final uncatCount = await todoRepo.countUncategorized();
-    final delCount = await todoRepo.count(includeDeleted: true);
-    final folders = await folderRepo.list();
-    final folderCounts = <int, int>{};
-    for (final f in folders) {
-      folderCounts[f.id] = await todoRepo.count(folderId: f.id);
-    }
-    return _FilterPanelData(
-      allCount: allCount,
-      uncategorizedCount: uncatCount,
-      deletedCount: delCount,
-      folders: folders,
-      folderCounts: folderCounts,
     );
   }
 
@@ -304,18 +271,3 @@ class _TodoListPageState extends ConsumerState<TodoListPage> {
   }
 }
 
-class _FilterPanelData {
-  final int allCount;
-  final int uncategorizedCount;
-  final int deletedCount;
-  final List<Folder> folders;
-  final Map<int, int> folderCounts;
-
-  const _FilterPanelData({
-    required this.allCount,
-    required this.uncategorizedCount,
-    required this.deletedCount,
-    required this.folders,
-    required this.folderCounts,
-  });
-}

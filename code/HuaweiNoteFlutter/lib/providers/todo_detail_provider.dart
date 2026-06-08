@@ -151,40 +151,47 @@ class TodoDetailNotifier extends StateNotifier<TodoDetailState> {
   }
 
   Future<bool> save() async {
-    if (state.todoId == 0 && state.title.trim().isEmpty) return false;
+    final currentState = state;
+    if (currentState.todoId == 0 && currentState.title.trim().isEmpty) {
+      return false;
+    }
     final now = DateTime.now().millisecondsSinceEpoch;
     final todo = Todo(
-      id: state.todoId,
-      title: state.title.trim(),
-      memo: state.memo,
-      isCompleted: state.isCompleted,
-      isImportant: state.isImportant,
-      remindAt: state.remindAt,
-      repeatType: state.repeatType,
-      folderId: state.folderId,
+      id: currentState.todoId,
+      title: currentState.title.trim(),
+      memo: currentState.memo,
+      isCompleted: currentState.isCompleted,
+      isImportant: currentState.isImportant,
+      remindAt: currentState.remindAt,
+      repeatType: currentState.repeatType,
+      folderId: currentState.folderId,
       createdAt: now,
       updatedAt: now,
     );
-    if (state.todoId == 0) {
+    if (currentState.todoId == 0) {
       final newId = await _todoRepo.insert(todo);
       if (newId > 0) {
-        state = state.copyWith(todoId: newId);
-        _scheduleOrCancel(newId);
+        if (mounted) state = state.copyWith(todoId: newId);
+        _scheduleOrCancelWith(
+            newId, currentState.remindAt, currentState.isCompleted,
+            currentState.title.trim());
         return true;
       }
       return false;
     } else {
       await _todoRepo.update(todo);
-      _scheduleOrCancel(state.todoId);
+      _scheduleOrCancelWith(
+          currentState.todoId, currentState.remindAt, currentState.isCompleted,
+          currentState.title.trim());
       return true;
     }
   }
 
-  void _scheduleOrCancel(int todoId) {
-    if (state.remindAt > DateTime.now().millisecondsSinceEpoch &&
-        !state.isCompleted) {
+  void _scheduleOrCancelWith(
+      int todoId, int remindAt, bool isCompleted, String title) {
+    if (remindAt > DateTime.now().millisecondsSinceEpoch && !isCompleted) {
       TodoNotificationService.instance
-          .scheduleReminder(todoId, state.title.trim(), state.remindAt);
+          .scheduleReminder(todoId, title, remindAt);
     } else {
       TodoNotificationService.instance.cancelReminder(todoId);
     }

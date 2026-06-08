@@ -6,6 +6,7 @@ Future<RepeatType?> showRepeatPickerSheet(BuildContext context,
     {RepeatType current = RepeatType.none}) {
   return showModalBottomSheet<RepeatType>(
     context: context,
+    backgroundColor: AppColors.bgCard,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
     ),

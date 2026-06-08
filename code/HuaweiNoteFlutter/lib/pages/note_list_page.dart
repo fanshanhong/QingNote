@@ -61,8 +61,7 @@ class _NoteListPageState extends ConsumerState<NoteListPage> {
                 if (s.filterPanelVisible) ...[
                   GestureDetector(
                     onTap: notifier.toggleFilterPanel,
-                    child:
-                        Container(color: Colors.black.withValues(alpha: 0.3)),
+                    child: Container(color: Colors.transparent),
                   ),
                   ConstrainedBox(
                     constraints: BoxConstraints(

@@ -40,9 +40,13 @@ class _NoteSearchBarState extends State<NoteSearchBar> {
           hintText: '搜索笔记',
           hintStyle: const TextStyle(
               color: AppColors.textHint, fontSize: AppDimens.textBody),
-          prefixIcon: const Icon(Icons.search, color: AppColors.textHint),
+          prefixIcon: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Image.asset('assets/images/search_icon.png',
+                width: 20, height: 20),
+          ),
           filled: true,
-          fillColor: const Color(0xFFBBDEFB),
+          fillColor: const Color(0xFFE3F2FD),
           contentPadding: const EdgeInsets.symmetric(vertical: 10),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(20),
