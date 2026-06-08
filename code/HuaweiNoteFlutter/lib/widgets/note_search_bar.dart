@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import '../theme.dart';
 
@@ -14,20 +13,15 @@ class NoteSearchBar extends StatefulWidget {
 
 class _NoteSearchBarState extends State<NoteSearchBar> {
   late final _controller = TextEditingController(text: widget.initialQuery);
-  Timer? _debounce;
 
   @override
   void dispose() {
-    _debounce?.cancel();
     _controller.dispose();
     super.dispose();
   }
 
   void _onChanged(String text) {
-    _debounce?.cancel();
-    _debounce = Timer(const Duration(milliseconds: 200), () {
-      widget.onQueryChanged(text.trim());
-    });
+    widget.onQueryChanged(text.trim());
   }
 
   @override
@@ -48,10 +42,18 @@ class _NoteSearchBarState extends State<NoteSearchBar> {
               color: AppColors.textHint, fontSize: AppDimens.textBody),
           prefixIcon: const Icon(Icons.search, color: AppColors.textHint),
           filled: true,
-          fillColor: const Color(0xFFF5F5F5),
+          fillColor: const Color(0xFFBBDEFB),
           contentPadding: const EdgeInsets.symmetric(vertical: 10),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(20),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(20),
+            borderSide: BorderSide.none,
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(20),
             borderSide: BorderSide.none,
           ),
         ),

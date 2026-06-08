@@ -16,25 +16,24 @@ impl Tokenizer for JiebaTokenizer {
     type TokenStream<'a> = JiebaTokenStream;
 
     fn token_stream<'a>(&'a mut self, text: &'a str) -> Self::TokenStream<'a> {
-        let words = JIEBA.cut(text, true);
+        let words = JIEBA.cut_for_search(text, true);
         let mut tokens = Vec::new();
-        let mut offset = 0;
+        let mut byte_offset = 0;
         for word in words {
-            let trimmed = word.trim();
-            if trimmed.is_empty() {
-                offset += word.len();
+            if word.trim().is_empty() {
+                byte_offset += word.len();
                 continue;
             }
-            let start = text[offset..].find(trimmed).unwrap_or(0) + offset;
-            let end = start + trimmed.len();
+            let start = byte_offset;
+            let end = start + word.len();
             tokens.push(Token {
                 offset_from: start,
                 offset_to: end,
                 position: tokens.len(),
-                text: trimmed.to_lowercase(),
+                text: word.trim().to_lowercase(),
                 position_length: 1,
             });
-            offset = end;
+            byte_offset = end;
         }
         JiebaTokenStream { tokens, index: 0 }
     }

@@ -97,6 +97,32 @@ class NoteRepository {
     return _rowToNote(rows.first);
   }
 
+  Future<List<Note>> getByIds(List<int> ids) async {
+    if (ids.isEmpty) return [];
+    final db = await _dbHelper.database;
+    final placeholders = List.filled(ids.length, '?').join(',');
+    final rows = await db.query(
+      'notes',
+      where: 'id IN ($placeholders) AND deleted_at = 0',
+      whereArgs: ids,
+    );
+    return rows.map(_rowToNote).toList();
+  }
+
+  Future<List<Note>> searchByLike(String keyword, {int limit = 50}) async {
+    if (keyword.isEmpty) return [];
+    final db = await _dbHelper.database;
+    final pattern = '%$keyword%';
+    final rows = await db.query(
+      'notes',
+      where: 'deleted_at = 0 AND (title LIKE ? OR plain_text LIKE ?)',
+      whereArgs: [pattern, pattern],
+      orderBy: 'updated_at DESC',
+      limit: limit,
+    );
+    return rows.map(_rowToNote).toList();
+  }
+
   Future<int> save(Note note) async {
     final db = await _dbHelper.database;
     final now = DateTime.now().millisecondsSinceEpoch;

@@ -159,4 +159,15 @@ mod tests {
             hits[0].title_highlight
         );
     }
+
+    #[test]
+    fn test_subword_search() {
+        let (_dir, idx) = setup();
+        let mut writer = idx.writer().unwrap();
+        idx.upsert(&writer, 1, "啥时候", "");
+        writer.commit().unwrap();
+
+        let hits = searcher::search(&idx, "时候", 10).unwrap();
+        assert!(!hits.is_empty(), "搜'时候'应命中'啥时候'");
+    }
 }

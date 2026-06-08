@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer' as dev;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -76,6 +77,8 @@ class NoteListNotifier extends StateNotifier<NoteListState> {
   final NoteRepository _noteRepo;
   final FolderRepository _folderRepo;
   final NotebookRepository _notebookRepo;
+  int _reloadGeneration = 0;
+  Timer? _queryDebounce;
 
   NoteListNotifier(this._noteRepo, this._folderRepo, this._notebookRepo)
       : super(const NoteListState());
@@ -142,26 +145,30 @@ class NoteListNotifier extends StateNotifier<NoteListState> {
   }
 
   Future<void> reload() async {
+    final gen = ++_reloadGeneration;
     state = state.copyWith(isLoading: true);
     try {
       final filter = await _validateFilter(state.filter);
       List<Note> notes;
       if (state.query.isNotEmpty) {
         final hits = await SearchService.instance.search(state.query);
+        if (gen != _reloadGeneration) return;
         if (hits.isNotEmpty) {
-          final hitIds = hits.map((h) => h.noteId as int).toSet();
-          final allNotes = await _noteRepo.list(filter: filter, sortBy: state.sortBy);
-          notes = allNotes.where((n) => hitIds.contains(n.id)).toList();
-          final idOrder = {for (var i = 0; i < hits.length; i++) hits[i].noteId as int: i};
-          notes.sort((a, b) => (idOrder[a.id] ?? 999).compareTo(idOrder[b.id] ?? 999));
+          final hitIds = hits.map((h) => h.noteId).toList();
+          final fetched = await _noteRepo.getByIds(hitIds);
+          if (gen != _reloadGeneration) return;
+          final idOrder = {for (var i = 0; i < hitIds.length; i++) hitIds[i]: i};
+          notes = fetched..sort((a, b) => (idOrder[a.id] ?? 999).compareTo(idOrder[b.id] ?? 999));
         } else {
-          notes = [];
+          notes = await _noteRepo.searchByLike(state.query);
+          if (gen != _reloadGeneration) return;
         }
       } else {
         notes = await _noteRepo.list(
           filter: filter,
           sortBy: state.sortBy,
         );
+        if (gen != _reloadGeneration) return;
       }
       final colorMap = <int, String>{};
       final nbIds = notes.map((n) => n.notebookId).whereType<int>().toSet();
@@ -169,6 +176,7 @@ class NoteListNotifier extends StateNotifier<NoteListState> {
         final nb = await _notebookRepo.get(id);
         if (nb != null) colorMap[id] = nb.color;
       }
+      if (gen != _reloadGeneration) return;
       final title = await _computeHeaderTitle(filter);
       final subtitle = await _computeHeaderSubtitle(filter, notes.length);
       state = state.copyWith(
@@ -180,6 +188,7 @@ class NoteListNotifier extends StateNotifier<NoteListState> {
         headerSubtitle: subtitle,
       );
     } catch (e, st) {
+      if (gen != _reloadGeneration) return;
       dev.log('reload failed', error: e, stackTrace: st);
       state = state.copyWith(isLoading: false);
     }
@@ -250,9 +259,13 @@ class NoteListNotifier extends StateNotifier<NoteListState> {
     await reload();
   }
 
-  Future<void> setQuery(String query) async {
+  void setQuery(String query) {
+    if (query == state.query) return;
     state = state.copyWith(query: query);
-    await reload();
+    _queryDebounce?.cancel();
+    _queryDebounce = Timer(const Duration(milliseconds: 150), () {
+      reload();
+    });
   }
 
   Future<void> toggleGridView() async {
