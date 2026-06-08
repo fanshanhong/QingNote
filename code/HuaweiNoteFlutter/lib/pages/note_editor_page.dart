@@ -49,7 +49,6 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
   EditorState? _editorStateRef;
   VoidCallback? _onToggledStyleChanged;
   VoidCallback? _onSelectionChanged;
-  VoidCallback? _onCursorVisibilityChanged;
 
   @override
   void initState() {
@@ -126,15 +125,6 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
     };
     editorState.selectionNotifier.addListener(_onSelectionChanged!);
 
-    _onCursorVisibilityChanged = () {
-      if (editorState.selection == null) return;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        _ensureCursorVisible();
-      });
-    };
-    editorState.selectionNotifier.addListener(_onCursorVisibilityChanged!);
-
     if (mounted) setState(() => _editorReady = true);
   }
 
@@ -184,9 +174,6 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
       }
       if (_onSelectionChanged != null) {
         _editorStateRef!.selectionNotifier.removeListener(_onSelectionChanged!);
-      }
-      if (_onCursorVisibilityChanged != null) {
-        _editorStateRef!.selectionNotifier.removeListener(_onCursorVisibilityChanged!);
       }
     }
     _scrollController?.dispose();
@@ -479,21 +466,32 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
       final es = notifier.editorState;
       if (es == null) return;
       final prev = node.previous;
+      final targetPath = prev?.path.toList();
+      final targetOffset = prev?.delta?.toPlainText().length ?? 0;
 
       final transaction = es.transaction;
       transaction.deleteNode(node);
+      if (targetPath != null) {
+        transaction.afterSelection = Selection.collapsed(
+          Position(path: targetPath, offset: targetOffset),
+        );
+      }
       es.apply(transaction);
 
-      // 编辑器的 TapGestureRecognizer 会在同一事件循环中根据点击坐标覆盖 selection，
-      // 必须延迟到下一帧才能稳定地设置光标到前一行
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (prev != null) {
-          final offset = prev.delta?.toPlainText().length ?? 0;
-          es.selection = Selection.collapsed(
-            Position(path: prev.path, offset: offset),
+      if (targetPath != null) {
+        Future.delayed(const Duration(milliseconds: 50), () {
+          final sel = Selection.collapsed(
+            Position(path: targetPath, offset: targetOffset),
           );
-        }
-      });
+          es.updateSelectionWithReason(
+            sel,
+            reason: SelectionUpdateReason.uiEvent,
+          );
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _ensureCursorVisible();
+          });
+        });
+      }
     }
     return {
       ...standardBlockComponentBuilderMap,
@@ -507,7 +505,6 @@ class _NoteEditorPageState extends ConsumerState<NoteEditorPage> {
       ImageBlockKeys.type: CustomImageBlockComponentBuilder(
         editable: state.isEditing,
         onDelete: deleteNode,
-        onImageLoaded: _ensureCursorVisible,
       ),
       AudioBlockKeys.type: AudioBlockComponentBuilder(
         noteId: state.noteId,
