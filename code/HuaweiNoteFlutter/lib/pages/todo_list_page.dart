@@ -40,12 +40,30 @@ class _TodoListPageState extends ConsumerState<TodoListPage> {
 
   void _onQuickAddSave(
       String title, int remindAt, bool isImportant, RepeatType repeatType) {
+    Navigator.pop(context);
     ref.read(todoListProvider.notifier).quickAdd(
           title: title,
           remindAt: remindAt,
           isImportant: isImportant,
           repeatType: repeatType,
         );
+  }
+
+  void _showQuickAddSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.bgCard,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(ctx).viewInsets.bottom,
+        ),
+        child: TodoQuickAddBar(onSave: _onQuickAddSave),
+      ),
+    );
   }
 
   void _showOverflowMenu() {
@@ -123,18 +141,14 @@ class _TodoListPageState extends ConsumerState<TodoListPage> {
                   : _buildTodoList(state, isDeletedView),
             ),
             if (state.isBatchMode) _buildBatchBottomBar(state),
-            if (state.isQuickAddVisible && !state.isBatchMode)
-              TodoQuickAddBar(onSave: _onQuickAddSave),
           ],
         ),
       ),
       floatingActionButton: (!state.filterPanelVisible &&
               !state.isBatchMode &&
-              !state.isQuickAddVisible &&
               !isDeletedView)
           ? FloatingActionButton(
-              onPressed: () =>
-                  ref.read(todoListProvider.notifier).showQuickAdd(),
+              onPressed: _showQuickAddSheet,
               child: const Icon(Icons.add))
           : null,
     );

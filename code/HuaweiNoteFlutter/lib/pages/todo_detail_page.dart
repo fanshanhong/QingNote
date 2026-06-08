@@ -60,8 +60,16 @@ class _TodoDetailPageState extends ConsumerState<TodoDetailPage>
 
   @override
   void deactivate() {
-    _save();
+    _saveSync();
     super.deactivate();
+  }
+
+  void _saveSync() {
+    if (!_loaded) return;
+    final notifier = ref.read(todoDetailProvider(widget.todoId).notifier);
+    notifier.setTitle(_titleController.text);
+    notifier.setMemo(_memoController.text);
+    Future.microtask(() => notifier.save());
   }
 
   void _save() {
