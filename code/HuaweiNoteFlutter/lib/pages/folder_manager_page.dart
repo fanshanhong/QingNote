@@ -232,17 +232,21 @@ class _FolderManagerPageState extends ConsumerState<FolderManagerPage> {
               _onEditNotebook(nb);
             },
           ),
-          ListTile(
-            leading: const Icon(Icons.drive_file_move_outlined),
-            title: const Text('移动到'),
-            onTap: () {
-              Navigator.pop(ctx);
-              _onMoveNotebook(nb);
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.delete_outline, color: AppColors.danger),
-            title: const Text('删除', style: TextStyle(color: AppColors.danger)),
+          if (!nb.isDefault)
+            ListTile(
+              leading: const Icon(Icons.drive_file_move_outlined),
+              title: const Text('移动到'),
+              onTap: () {
+                Navigator.pop(ctx);
+                _onMoveNotebook(nb);
+              },
+            ),
+          if (!nb.isDefault)
+            ListTile(
+              leading:
+                  const Icon(Icons.delete_outline, color: AppColors.danger),
+              title:
+                  const Text('删除', style: TextStyle(color: AppColors.danger)),
               onTap: () {
                 Navigator.pop(ctx);
                 _onDeleteNotebook(nb);
